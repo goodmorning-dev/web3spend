@@ -82,6 +82,24 @@ describe('commitImport', () => {
     expect(transaction.cashbackCurrency).toBe('USD')
   })
 
+  it('allows a cashback correction when the reported status agrees with the current one', async () => {
+    await commitImport([makeRow({ status: 'CLEARED', cashbackMinor: 0 })], {
+      fileHash: 'hash-1',
+      parserVersion: '1',
+      unsupportedCount: 0,
+    })
+
+    await commitImport([makeRow({ status: 'CLEARED', cashbackMinor: 12 })], {
+      fileHash: 'hash-2',
+      parserVersion: '1',
+      unsupportedCount: 0,
+    })
+
+    const [transaction] = await db.transactions.toArray()
+    expect(transaction.status).toBe('CLEARED')
+    expect(transaction.cashbackMinor).toBe(12)
+  })
+
   it('rolls back every write (cards, transactions, import record) if the final commit step fails', async () => {
     const rows = [
       makeRow({ description: 'Coffee Shop' }),

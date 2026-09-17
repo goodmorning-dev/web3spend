@@ -3,7 +3,7 @@ import type { ImportRowCounts } from '@/types/import'
 import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
 import { resolveCard } from './cardIdentity'
 import { computeIdentityKey } from './identityKey'
-import { isTerminalStatus, resolveStatusTransition } from './statusTransition'
+import { resolveStatusTransition } from './statusTransition'
 
 /**
  * A single already-normalized row, as a (future) parsing module would produce
@@ -55,15 +55,18 @@ export async function commitImport(
       const existing = await db.transactions.where('identityKey').equals(identityKey).first()
 
       if (existing) {
-        // A terminal existing row means this report is stale (see statusTransition.ts):
-        // reject its cashback figures along with its status, not just the status.
-        const locked = isTerminalStatus(existing.status)
         const status: TransactionStatus = resolveStatusTransition(existing.status, row.status)
+        // If the resolved status differs from what this row actually reported, its
+        // status got rejected as stale (statusTransition.ts) — so the rest of what
+        // it reported, cashback included, is equally untrustworthy and gets rejected
+        // too. A report whose status matches (whether unchanged or a real transition
+        // the rule allowed) is trusted, so its cashback figures apply as normal.
+        const isStaleReport = row.status !== status
         await db.transactions.put({
           ...existing,
           status,
-          cashbackMinor: locked ? existing.cashbackMinor : row.cashbackMinor,
-          cashbackCurrency: locked ? existing.cashbackCurrency : row.cashbackCurrency,
+          cashbackMinor: isStaleReport ? existing.cashbackMinor : row.cashbackMinor,
+          cashbackCurrency: isStaleReport ? existing.cashbackCurrency : row.cashbackCurrency,
           importId,
         })
         updated += 1
