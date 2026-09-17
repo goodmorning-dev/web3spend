@@ -3,7 +3,7 @@ import type { ImportRowCounts } from '@/types/import'
 import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
 import { resolveCard } from './cardIdentity'
 import { computeIdentityKey } from './identityKey'
-import { resolveStatusTransition } from './statusTransition'
+import { isTerminalStatus, resolveStatusTransition } from './statusTransition'
 
 /**
  * A single already-normalized row, as a (future) parsing module would produce
@@ -55,12 +55,15 @@ export async function commitImport(
       const existing = await db.transactions.where('identityKey').equals(identityKey).first()
 
       if (existing) {
+        // A terminal existing row means this report is stale (see statusTransition.ts):
+        // reject its cashback figures along with its status, not just the status.
+        const locked = isTerminalStatus(existing.status)
         const status: TransactionStatus = resolveStatusTransition(existing.status, row.status)
         await db.transactions.put({
           ...existing,
           status,
-          cashbackMinor: row.cashbackMinor,
-          cashbackCurrency: row.cashbackCurrency,
+          cashbackMinor: locked ? existing.cashbackMinor : row.cashbackMinor,
+          cashbackCurrency: locked ? existing.cashbackCurrency : row.cashbackCurrency,
           importId,
         })
         updated += 1

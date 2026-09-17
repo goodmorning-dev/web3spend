@@ -65,21 +65,21 @@ describe('commitImport', () => {
     expect(transactions[0].cashbackMinor).toBe(12)
   })
 
-  it('never downgrades a CLEARED transaction on a later, stale re-import', async () => {
-    await commitImport([makeRow({ status: 'CLEARED' })], {
-      fileHash: 'hash-1',
-      parserVersion: '1',
-      unsupportedCount: 0,
-    })
+  it('never downgrades a CLEARED transaction, or its cashback, on a later stale re-import', async () => {
+    await commitImport(
+      [makeRow({ status: 'CLEARED', cashbackMinor: 12, cashbackCurrency: 'USD' })],
+      { fileHash: 'hash-1', parserVersion: '1', unsupportedCount: 0 },
+    )
 
-    await commitImport([makeRow({ status: 'PENDING' })], {
-      fileHash: 'hash-2',
-      parserVersion: '1',
-      unsupportedCount: 0,
-    })
+    await commitImport(
+      [makeRow({ status: 'PENDING', cashbackMinor: 0, cashbackCurrency: 'EUR' })],
+      { fileHash: 'hash-2', parserVersion: '1', unsupportedCount: 0 },
+    )
 
     const [transaction] = await db.transactions.toArray()
     expect(transaction.status).toBe('CLEARED')
+    expect(transaction.cashbackMinor).toBe(12)
+    expect(transaction.cashbackCurrency).toBe('USD')
   })
 
   it('rolls back every write (cards, transactions, import record) if the final commit step fails', async () => {
