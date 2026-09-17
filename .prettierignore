@@ -1,0 +1,9 @@
+dist
+coverage
+node_modules
+package-lock.json
+
+# hand-written planning/reference docs — not reformatted as code
+docs/
+AGENTS.md
+README.md

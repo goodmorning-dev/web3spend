@@ -1,0 +1,11 @@
+# Normalize line endings to LF regardless of a contributor's local
+# core.autocrlf setting, so `npm run format:check` is consistent on every
+# platform instead of depending on how each checkout converts line endings.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
