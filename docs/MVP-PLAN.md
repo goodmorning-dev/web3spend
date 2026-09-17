@@ -145,7 +145,8 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Show date, merchant, card label/last four digits, amount/currency, category, status, and recorded cashback.
 - Show original amount/currency in details when different.
 - User category override per transaction is a real feature, deferred to v2, not dropped:
-  the MVP ships with the provider/MCC-mapped category only, editable in a later version.
+  the MVP shows Etherfi's raw category text as-is (no mapping to an app-level taxonomy — see
+  §6), editable in a later version.
 - Also deferred (v2), and independent of overrides: bulk merchant rules (one action that
   recategorizes every past and future transaction from a given merchant at once, instead of
   editing rows one by one) and transaction splitting (dividing a single transaction's amount
@@ -170,8 +171,8 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Use CLEARED card_spend rows for the default purchase total.
 - PENDING and CANCELLED are excluded from cleared spending and its cashback calculation.
 - Unknown types, statuses, or payment modes must be reported. Never silently count them as ordinary spending or assume Direct Pay.
-- Normalize category whitespace and parse optional leading MCC codes. Retain the original category text.
-- Map normalized provider categories into a small, documented set of spending categories. Unmapped values go to Uncategorized, not a guessed category.
+- Normalize category whitespace and mojibake only; retain the original category text as-is (MCC prefix included where present) and use it directly everywhere a category is shown, grouped, or filtered.
+- No mapping to a small, curated set of app-level categories in the MVP. That taxonomy, and the "Uncategorized" fallback it implies, are deferred to v2 (see §13).
 - Describe cashback as recorded cashback on the selected purchases. The export does not establish when it was claimed or received.
 - Effective cashback = sum of recorded cashback / sum of included purchase spend, multiplied by 100, only when currencies and included populations match and data is complete.
 - Display unavailable rather than 0% when the denominator is zero or required cashback information is missing/incompatible.
@@ -247,7 +248,7 @@ Persist base records; derive chart summaries from them. Validate database migrat
 ## 9. Privacy and maintenance
 
 - All transaction parsing, storage, matching, and analytics stay in the browser.
-- Bundle fonts, icons, parsers, charts, and category mappings. Avoid remote merchant logos and third-party analytics scripts.
+- Bundle fonts, icons, parsers, and charts. Avoid remote merchant logos and third-party analytics scripts.
 - Never put financial details in URLs, requests, remote error reports, or server logs.
 - Test offline cold launch after initial caching, including import and delete-all.
 - Treat imported strings as text, never executable HTML or formulas.
@@ -338,6 +339,9 @@ Done when: users can complete the flow unaided and the team has a clear feedback
 ## 13. Deferred work
 
 - CSV import support.
+- A small, curated app-level category taxonomy and the mapping table from Etherfi's raw
+  category text into it (see §6). The MVP shows raw category text as-is; the taxonomy is
+  designed once more real exports are seen and ships together with overrides below.
 - User category overrides per transaction, bulk merchant rules, and transaction splitting (see §5).
 - Versioned backup/export and restore, and cross-device backup merging (see §5).
 - Full Borrow-mode analytics: balances, interest, repayments, collateral, and liquidation.
