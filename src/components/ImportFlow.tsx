@@ -7,6 +7,7 @@ interface ImportResult {
   added: number
   updated: number
   unsupported: UnsupportedRow[]
+  alreadyImported: boolean
 }
 
 /**
@@ -41,12 +42,17 @@ function ImportFlow() {
       const buffer = await file.arrayBuffer()
       const fileHash = await sha256Hex(buffer)
       const { rows, unsupported } = etherfiAdapter.parse(buffer)
-      const { rowCounts } = await commitImport(rows, {
+      const { rowCounts, alreadyImported } = await commitImport(rows, {
         fileHash,
         parserVersion: ETHERFI_PARSER_VERSION,
         unsupportedCount: unsupported.length,
       })
-      setResult({ added: rowCounts.added, updated: rowCounts.updated, unsupported })
+      setResult({
+        added: rowCounts.added,
+        updated: rowCounts.updated,
+        unsupported,
+        alreadyImported,
+      })
     } catch (err) {
       setError(
         err instanceof Error
@@ -81,10 +87,14 @@ function ImportFlow() {
 
       {result && (
         <div className="flex flex-col gap-2 rounded-lg bg-muted p-3 text-sm">
-          <p>
-            {result.added} added, {result.updated} updated.
-          </p>
-          {result.unsupported.length > 0 && (
+          {result.alreadyImported ? (
+            <p>This file has already been imported. No changes were made.</p>
+          ) : (
+            <p>
+              {result.added} added, {result.updated} updated.
+            </p>
+          )}
+          {!result.alreadyImported && result.unsupported.length > 0 && (
             <details>
               <summary className="cursor-pointer text-muted-foreground">
                 {result.unsupported.length} row{result.unsupported.length === 1 ? '' : 's'} could

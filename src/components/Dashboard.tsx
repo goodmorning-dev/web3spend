@@ -1,11 +1,18 @@
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import ImportFlow from './ImportFlow'
 
-function formatDate(iso: string): string {
+/**
+ * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
+ * preserved and labeled, never reinterpreted in the viewer's local zone. A
+ * purchase at Jan 31 23:30 UTC must read as Jan 31, not Feb 1 for a viewer
+ * ahead of UTC.
+ */
+function formatUtcDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   })
 }
 
@@ -39,13 +46,13 @@ function Dashboard() {
             </p>
             {summary.earliestTimestampUtc && summary.latestTimestampUtc && (
               <p className="text-sm text-muted-foreground">
-                Observed transactions from {formatDate(summary.earliestTimestampUtc)} to{' '}
-                {formatDate(summary.latestTimestampUtc)}.
+                Observed transactions from {formatUtcDate(summary.earliestTimestampUtc)} to{' '}
+                {formatUtcDate(summary.latestTimestampUtc)} (UTC).
               </p>
             )}
             {summary.latestImportedAt && (
               <p className="text-sm text-muted-foreground">
-                Last import: {formatDate(summary.latestImportedAt)}.
+                Last import: {formatUtcDate(summary.latestImportedAt)} (UTC).
               </p>
             )}
             <p className="text-xs text-muted-foreground">Charts and filtering are coming soon.</p>

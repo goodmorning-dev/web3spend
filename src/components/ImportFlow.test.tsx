@@ -131,4 +131,19 @@ describe('ImportFlow', () => {
     expect(screen.getByText(/all transactions/i)).toBeInTheDocument()
     expect(await db.transactions.count()).toBe(0)
   })
+
+  it('reports that a file was already imported instead of reprocessing it', async () => {
+    const user = userEvent.setup()
+    render(<ImportFlow />)
+
+    const input = screen.getByLabelText(/choose an xlsx file/i)
+    const file = toFile(buildValidWorkbook())
+
+    await user.upload(input, file)
+    expect(await screen.findByText('1 added, 0 updated.')).toBeInTheDocument()
+
+    await user.upload(input, file)
+    expect(await screen.findByText(/already been imported/i)).toBeInTheDocument()
+    expect(await db.transactions.count()).toBe(1)
+  })
 })
