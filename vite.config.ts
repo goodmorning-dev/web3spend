@@ -17,6 +17,11 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // default globPatterns omit font files; bundled fonts must be precached
+        // too so offline typography doesn't fall back to a system font.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+      },
       manifest: {
         name: 'Web3Spend',
         short_name: 'Web3Spend',
