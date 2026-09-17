@@ -16,6 +16,10 @@ how we build it. Status: Draft for discussion.
   whether Borrow rows fit the same normalized transaction shape as Direct Pay. If they do,
   basic Borrow transaction import may land in the MVP; full Borrow analytics (balances,
   interest, collateral, liquidation) stays v2 regardless (MVP-PLAN §2).
+- Category taxonomy: RESOLVED. The MVP does not map categories at all — Etherfi's own
+  category text is normalized for whitespace/mojibake only and used as-is everywhere (display,
+  grouping, filtering). A curated app-level taxonomy and per-transaction overrides are both
+  deferred to v2 (section 7, MVP-PLAN §13).
 
 ## 2. What we borrow from the reference implementation, and what we do differently
 
@@ -27,9 +31,10 @@ Borrow:
 - Parse-once / cheap-re-derive split: parsing a file into normalized rows is the expensive
   step; filtering and chart aggregation must re-run cheaply off already-stored data without
   re-parsing.
-- Static, documented category taxonomy. The taxonomy itself ships in the MVP; making it
-  user-overridable (surfaced separately from provider-supplied categories so re-imports never
-  clobber a correction) is deferred to v2, per MVP-PLAN §5.
+- Static, documented category taxonomy — as a v2 idea to borrow, not MVP scope. The MVP shows
+  Etherfi's raw category text as-is; building a curated taxonomy and making it user-overridable
+  (surfaced separately from provider-supplied categories so re-imports never clobber a
+  correction) are both deferred to v2, per MVP-PLAN §5/§13.
 - Visible in-UI privacy messaging (not just a docs claim): a persistent banner stating data
   never leaves the browser.
 
@@ -72,7 +77,6 @@ src/
   parsing/           XLSX sheet/header detection, row validation, normalization
   matching/          identity-key computation, upsert logic
   storage/           Dexie schema + typed repositories (cards, transactions, imports, settings)
-  categorization/    static MCC/category-text -> app-category table (override lookup is v2)
   analyzers/         pure aggregation functions (by month/year/category/currency/card)
   components/        feature UI (Home, ImportFlow, Dashboard, TransactionsTable, Settings)
   components/ui/     shadcn primitives
@@ -80,6 +84,9 @@ src/
   types/             StandardTransaction, Card, ImportRecord, Settings (CategoryOverride is v2)
   utils/             money (minor-units helpers), dates (UTC helpers), text normalization
 ```
+
+A `categorization/` module (the app-category table and its lookup) is added in v2 once the
+taxonomy ships; there's nothing for it to do in v1 (section 7).
 
 ## 4. Data model (Dexie schema v1)
 
@@ -104,7 +111,9 @@ interface StandardTransaction {
   originalCurrency: string
   cashbackMinor: number
   cashbackCurrency: string
-  categoryRaw: string        // as imported, whitespace-normalized, MCC prefix retained
+  categoryRaw: string        // as imported, whitespace/mojibake-normalized, MCC prefix
+                             // retained; used directly as the category everywhere in the MVP
+                             // (no taxonomy mapping — section 7)
   spendingMode: 'Direct Pay' // widen if Milestone 0 confirms Borrow-mode rows fit this shape
   identityKey: string        // cardId+timestampUtc+normalizedDescription+amountMinor+currency, used
                              // as the composite identity for upsert on re-import (section 6)
@@ -162,8 +171,9 @@ db.version(1).stores({
    currency codes, enum fields); unknown `type`, `status`, or `spending mode` values are
    collected as "unsupported rows," never silently coerced into a known bucket.
 5. **Normalization**: trim/collapse whitespace and strip non-breaking-space / mojibake
-   artifacts from `category`; parse an optional leading MCC prefix; convert amounts to
-   integer minor units; parse timestamp to ISO UTC.
+   artifacts from `category` (the MCC prefix, if present, is left in place — no mapping step
+   consumes it in the MVP; see section 7); convert amounts to integer minor units; parse
+   timestamp to ISO UTC.
 6. **Identity + upsert**: compute `identityKey` (hash of `cardId + timestampUtc +
    normalizedDescription + amountMinor + currency`; see section 6) for each parsed row, then
    upsert directly against the DB; no separate preview/confirmation stage.
@@ -213,25 +223,28 @@ two-hash system:
   ambiguous-match resolution UI, and explicit surfacing of contradictory status changes across
   overlapping exports: the richer design originally scoped here.
 
-## 7. Category taxonomy
+## 7. Categories: raw in the MVP, taxonomy in v2
 
 Etherfi already supplies a `category` string per row (often `"<MCC> - <description>"`, e.g.
 `"5411 - Grocery Stores and Supermarkets"`, sometimes without the MCC prefix, e.g. `"Parking
-Lots and Garages"`). Unlike the reference implementation, which has to *infer* a category from a raw merchant name,
-we only need to *map* an already-descriptive (if messy) string to a small app-level category.
+Lots and Garages"`). The MVP does not map this to an app-defined taxonomy: `categoryRaw`
+(whitespace/mojibake normalized only, MCC prefix retained) is used directly, as-is, for
+display, grouping, and filtering everywhere in the app. There is no `Uncategorized` bucket in
+the MVP either, since nothing is being classified — every row already carries whatever
+category string Etherfi assigned it.
 
-Starter taxonomy (extend as more real category strings are observed across pilot users):
+Rationale: the sample export (a single cardholder) isn't enough to seed a curated taxonomy
+with confidence, and per-transaction override UI — the main reason to have a small, stable
+taxonomy in the first place — is already deferred to v2. Shipping a mapping table now would
+mean guessing at a design that gets redone once more real exports and the override feature
+land together.
+
+Deferred to v2 (MVP-PLAN §13): a small, curated app-level taxonomy (starter sketch:
 `Groceries, Restaurants & Dining, Transport, Travel, Shopping, Entertainment & Leisure,
 Utilities & Bills, Health & Wellness, Financial Fees & Services, Cash & ATM, Subscriptions &
-Software, Education, Uncategorized`.
-
-Mapping approach: normalize (strip MCC prefix + whitespace/mojibake), look up in a static,
-version-controlled table (`categorization/mccCategoryMap.ts`) from normalized description →
-app category; unmapped values fall into `Uncategorized`, never a guessed category. The MVP
-ships with this table-driven default only; no per-transaction override yet. When overrides
-land in v2, a user's manual choice (`CategoryOverride`) takes precedence over the table and
-survives re-imports (the table only ever supplies the *default*, never overwrites a stored
-override).
+Software, Education, Uncategorized`), a static mapping table (`categorization/mccCategoryMap.ts`)
+from normalized category text to that taxonomy, and per-transaction manual overrides
+(`CategoryOverride`, section 4) that take precedence over the table and survive re-imports.
 
 ## 8. Money & date handling
 
@@ -254,7 +267,8 @@ horizontal bars... pie/donut optional" already reflects this):
 - Column chart: total spend per day (month view) / per month (year view).
 - Sorted horizontal bar list: spend by category with amount + share, clickable to filter the
   transaction table (same click-to-filter pattern as the reference implementation's category
-  chart).
+  chart). Categories are Etherfi's own raw text (section 7), so the list can be longer and
+  less tidy than a curated taxonomy; sorting by amount keeps the top spend visible regardless.
 - Column/line: accumulated cashback and effective cashback % (`cashback / cleared spend`) per
   period; "unavailable" (not 0%) when the denominator is zero or data is incomplete.
 - Activity heatmap (MVP-PLAN §5): a GitHub-contribution-style year grid, one cell per day,
@@ -278,8 +292,6 @@ modules from day one with Vitest:
   mojibake, missing MCC prefix, malformed amounts).
 - `matching/`: identity-key stability and upsert correctness, card-assignment heuristic, using
   synthetic fixtures modeling overlapping imports and status transitions (PENDING → CLEARED).
-- `categorization/`: mapping table lookups (override precedence tests land in v2 with the
-  feature itself).
 - `analyzers/`: aggregation correctness (decimal-safe sums, UTC period boundaries, effective
   cashback % edge cases).
 React Testing Library for the import flow (added/unsupported counts render correctly after a
@@ -288,8 +300,8 @@ the real anonymized xlsx is never committed to the repo (MVP-PLAN §9/§12).
 
 ## 11. Privacy & PWA
 
-- Bundle everything (fonts, icons, parser, charts, category table): no remote fetches for
-  app assets, no third-party analytics script, no merchant logos from a remote CDN.
+- Bundle everything (fonts, icons, parser, charts): no remote fetches for app assets, no
+  third-party analytics script, no merchant logos from a remote CDN.
 - **shadcn/ui and remote requests**: shadcn/ui is not a runtime package. `npx shadcn add
   <component>` copies component source (built on Radix UI primitives + Tailwind classes, both
   fully bundled with no runtime network calls) directly into the repo; from that point it's
@@ -312,8 +324,6 @@ the real anonymized xlsx is never committed to the repo (MVP-PLAN §9/§12).
 - **Borrow-mode fit**: needs a redacted Borrow-mode export checked against the normalized
   `StandardTransaction` shape during Milestone 0; decides whether basic Borrow import is
   in-scope for the MVP (MVP-PLAN §2).
-- **Category taxonomy completeness**: the starter list in section 7 is seeded from the one
-  sample export (single cardholder); expect to extend it once more real exports are seen.
 - **Local data-at-rest protection** (MVP-PLAN §13): not scoped for the MVP. If prioritized
   later, needs a real design pass covering threat model (shared-device glance-access vs. raw
   browser-profile/storage access), lock-screen vs. Web Crypto-based encryption of the
@@ -327,8 +337,9 @@ Ties MVP-PLAN.md's Milestones 0–4 to concrete deliverables from this document:
   matching the observed workbook shape (section 10) for use in all later tests.
 - **M1** (sections 3–6): repo scaffold, Dexie schema, parsing pipeline, composite-identity
   upsert, atomic commit; no preview UI.
-- **M2** (sections 7–9): category taxonomy (no overrides yet), decimal-safe aggregation,
-  dashboard charts including the activity heatmap, transaction table with filters.
+- **M2** (sections 7–9): raw category display (no taxonomy mapping, no overrides — both v2),
+  decimal-safe aggregation, dashboard charts including the activity heatmap, transaction table
+  with filters.
 - **M3** (section 11): PWA manifest/service worker, delete-all control, storage-quota handling,
   mobile layouts, offline verification. Backup/restore is v2.
 - **M4**: license file + README (section 1, 11), deploy, pilot with Etherfi-using coworkers.
