@@ -1,4 +1,5 @@
 import Dexie from 'dexie'
+import { sha256Hex } from '@/utils/hash'
 
 export interface IdentityFields {
   cardId: string
@@ -26,10 +27,5 @@ export async function computeIdentityKey(fields: IdentityFields): Promise<string
     fields.amountMinor,
     fields.currency,
   ].join('|')
-  const digest = await Dexie.waitFor(
-    crypto.subtle.digest('SHA-256', new TextEncoder().encode(input)),
-  )
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('')
+  return Dexie.waitFor(sha256Hex(new TextEncoder().encode(input)))
 }

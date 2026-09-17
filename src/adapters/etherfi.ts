@@ -4,6 +4,12 @@ import { parseRow } from '@/parsing/rowParser'
 import type { ParseResult, ProviderAdapter, UnsupportedRow } from './providerAdapter'
 
 /**
+ * Bumped whenever parsing/normalization behavior changes, so an ImportRecord
+ * can tell which parser version actually produced its rows.
+ */
+export const ETHERFI_PARSER_VERSION = '1'
+
+/**
  * TECHNICAL-PLAN §5: reads only the "All Transactions" sheet by exact name
  * (never the per-currency sheets, which duplicate its rows), resolves the
  * header, and validates/normalizes every data row using that same header's

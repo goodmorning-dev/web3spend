@@ -22,9 +22,11 @@ describe('App routing', () => {
     expect(screen.getByRole('heading', { name: 'Web3Spend' })).toBeInTheDocument()
   })
 
-  it('renders the app placeholder at /app', () => {
+  it('renders the Dashboard at /app', async () => {
     renderAt('/app')
-    expect(screen.getByText(/coming soon/i)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: /import your etherfi export/i }),
+    ).toBeInTheDocument()
   })
 
   it('redirects an unknown path to /home', () => {

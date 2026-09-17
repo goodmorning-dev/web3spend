@@ -150,4 +150,49 @@ describe('commitImport', () => {
     expect(await db.cards.count()).toBe(1)
     expect(await db.imports.count()).toBe(2)
   })
+
+  it('short-circuits re-importing the exact same file instead of reprocessing its rows', async () => {
+    const options = { fileHash: 'hash-a', parserVersion: '1', unsupportedCount: 0 }
+    const first = await commitImport([makeRow()], options)
+
+    const repeat = await commitImport([makeRow()], options)
+
+    expect(repeat).toEqual({
+      importId: first.importId,
+      rowCounts: first.rowCounts,
+      alreadyImported: true,
+    })
+    expect(await db.transactions.count()).toBe(1)
+    expect(await db.imports.count()).toBe(1)
+  })
+
+  it('cannot undo a newer correction by re-importing an older file with the same fileHash again', async () => {
+    const fileA = { fileHash: 'hash-a', parserVersion: '1', unsupportedCount: 0 }
+    const fileB = { fileHash: 'hash-b', parserVersion: '1', unsupportedCount: 0 }
+
+    // file A: first seen with 0 cashback
+    await commitImport([makeRow({ status: 'CLEARED', cashbackMinor: 0 })], fileA)
+    // file B: a genuine correction to 12 cents under the same status
+    await commitImport([makeRow({ status: 'CLEARED', cashbackMinor: 12 })], fileB)
+    // file A again, byte-for-byte the same upload as before
+    const repeat = await commitImport([makeRow({ status: 'CLEARED', cashbackMinor: 0 })], fileA)
+
+    expect(repeat.alreadyImported).toBe(true)
+    const [transaction] = await db.transactions.toArray()
+    expect(transaction.cashbackMinor).toBe(12)
+  })
+
+  it('treats two concurrent uploads of the same file as one import, not two', async () => {
+    const options = { fileHash: 'hash-a', parserVersion: '1', unsupportedCount: 0 }
+
+    const [first, second] = await Promise.all([
+      commitImport([makeRow()], options),
+      commitImport([makeRow()], options),
+    ])
+
+    const alreadyImportedFlags = [first.alreadyImported, second.alreadyImported].sort()
+    expect(alreadyImportedFlags).toEqual([false, true])
+    expect(await db.transactions.count()).toBe(1)
+    expect(await db.imports.count()).toBe(1)
+  })
 })
