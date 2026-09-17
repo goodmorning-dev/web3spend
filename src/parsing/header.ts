@@ -19,15 +19,23 @@ export const EXPECTED_COLUMNS = [
   'spending mode',
 ] as const
 
-const HEADER_SCAN_LIMIT = 15
+const EXPECTED_COLUMNS_SET: ReadonlySet<string> = new Set(EXPECTED_COLUMNS)
+
+export interface ResolvedHeader {
+  rowIndex: number
+  columns: (string | null)[]
+}
+
+export type HeaderResolution = { ok: true; header: ResolvedHeader } | { ok: false; reason: string }
 
 /**
- * Scans the first rows for the header, matched by column name rather than a
- * fixed row index: real exports have a summary block above the actual table.
- * Returns null (never guesses) if no row within the scan window has all the
- * expected column names.
+ * Scans every row for the header, matched by column name rather than a fixed
+ * row index: real exports have a summary block above the actual table. Never
+ * guesses: a row with a duplicated required column, or more than one row
+ * that looks like a valid header, is reported as an error rather than
+ * silently resolved by picking the first match (MVP-PLAN section 4).
  */
-export function detectHeaderRowIndex(sheet: WorkSheet): number | null {
+export function resolveHeader(sheet: WorkSheet): HeaderResolution {
   const rawRows = utils.sheet_to_json<unknown[]>(sheet, {
     header: 1,
     range: 0,
@@ -35,15 +43,49 @@ export function detectHeaderRowIndex(sheet: WorkSheet): number | null {
     defval: null,
   })
 
-  for (let i = 0; i < Math.min(HEADER_SCAN_LIMIT, rawRows.length); i++) {
-    const cellNames = new Set(
-      rawRows[i]
-        .filter((cell): cell is string => typeof cell === 'string')
-        .map((cell) => cell.trim()),
-    )
-    if (EXPECTED_COLUMNS.every((name) => cellNames.has(name))) {
-      return i
+  const candidates: ResolvedHeader[] = []
+
+  for (let rowIndex = 0; rowIndex < rawRows.length; rowIndex++) {
+    const columns = rawRows[rowIndex].map((cell) => (typeof cell === 'string' ? cell.trim() : null))
+    const names = new Set(columns.filter((cell): cell is string => cell !== null))
+    if (!EXPECTED_COLUMNS.every((name) => names.has(name))) {
+      continue
     }
+
+    const duplicate = findDuplicateExpectedColumn(columns)
+    if (duplicate) {
+      return {
+        ok: false,
+        reason: `Row ${rowIndex + 1} has more than one "${duplicate}" column; expected exactly one.`,
+      }
+    }
+
+    candidates.push({ rowIndex, columns })
+  }
+
+  if (candidates.length === 0) {
+    return { ok: false, reason: 'Could not find the transaction header row.' }
+  }
+  if (candidates.length > 1) {
+    const rowNumbers = candidates.map((candidate) => candidate.rowIndex + 1).join(', ')
+    return {
+      ok: false,
+      reason: `Found more than one possible header row (rows ${rowNumbers}); expected exactly one transaction table.`,
+    }
+  }
+  return { ok: true, header: candidates[0] }
+}
+
+function findDuplicateExpectedColumn(columns: (string | null)[]): string | null {
+  const seen = new Set<string>()
+  for (const name of columns) {
+    if (name === null || !EXPECTED_COLUMNS_SET.has(name)) {
+      continue
+    }
+    if (seen.has(name)) {
+      return name
+    }
+    seen.add(name)
   }
   return null
 }

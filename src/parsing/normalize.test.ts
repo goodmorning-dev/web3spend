@@ -55,6 +55,16 @@ describe('toAmountMinorOrNull', () => {
     expect(toAmountMinorOrNull(4.345)).toBeNull()
   })
 
+  it('rejects a value that is only a hair off a clean 2-decimal amount, not just a wildly imprecise one', () => {
+    // a fixed tolerance loose enough to absorb genuine floating-point noise on
+    // large amounts is also loose enough to wave this through as 100 cents
+    expect(toAmountMinorOrNull(1.000000001)).toBeNull()
+  })
+
+  it('rejects an amount whose minor-unit conversion would exceed a safe integer', () => {
+    expect(toAmountMinorOrNull(Number.MAX_SAFE_INTEGER)).toBeNull()
+  })
+
   it('rejects non-numeric or non-finite values', () => {
     expect(toAmountMinorOrNull('4.34')).toBeNull()
     expect(toAmountMinorOrNull(null)).toBeNull()

@@ -1,12 +1,14 @@
 import { read, utils } from 'xlsx'
-import { detectHeaderRowIndex, TRANSACTION_SHEET_NAME } from '@/parsing/header'
+import { resolveHeader, TRANSACTION_SHEET_NAME } from '@/parsing/header'
 import { parseRow } from '@/parsing/rowParser'
 import type { ParseResult, ProviderAdapter, UnsupportedRow } from './providerAdapter'
 
 /**
  * TECHNICAL-PLAN §5: reads only the "All Transactions" sheet by exact name
- * (never the per-currency sheets, which duplicate its rows), detects the
- * header by column name, and validates/normalizes every data row.
+ * (never the per-currency sheets, which duplicate its rows), resolves the
+ * header, and validates/normalizes every data row using that same header's
+ * own column names, so a row never gets mapped against different keys than
+ * the ones detection actually validated.
  */
 function parse(data: ArrayBuffer): ParseResult {
   const workbook = read(data, { type: 'array' })
@@ -15,21 +17,39 @@ function parse(data: ArrayBuffer): ParseResult {
     throw new Error(`Workbook has no "${TRANSACTION_SHEET_NAME}" sheet.`)
   }
 
-  const headerRowIndex = detectHeaderRowIndex(sheet)
-  if (headerRowIndex === null) {
-    throw new Error('Could not find the transaction header row.')
+  const headerResolution = resolveHeader(sheet)
+  if (!headerResolution.ok) {
+    throw new Error(headerResolution.reason)
   }
+  const { rowIndex: headerRowIndex, columns } = headerResolution.header
 
-  const rawRows = utils.sheet_to_json<Record<string, unknown>>(sheet, {
-    range: headerRowIndex,
+  // header: 1 (array rows, not header-keyed objects) and an explicit
+  // blankrows: true keep every row's array index aligned to its real
+  // spreadsheet position; SheetJS omits blank rows by default in the mode
+  // this used to use, which threw off reported row numbers.
+  const dataRows = utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    range: headerRowIndex + 1,
     raw: true,
     defval: null,
+    blankrows: true,
   })
 
   const rows: ParseResult['rows'] = []
   const unsupported: UnsupportedRow[] = []
 
-  rawRows.forEach((raw, index) => {
+  dataRows.forEach((cells, index) => {
+    if (cells.every((cell) => cell === null)) {
+      return
+    }
+
+    const raw: Record<string, unknown> = {}
+    columns.forEach((name, columnIndex) => {
+      if (name !== null) {
+        raw[name] = cells[columnIndex] ?? null
+      }
+    })
+
     const result = parseRow(raw)
     if (result.ok) {
       rows.push(result.row)

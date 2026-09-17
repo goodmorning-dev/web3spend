@@ -1,4 +1,5 @@
-export { detectHeaderRowIndex, EXPECTED_COLUMNS, TRANSACTION_SHEET_NAME } from './header'
+export { EXPECTED_COLUMNS, resolveHeader, TRANSACTION_SHEET_NAME } from './header'
+export type { HeaderResolution, ResolvedHeader } from './header'
 export { normalizeText, parseTimestampUtc, toAmountMinorOrNull, toLast4OrNull } from './normalize'
 export { parseRow } from './rowParser'
 export type { RowParseResult } from './rowParser'

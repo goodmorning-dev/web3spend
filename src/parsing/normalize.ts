@@ -1,6 +1,10 @@
 const NON_BREAKING_SPACE = String.fromCharCode(160)
 const WHITESPACE_PATTERN = new RegExp(`[${NON_BREAKING_SPACE}\\s]+`, 'g')
 const TIMESTAMP_PATTERN = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}) UTC$/
+// Matches a plain decimal (no exponential notation): the shortest string that
+// round-trips to the same double, per Number.prototype.toString(). If the
+// source value truly had at most 2 decimals, this reproduces it exactly.
+const PLAIN_DECIMAL_PATTERN = /^-?\d+(?:\.(\d+))?$/
 
 /**
  * Collapses runs of whitespace, including the non-breaking spaces Etherfi's
@@ -37,15 +41,28 @@ export function parseTimestampUtc(raw: string): string | null {
 /**
  * TECHNICAL-PLAN §8: reject rather than round an amount with more than 2
  * fractional digits, since fiat amounts are always <=2 decimals and a 3rd
- * digit signals something we don't understand yet.
+ * digit signals something we don't understand yet. Comparing value*100 to
+ * its rounded form with a fixed tolerance isn't reliable here: a tolerance
+ * loose enough to absorb genuine floating-point noise on large amounts is
+ * also loose enough to silently accept a value like 1.000000001 as 100
+ * cents. Reading the decimal digits directly off the value's own string
+ * form doesn't have that problem, since toString() reproduces exactly the
+ * digits the value was constructed from.
  */
 export function toAmountMinorOrNull(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return null
   }
-  const minor = value * 100
-  const rounded = Math.round(minor)
-  return Math.abs(minor - rounded) > 1e-6 ? null : rounded
+  const match = PLAIN_DECIMAL_PATTERN.exec(value.toString())
+  if (!match) {
+    return null
+  }
+  const fractionDigits = match[1]?.length ?? 0
+  if (fractionDigits > 2) {
+    return null
+  }
+  const minor = Math.round(value * 100)
+  return Number.isSafeInteger(minor) ? minor : null
 }
 
 /**
