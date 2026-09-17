@@ -1,0 +1,36 @@
+/// <reference types="vitest/config" />
+import path from 'node:path'
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
+
+// https://vite.dev/config/
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(import.meta.dirname, './src'),
+    },
+  },
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'Web3Spend',
+        short_name: 'Web3Spend',
+        description: 'Local-first spending and cashback dashboard for Etherfi cardholders.',
+        display: 'standalone',
+        theme_color: '#0a0d13',
+        background_color: '#0a0d13',
+        icons: [],
+      },
+    }),
+  ],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+  },
+})
