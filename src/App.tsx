@@ -1,13 +1,22 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
+import Home from '@/components/Home'
+
+function AppPlaceholder() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
+      <p className="text-sm text-muted-foreground">Import flow coming soon.</p>
+    </main>
+  )
+}
+
 function App() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 text-neutral-100">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold">Web3Spend</h1>
-        <p className="mt-2 text-sm text-neutral-400">
-          Scaffolding in progress — see docs/MVP-PLAN.md and docs/TECHNICAL-PLAN.md.
-        </p>
-      </div>
-    </main>
+    <Routes>
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/home" element={<Home />} />
+      <Route path="/app" element={<AppPlaceholder />} />
+      <Route path="*" element={<Navigate to="/home" replace />} />
+    </Routes>
   )
 }
 
