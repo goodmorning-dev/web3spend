@@ -1,8 +1,78 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
+import { utils, write, type WorkBook } from 'xlsx'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import DashboardPage from './DashboardPage'
+
+const HEADER_ROW = [
+  'timestamp',
+  'type',
+  'description',
+  'status',
+  'amount',
+  'currency',
+  'card',
+  'card holder name',
+  'original amount',
+  'original currency',
+  'cashback earned',
+  'cashback currency',
+  'category',
+  'spending mode',
+]
+
+function buildWorkbookWithOneUnsupportedRow(): WorkBook {
+  const workbook = utils.book_new()
+  utils.book_append_sheet(
+    workbook,
+    utils.aoa_to_sheet([
+      HEADER_ROW,
+      [
+        '2026-01-15 10:00:00 UTC',
+        'card_spend',
+        'Merchant A',
+        'CLEARED',
+        4.5,
+        'EUR',
+        '1234',
+        'Jane Doe',
+        4.5,
+        'EUR',
+        0.14,
+        'EUR',
+        '5411 - Grocery Stores and Supermarkets',
+        'Direct Pay',
+      ],
+      [
+        '2026-01-16 10:00:00 UTC',
+        'card_spend',
+        'Merchant B',
+        'REVERSED',
+        1,
+        'EUR',
+        '1234',
+        'Jane Doe',
+        1,
+        'EUR',
+        0,
+        'EUR',
+        'Miscellaneous',
+        'Direct Pay',
+      ],
+    ]),
+    'All Transactions',
+  )
+  return workbook
+}
+
+function toFile(workbook: WorkBook, name = 'export.xlsx'): File {
+  const buffer = write(workbook, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer
+  return new File([buffer], name, {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+}
 
 const originalTz = process.env.TZ
 
@@ -124,5 +194,19 @@ describe('DashboardPage', () => {
 
     expect(document.body.textContent).toContain(correctUtcText)
     expect(document.body.textContent).not.toContain(wrongLocalText)
+  })
+
+  it('keeps the import result, including unsupported-row warnings, visible once the first import completes', async () => {
+    const user = userEvent.setup()
+    render(<DashboardPage />)
+
+    await screen.findByRole('heading', { name: /import your etherfi export/i })
+
+    const input = screen.getByLabelText(/choose an xlsx file/i)
+    await user.upload(input, toFile(buildWorkbookWithOneUnsupportedRow()))
+
+    expect(await screen.findByRole('heading', { name: /your data/i })).toBeInTheDocument()
+    expect(screen.getByText('1 added, 0 updated.')).toBeInTheDocument()
+    expect(screen.getByText(/1 row could not be imported/i)).toBeInTheDocument()
   })
 })

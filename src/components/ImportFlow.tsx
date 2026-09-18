@@ -10,12 +10,19 @@ interface ImportResult {
   alreadyImported: boolean
 }
 
+interface ImportFlowProps {
+  /** Called right after a file finishes processing, successfully or not,
+   * so a parent can react to "an import just happened" without needing to
+   * duplicate this component's own result state. */
+  onImported?: (result: ImportResult) => void
+}
+
 /**
  * MVP-PLAN §5/§7: no preview/confirmation step. A selected file is parsed and
  * committed directly; unsupported rows are reported plainly afterward, not
  * hidden or silently dropped.
  */
-function ImportFlow() {
+function ImportFlow({ onImported }: ImportFlowProps = {}) {
   const [status, setStatus] = useState<'idle' | 'processing'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
@@ -47,12 +54,14 @@ function ImportFlow() {
         parserVersion: ETHERFI_PARSER_VERSION,
         unsupportedCount: unsupported.length,
       })
-      setResult({
+      const importResult: ImportResult = {
         added: rowCounts.added,
         updated: rowCounts.updated,
         unsupported,
         alreadyImported,
-      })
+      }
+      setResult(importResult)
+      onImported?.(importResult)
     } catch (err) {
       setError(
         err instanceof Error
