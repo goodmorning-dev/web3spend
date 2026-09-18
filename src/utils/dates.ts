@@ -36,3 +36,13 @@ export function getUtcDateKey(timestampUtc: string): string {
   const date = new Date(timestampUtc)
   return formatUtcDateKey(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())
 }
+
+/** e.g. "September 2026". Explicit timeZone: 'UTC' so a viewer ahead of UTC
+ * never sees a month label shifted by the local/UTC boundary. */
+export function formatUtcMonthLabel(year: number, month: number): string {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  })
+}

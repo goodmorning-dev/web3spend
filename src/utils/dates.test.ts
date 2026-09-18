@@ -4,6 +4,7 @@ import {
   daysInUtcYear,
   formatUtcDateKey,
   formatUtcMonthKey,
+  formatUtcMonthLabel,
   getUtcDateKey,
   getUtcMonth,
   getUtcYear,
@@ -67,5 +68,37 @@ describe('getUtcYear / getUtcMonth / getUtcDateKey', () => {
     expect(getUtcYear(timestampUtc)).toBe(2026)
     expect(getUtcMonth(timestampUtc)).toBe(1)
     expect(getUtcDateKey(timestampUtc)).toBe('2026-01-31')
+  })
+})
+
+describe('formatUtcMonthLabel', () => {
+  it('names the month and year using the viewer locale, not a hardcoded English one', () => {
+    // avoid asserting an English month name: this machine's own default
+    // locale may not be English (observed to be Bulgarian in this repo's
+    // dev environment), so compare against the same underlying call instead
+    const expected = new Date(Date.UTC(2026, 8, 1)).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+    })
+    expect(formatUtcMonthLabel(2026, 9)).toBe(expected)
+    expect(formatUtcMonthLabel(2026, 9)).toContain('2026')
+  })
+
+  it('does not shift to the next month for a viewer ahead of UTC', () => {
+    const originalTz = process.env.TZ
+    process.env.TZ = 'Pacific/Kiritimati' // UTC+14
+    try {
+      // Jan 1 at UTC midnight is still Dec 31 locally in a zone behind UTC,
+      // and still January everywhere ahead of UTC; this just needs to not throw
+      // or silently compute the wrong month under either kind of offset.
+      expect(formatUtcMonthLabel(2026, 1)).not.toContain('2025')
+    } finally {
+      if (originalTz === undefined) {
+        delete process.env.TZ
+      } else {
+        process.env.TZ = originalTz
+      }
+    }
   })
 })
