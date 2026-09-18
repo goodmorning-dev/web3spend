@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { SpendTrendPoint } from '@/analyzers'
 import { formatMoney } from '@/utils/format'
-import SpendChart, { SpendChartTooltip } from './SpendChart'
+import SpendChart, { DebouncedSpendChartTooltip, SpendChartTooltip } from './SpendChart'
 
 function makePoint(overrides: Partial<SpendTrendPoint> = {}): SpendTrendPoint {
   return {
@@ -142,6 +142,61 @@ describe('SpendChart', () => {
       )
 
       expect(container).toBeEmptyDOMElement()
+    })
+  })
+
+  describe('DebouncedSpendChartTooltip', () => {
+    // Recharts flips `active` to false for a beat whenever the mouse
+    // crosses a gap in its hit-tested regions (the plot's edge, a gap left
+    // by a hidden series, ...) before the next point picks it back up; that
+    // read as the tooltip flickering off and on. This checks the wrapper
+    // rides through exactly that sequence without ever going blank.
+    const payload = [{ dataKey: 'lastMonthMinor', value: 9.5, name: 'lastMonthMinor' }]
+
+    it('does not go blank when Recharts briefly reports inactive between two active points', async () => {
+      const { rerender } = render(
+        <DebouncedSpendChartTooltip
+          active
+          payload={payload}
+          label={15}
+          currency="EUR"
+          hiddenKeys={new Set()}
+        />,
+      )
+      expect(screen.getByText('Day 15')).toBeInTheDocument()
+
+      // the brief gap: Recharts reports inactive right before the next
+      // point takes over, as a real continuous hover across it would.
+      rerender(<DebouncedSpendChartTooltip active={false} currency="EUR" hiddenKeys={new Set()} />)
+      expect(screen.getByText('Day 15')).toBeInTheDocument()
+
+      rerender(
+        <DebouncedSpendChartTooltip
+          active
+          payload={payload}
+          label={16}
+          currency="EUR"
+          hiddenKeys={new Set()}
+        />,
+      )
+      expect(screen.getByText('Day 16')).toBeInTheDocument()
+    })
+
+    it('eventually clears once the mouse actually leaves and nothing new arrives', async () => {
+      const { container, rerender } = render(
+        <DebouncedSpendChartTooltip
+          active
+          payload={payload}
+          label={15}
+          currency="EUR"
+          hiddenKeys={new Set()}
+        />,
+      )
+      expect(screen.getByText('Day 15')).toBeInTheDocument()
+
+      rerender(<DebouncedSpendChartTooltip active={false} currency="EUR" hiddenKeys={new Set()} />)
+
+      await waitFor(() => expect(container).toBeEmptyDOMElement())
     })
   })
 })

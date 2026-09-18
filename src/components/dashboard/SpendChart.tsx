@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Area, CartesianGrid, ComposedChart, Line, Tooltip, XAxis, YAxis } from 'recharts'
 import type { SpendTrendPoint } from '@/analyzers'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
@@ -116,6 +116,69 @@ export function SpendChartTooltip({
   )
 }
 
+interface DebouncedTooltipState {
+  active: boolean
+  payload?: readonly TooltipPayloadItem[]
+  label?: ReactNode
+}
+
+/** Recharts flips `active` to false for a beat whenever the mouse crosses a
+ * gap between its hit-tested regions (e.g. right at the edge of the plot,
+ * or over a gap left by a hidden/null series), which read as the tooltip
+ * flickering off and back on. Same fix as the donut and the heatmap: defer
+ * clearing it briefly, and cancel that if a new active point arrives first,
+ * so a continuous hover never shows the "no tooltip" state in between. */
+function useDebouncedTooltip(
+  active: boolean | undefined,
+  payload: readonly TooltipPayloadItem[] | undefined,
+  label: ReactNode,
+  delay = 100,
+): DebouncedTooltipState {
+  const [state, setState] = useState<DebouncedTooltipState>({ active: false })
+  const clearTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const isActivePoint = Boolean(active && payload?.length)
+
+  // A fresh active point is applied right away, adjusted during render
+  // (React's guidance for deriving state from props) rather than via an
+  // effect; becoming inactive is the actual side effect here (a delayed
+  // timer) and is the only part that belongs in the effect below.
+  if (isActivePoint && (!state.active || state.payload !== payload || state.label !== label)) {
+    setState({ active: true, payload, label })
+  }
+
+  useEffect(() => {
+    if (isActivePoint) {
+      clearTimeout(clearTimeoutRef.current)
+      return
+    }
+    clearTimeoutRef.current = setTimeout(() => {
+      setState((prev) => ({ ...prev, active: false }))
+    }, delay)
+    return () => clearTimeout(clearTimeoutRef.current)
+  }, [isActivePoint, delay])
+
+  return state
+}
+
+export function DebouncedSpendChartTooltip({
+  active,
+  payload,
+  label,
+  currency,
+  hiddenKeys,
+}: SpendChartTooltipProps) {
+  const debounced = useDebouncedTooltip(active, payload, label)
+  return (
+    <SpendChartTooltip
+      active={debounced.active}
+      payload={debounced.payload}
+      label={debounced.label}
+      currency={currency}
+      hiddenKeys={hiddenKeys}
+    />
+  )
+}
+
 /**
  * The Sept 2026 design pass: cumulative spend this month against last month
  * and the average month, so a viewer can see at a glance whether this
@@ -202,7 +265,7 @@ function SpendChart({ trend, currency }: SpendChartProps) {
             isAnimationActive={false}
             cursor={{ stroke: 'var(--color-border)', strokeDasharray: '3 3' }}
             content={({ active, payload, label }) => (
-              <SpendChartTooltip
+              <DebouncedSpendChartTooltip
                 active={active}
                 payload={payload}
                 label={label}
