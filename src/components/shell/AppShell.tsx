@@ -14,7 +14,7 @@ function AppShell() {
       <div className="relative isolate flex min-h-screen flex-col-reverse bg-background text-foreground sm:flex-row">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-[260px] -left-[220px] -z-10 size-[820px] bg-[radial-gradient(circle,var(--color-primary)_0%,transparent_65%)] opacity-[0.28]"
+          className="pointer-events-none fixed -top-[260px] -left-[220px] -z-10 size-[820px] bg-[radial-gradient(circle,var(--color-primary)_0%,transparent_65%)] opacity-[0.28]"
         />
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-6">
