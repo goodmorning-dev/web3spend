@@ -49,29 +49,32 @@ function VaultAnimation() {
         ))}
 
         {CHIPS.map((chip) => (
-          <g
-            key={chip.label}
-            transform={`translate(0,${chip.y})`}
-            className="motion-safe:animate-vault-chip"
-            style={{ animationDelay: chip.delay }}
-          >
-            <rect
-              x="0"
-              y="-11"
-              width="72"
-              height="22"
-              rx="6"
-              className="fill-card stroke-border"
-              strokeWidth="1.3"
-            />
-            <text
-              x="36"
-              y="3"
-              textAnchor="middle"
-              className="fill-text-dim text-[9px] font-medium tabular-nums"
-            >
-              {chip.label}
-            </text>
+          // A CSS `transform` (the animation below) replaces an element's
+          // SVG `transform` attribute entirely rather than composing with
+          // it, so the lane's static vertical placement has to live on its
+          // own outer group; putting it on the same element as the
+          // animation collapsed every chip to y=0 once the animation's
+          // translateX took over.
+          <g key={chip.label} transform={`translate(0,${chip.y})`}>
+            <g className="motion-safe:animate-vault-chip" style={{ animationDelay: chip.delay }}>
+              <rect
+                x="0"
+                y="-11"
+                width="72"
+                height="22"
+                rx="6"
+                className="fill-card stroke-border"
+                strokeWidth="1.3"
+              />
+              <text
+                x="36"
+                y="3"
+                textAnchor="middle"
+                className="fill-text-dim text-[9px] font-medium tabular-nums"
+              >
+                {chip.label}
+              </text>
+            </g>
           </g>
         ))}
 
