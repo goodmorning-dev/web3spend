@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { CategoryBucket } from '@/analyzers'
@@ -165,8 +165,37 @@ describe('CategoryBreakdown', () => {
 
     await user.unhover(transportRow)
 
-    expect(transportRow.className).not.toContain('bg-muted')
-    expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${totalText}Total spent`)
+    // the clear is deliberately debounced (see scheduleUnhover) so moving
+    // between adjacent slices/rows doesn't flash back to "Total spent" in
+    // between; that means it doesn't happen synchronously with unhover.
+    await waitFor(() => {
+      expect(transportRow.className).not.toContain('bg-muted')
+      expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${totalText}Total spent`)
+    })
+  })
+
+  it('does not flash back to the total when moving straight from one row to another', async () => {
+    const buckets: CategoryBucket[] = [
+      { category: 'Food', spendMinor: 700, share: 0.7 },
+      { category: 'Transport', spendMinor: 300, share: 0.3 },
+    ]
+
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
+
+    const foodRow = screen.getByText('Food').closest('li')!
+    const transportRow = screen.getByText('Transport').closest('li')!
+
+    fireEvent.mouseEnter(foodRow)
+    expect(donutCenterText()).toContain('Food · 70%')
+
+    // leaving one row and entering the next right away, as a real mouse
+    // move between adjacent rows would, must cancel the pending clear
+    // rather than let it fire and revert to "Total spent" momentarily.
+    fireEvent.mouseLeave(foodRow)
+    fireEvent.mouseEnter(transportRow)
+
+    expect(donutCenterText()).not.toContain('Total spent')
+    expect(donutCenterText()).toContain('Transport · 30%')
   })
 
   it('dims every other pie slice while one is hovered', () => {

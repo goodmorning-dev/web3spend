@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Cell, Pie, PieChart } from 'recharts'
 import type { CategoryBucket } from '@/analyzers'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
@@ -75,6 +75,26 @@ function ViewAllButton({ onClick }: { onClick: () => void }) {
 /** MVP-PLAN §5: sorted spend by category, from cleared purchases only. */
 function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const clearHoverTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => clearTimeout(clearHoverTimeout.current), [])
+
+  // Moving the mouse from one slice/row to the next (across the small gap
+  // paddingAngle leaves between slices, or the gap between list rows) fires
+  // a mouseleave right before the next mouseenter; clearing the hover
+  // immediately snapped the donut back to "Total spent" for a single frame
+  // in between, reading as a flicker. Deferring the clear briefly, and
+  // cancelling it if a new hover arrives in that window, keeps the
+  // transition smooth instead.
+  function hoverCategory(index: number) {
+    clearTimeout(clearHoverTimeout.current)
+    setHoveredIndex(index)
+  }
+
+  function scheduleUnhover() {
+    clearTimeout(clearHoverTimeout.current)
+    clearHoverTimeout.current = setTimeout(() => setHoveredIndex(null), 100)
+  }
 
   if (buckets.length === 0) {
     return (
@@ -138,14 +158,14 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
                 paddingAngle={2.5}
                 strokeWidth={2}
                 isAnimationActive={false}
-                onMouseEnter={(_, index) => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
+                onMouseEnter={(_, index) => hoverCategory(index)}
+                onMouseLeave={scheduleUnhover}
               >
                 {data.map((entry, index) => (
                   <Cell
                     key={entry.categoryKey}
                     fill={entry.fill}
-                    className="cursor-pointer transition-opacity"
+                    className="cursor-pointer transition-[fill-opacity] duration-200 ease-out"
                     fillOpacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.32}
                   />
                 ))}
@@ -178,11 +198,11 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
             <li
               key={bucket.category}
               className={cn(
-                '-mx-1.5 flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-sm transition-colors',
+                '-mx-1.5 flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-sm transition-colors duration-200',
                 hoveredIndex === index && 'bg-muted',
               )}
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
+              onMouseEnter={() => hoverCategory(index)}
+              onMouseLeave={scheduleUnhover}
             >
               <span
                 className="size-2.5 shrink-0 rounded-[2px]"
