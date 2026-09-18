@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { SpendTrendPoint } from '@/analyzers'
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { formatMoney } from '@/utils/format'
-import SpendChart from './SpendChart'
+import SpendChart, { SpendChartTooltip } from './SpendChart'
 
 function makePoint(overrides: Partial<SpendTrendPoint> = {}): SpendTrendPoint {
   return {
@@ -31,37 +31,117 @@ describe('SpendChart', () => {
     expect(screen.getByText('Average monthly')).toBeInTheDocument()
   })
 
-  it('shows the day\'s tooltip label as "Day 15", not a series label', () => {
+  it('toggles a series off (dimmed, aria-pressed false) when its legend entry is clicked, and back on', async () => {
+    const user = userEvent.setup()
+    const trend = [
+      makePoint({ day: 1, thisMonthMinor: 100, lastMonthMinor: 200, averageMonthlyMinor: 150 }),
+    ]
+
+    render(<SpendChart trend={trend} currency="EUR" />)
+
+    const lastMonthLegend = screen.getByRole('button', { name: 'Last month' })
+    expect(lastMonthLegend).toHaveAttribute('aria-pressed', 'true')
+    expect(lastMonthLegend.className).not.toContain('opacity-35')
+
+    await user.click(lastMonthLegend)
+    expect(lastMonthLegend).toHaveAttribute('aria-pressed', 'false')
+    expect(lastMonthLegend.className).toContain('opacity-35')
+
+    await user.click(lastMonthLegend)
+    expect(lastMonthLegend).toHaveAttribute('aria-pressed', 'true')
+    expect(lastMonthLegend.className).not.toContain('opacity-35')
+  })
+
+  it('gives each legend entry its own series color, not the default text color', () => {
+    const trend = [makePoint({ day: 1 })]
+    render(<SpendChart trend={trend} currency="EUR" />)
+
+    expect(screen.getByRole('button', { name: 'This month (to date)' })).toHaveStyle({
+      color: 'var(--color-chart-1)',
+    })
+    expect(screen.getByRole('button', { name: 'Last month' })).toHaveStyle({
+      color: 'var(--color-chart-5)',
+    })
+    expect(screen.getByRole('button', { name: 'Average monthly' })).toHaveStyle({
+      color: 'var(--color-chart-2)',
+    })
+  })
+
+  describe('SpendChartTooltip', () => {
     // Recharts' tooltip hover is impractical to simulate reliably in
     // jsdom (it depends on real layout math), so this renders the exact
-    // tooltip content SpendChart configures, with the payload shape
-    // Recharts sends for day 15, and checks its output directly.
-    render(
-      <ChartContainer
-        config={{
-          thisMonthMinor: { label: 'This month (to date)', color: 'var(--color-chart-1)' },
-        }}
-      >
-        <ChartTooltipContent
-          active
-          payload={[
-            {
-              dataKey: 'thisMonthMinor',
-              name: 'thisMonthMinor',
-              value: 4.5,
-              payload: { day: 15, thisMonthMinor: 4.5 },
-              color: 'var(--color-chart-1)',
-              graphicalItemId: 'area-thisMonthMinor',
-            },
-          ]}
-          label={15}
-          labelFormatter={(day) => `Day ${day}`}
-          formatter={(value) => formatMoney(Math.round(Number(value) * 100), 'EUR')}
-        />
-      </ChartContainer>,
-    )
+    // tooltip component SpendChart configures, with the payload shape
+    // Recharts sends for a given day, and checks its output directly.
+    const payload = [
+      { dataKey: 'lastMonthMinor', value: 9.5, name: 'lastMonthMinor' },
+      { dataKey: 'averageMonthlyMinor', value: 10.3, name: 'averageMonthlyMinor' },
+      { dataKey: 'thisMonthMinor', value: 4.5, name: 'thisMonthMinor' },
+    ]
 
-    expect(screen.getByText('Day 15')).toBeInTheDocument()
-    expect(screen.queryByText(/Day This month/)).not.toBeInTheDocument()
+    it('shows "Day N" and every visible series in a fixed order (this month, last month, average)', () => {
+      render(
+        <SpendChartTooltip
+          active
+          payload={payload}
+          label={15}
+          currency="EUR"
+          hiddenKeys={new Set()}
+        />,
+      )
+
+      expect(screen.getByText('Day 15')).toBeInTheDocument()
+      const rows = screen.getAllByText(/This month|Last month|Average/).map((el) => el.textContent)
+      expect(rows).toEqual(['This month', 'Last month', 'Average'])
+      expect(screen.getByText(formatMoney(450, 'EUR').replace(/\s+/g, ' '))).toBeInTheDocument()
+      expect(screen.getByText(formatMoney(950, 'EUR').replace(/\s+/g, ' '))).toBeInTheDocument()
+      expect(screen.getByText(formatMoney(1030, 'EUR').replace(/\s+/g, ' '))).toBeInTheDocument()
+    })
+
+    it('omits a series that has no value for this day (e.g. "this month" past today)', () => {
+      const partialPayload = payload.filter((item) => item.dataKey !== 'thisMonthMinor')
+
+      render(
+        <SpendChartTooltip
+          active
+          payload={partialPayload}
+          label={20}
+          currency="EUR"
+          hiddenKeys={new Set()}
+        />,
+      )
+
+      expect(screen.queryByText('This month')).not.toBeInTheDocument()
+      expect(screen.getByText('Last month')).toBeInTheDocument()
+    })
+
+    it('omits a series the legend has toggled off, even if Recharts still supplies it', () => {
+      render(
+        <SpendChartTooltip
+          active
+          payload={payload}
+          label={15}
+          currency="EUR"
+          hiddenKeys={new Set(['averageMonthlyMinor'])}
+        />,
+      )
+
+      expect(screen.getByText('This month')).toBeInTheDocument()
+      expect(screen.getByText('Last month')).toBeInTheDocument()
+      expect(screen.queryByText('Average')).not.toBeInTheDocument()
+    })
+
+    it('renders nothing while inactive', () => {
+      const { container } = render(
+        <SpendChartTooltip
+          active={false}
+          payload={payload}
+          label={15}
+          currency="EUR"
+          hiddenKeys={new Set()}
+        />,
+      )
+
+      expect(container).toBeEmptyDOMElement()
+    })
   })
 })

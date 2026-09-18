@@ -23,7 +23,7 @@ const PALETTE = [
   'var(--color-chart-5)',
 ]
 
-const MAX_VISIBLE_CATEGORIES = 4
+const MAX_VISIBLE_CATEGORIES = 5
 
 function colorForIndex(index: number): string {
   return PALETTE[index % PALETTE.length]
@@ -55,7 +55,7 @@ function ViewAllButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
+      className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-xs font-semibold text-primary hover:underline"
     >
       View all
       <ChevronRight className="size-3.5" />
@@ -109,7 +109,7 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
         <div className="relative shrink-0">
           <ChartContainer
             config={chartConfig}
-            className="mx-auto aspect-square h-[172px] w-[172px]"
+            className="mx-auto aspect-square h-[190px] w-[190px]"
           >
             <PieChart>
               <ChartTooltip
@@ -123,8 +123,9 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
                 data={data}
                 dataKey="spendMinor"
                 nameKey="categoryKey"
-                innerRadius={56}
-                outerRadius={78}
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={2.5}
                 strokeWidth={2}
               >
                 {data.map((entry) => (
@@ -148,7 +149,9 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
                 style={{ backgroundColor: colorForIndex(index) }}
                 aria-hidden="true"
               />
-              <span className="min-w-0 flex-1 truncate text-text-dim">{bucket.category}</span>
+              <span className="min-w-0 flex-1 truncate text-text-dim" title={bucket.category}>
+                {bucket.category}
+              </span>
               <span className="shrink-0 font-medium tabular-nums">
                 {formatMoney(bucket.spendMinor, currency)}
               </span>

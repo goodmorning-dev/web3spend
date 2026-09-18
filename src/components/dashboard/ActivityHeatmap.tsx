@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { DayActivity } from '@/analyzers'
+import { formatUtcDate } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
 
 interface ActivityHeatmapProps {
@@ -61,6 +62,7 @@ function ActivityHeatmap({
     : -1
   const [focusedIndex, setFocusedIndex] = useState(() => Math.max(selectedIndex, 0))
   const [hasFocus, setHasFocus] = useState(false)
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   // Keeps keyboard focus following the selected day (e.g. after it's set
   // from outside, such as clicking a different heatmap) without an effect:
@@ -151,7 +153,7 @@ function ActivityHeatmap({
           <span>More</span>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <svg
           viewBox={`0 0 ${width} ${height}`}
           width={width}
@@ -219,12 +221,49 @@ function ActivityHeatmap({
                 strokeDasharray={isFocused && !isSelected ? '1.5,1.5' : undefined}
                 className="cursor-pointer"
                 onClick={() => selectIndex(index)}
-              >
-                <title>{label}</title>
-              </rect>
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
             )
           })}
         </svg>
+        {hoveredIndex !== null && (
+          <HeatmapTooltip
+            day={activity[hoveredIndex]}
+            currency={currency}
+            x={PAD_LEFT + Math.floor((hoveredIndex + jan1Weekday) / 7) * STEP + CELL / 2}
+            y={PAD_TOP + ((hoveredIndex + jan1Weekday) % 7) * STEP}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** A custom tooltip matching the design reference's `.chart-tooltip` styling
+ * (the same box the spend chart's tooltip uses), replacing the native
+ * browser tooltip an SVG `<title>` would otherwise give. */
+function HeatmapTooltip({
+  day,
+  currency,
+  x,
+  y,
+}: {
+  day: DayActivity
+  currency: string
+  x: number
+  y: number
+}) {
+  return (
+    <div
+      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-[10px] border border-border bg-secondary px-3 py-2.5 whitespace-nowrap shadow-lg"
+      style={{ left: x, top: y - 10 }}
+    >
+      <div className="text-[10.5px] font-semibold tracking-[0.06em] text-text-faint uppercase">
+        {formatUtcDate(`${day.key}T00:00:00.000Z`)}
+      </div>
+      <div className="mt-1.5 text-xs font-medium tabular-nums text-foreground">
+        {day.spendMinor > 0 ? `${formatMoney(day.spendMinor, currency)} spent` : 'No spend'}
       </div>
     </div>
   )

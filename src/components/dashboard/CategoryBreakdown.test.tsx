@@ -52,11 +52,12 @@ describe('CategoryBreakdown', () => {
     expect(styleText).not.toContain('evil.example')
   })
 
-  it('shows every category as-is when there are 4 or fewer', () => {
+  it('shows every category as-is when there are 5 or fewer', () => {
     const buckets: CategoryBucket[] = [
-      { category: 'Food', spendMinor: 400, share: 0.4 },
-      { category: 'Shopping', spendMinor: 300, share: 0.3 },
+      { category: 'Food', spendMinor: 350, share: 0.35 },
+      { category: 'Shopping', spendMinor: 250, share: 0.25 },
       { category: 'Transport', spendMinor: 200, share: 0.2 },
+      { category: 'Health', spendMinor: 100, share: 0.1 },
       { category: 'Other stuff', spendMinor: 100, share: 0.1 },
     ]
 
@@ -65,16 +66,18 @@ describe('CategoryBreakdown', () => {
     expect(screen.getByText('Food')).toBeInTheDocument()
     expect(screen.getByText('Shopping')).toBeInTheDocument()
     expect(screen.getByText('Transport')).toBeInTheDocument()
+    expect(screen.getByText('Health')).toBeInTheDocument()
     expect(screen.getByText('Other stuff')).toBeInTheDocument()
     expect(screen.queryByText('Other')).not.toBeInTheDocument()
   })
 
-  it('rolls the 5th category and beyond into a single "Other" bucket, keeping the true grand total', () => {
+  it('rolls the 6th category and beyond into a single "Other" bucket, keeping the true grand total', () => {
     const buckets: CategoryBucket[] = [
       { category: 'Food', spendMinor: 500, share: 0.5 },
       { category: 'Shopping', spendMinor: 200, share: 0.2 },
-      { category: 'Transport', spendMinor: 150, share: 0.15 },
-      { category: 'Health', spendMinor: 100, share: 0.1 },
+      { category: 'Transport', spendMinor: 100, share: 0.1 },
+      { category: 'Health', spendMinor: 80, share: 0.08 },
+      { category: 'Utilities', spendMinor: 70, share: 0.07 },
       { category: 'Entertainment', spendMinor: 30, share: 0.03 },
       { category: 'Subscriptions', spendMinor: 20, share: 0.02 },
     ]
@@ -85,6 +88,7 @@ describe('CategoryBreakdown', () => {
     expect(screen.getByText('Shopping')).toBeInTheDocument()
     expect(screen.getByText('Transport')).toBeInTheDocument()
     expect(screen.getByText('Health')).toBeInTheDocument()
+    expect(screen.getByText('Utilities')).toBeInTheDocument()
     expect(screen.queryByText('Entertainment')).not.toBeInTheDocument()
     expect(screen.queryByText('Subscriptions')).not.toBeInTheDocument()
 
@@ -94,6 +98,15 @@ describe('CategoryBreakdown', () => {
 
     // the donut center total is never reduced by the rollup
     expect(screen.getByText(formatMoney(1000, 'EUR').replace(/\s+/g, ' '))).toBeInTheDocument()
+  })
+
+  it('shows the full category name on hover via a title attribute, even when truncated', () => {
+    const longCategory = 'Service Stations (with or without Ancillary Services)'
+    const buckets: CategoryBucket[] = [{ category: longCategory, spendMinor: 100, share: 1 }]
+
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
+
+    expect(screen.getByText(longCategory)).toHaveAttribute('title', longCategory)
   })
 
   it('calls onViewAll when "View all" is clicked', async () => {

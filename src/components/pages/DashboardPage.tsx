@@ -130,7 +130,7 @@ function DashboardPage() {
                 <button
                   type="button"
                   onClick={goToTransactions}
-                  className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                  className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-xs font-semibold text-primary hover:underline"
                 >
                   View all
                   <ChevronRight className="size-3.5" />

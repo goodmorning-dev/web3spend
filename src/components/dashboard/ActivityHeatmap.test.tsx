@@ -27,8 +27,33 @@ describe('ActivityHeatmap', () => {
 
     expect(getGrid()).toBeInTheDocument()
     expect(document.querySelectorAll('rect')).toHaveLength(activity.length)
-    const expectedTitle = `2026-01-15: ${formatMoney(4500, 'EUR')}`.replace(/\s+/g, ' ')
-    expect(screen.getByText(expectedTitle)).toBeInTheDocument()
+    // toHaveAttribute checks the raw attribute value, unlike getByText,
+    // which normalizes whitespace; some locales format currency with a
+    // non-breaking space, so this must match formatMoney's own output
+    // exactly rather than a manually-normalized copy of it.
+    const expectedLabel = `2026-01-15: ${formatMoney(4500, 'EUR')}`
+    expect(document.getElementById('heatmap-day-14')).toHaveAttribute('aria-label', expectedLabel)
+  })
+
+  it('shows a custom tooltip on hover instead of a native browser tooltip', async () => {
+    const user = userEvent.setup()
+    const activity = makeYearActivity(2026)
+    activity[14] = { key: '2026-01-15', spendMinor: 4500, level: 3 }
+
+    render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
+
+    const cell = document.getElementById('heatmap-day-14')!
+    expect(cell.querySelector('title')).not.toBeInTheDocument()
+
+    await user.hover(cell)
+    expect(
+      screen.getByText(`${formatMoney(4500, 'EUR')} spent`.replace(/\s+/g, ' ')),
+    ).toBeInTheDocument()
+
+    await user.unhover(cell)
+    expect(
+      screen.queryByText(`${formatMoney(4500, 'EUR')} spent`.replace(/\s+/g, ' ')),
+    ).not.toBeInTheDocument()
   })
 
   it('calls onSelectDay with the year, month, and day for the clicked cell', async () => {
