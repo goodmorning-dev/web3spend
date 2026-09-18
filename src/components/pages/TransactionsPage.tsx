@@ -47,10 +47,10 @@ function TransactionsPage() {
   const selectedDateKey =
     filters?.day !== undefined ? formatUtcDateKey(filters.year, filters.month, filters.day) : null
 
-  const cardLabelById = useMemo(() => {
+  const cardLastFourById = useMemo(() => {
     const map = new Map<string, string>()
     for (const card of options?.cards ?? []) {
-      map.set(card.id, card.label)
+      map.set(card.id, card.last4)
     }
     return map
   }, [options])
@@ -134,7 +134,16 @@ function TransactionsPage() {
         categoryOptions={categoryOptions}
         onCategoryChange={setCategory}
       />
-      <TransactionsTable transactions={visibleTransactions} cardLabelById={cardLabelById} />
+      <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+        <div>
+          <h3 className="font-heading text-sm font-semibold">All transactions</h3>
+          <p className="text-[11.5px] font-medium text-text-faint">
+            {visibleTransactions.length}{' '}
+            {visibleTransactions.length === 1 ? 'transaction' : 'transactions'} found
+          </p>
+        </div>
+        <TransactionsTable transactions={visibleTransactions} cardLastFourById={cardLastFourById} />
+      </section>
     </div>
   )
 }

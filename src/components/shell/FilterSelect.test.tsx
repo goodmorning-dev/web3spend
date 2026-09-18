@@ -41,4 +41,21 @@ describe('FilterSelect', () => {
 
     expect(handleChange).toHaveBeenCalledWith('USD')
   })
+
+  it('applies a fixed trigger width so picking a shorter value never resizes it', () => {
+    render(
+      <FilterSelect
+        ariaLabel="Currency"
+        value="EUR"
+        onChange={() => {}}
+        options={[
+          { value: 'EUR', label: 'EUR' },
+          { value: 'USD', label: 'USD' },
+        ]}
+        triggerClassName="min-w-[92px]"
+      />,
+    )
+
+    expect(screen.getByRole('combobox', { name: 'Currency' }).className).toContain('min-w-[92px]')
+  })
 })
