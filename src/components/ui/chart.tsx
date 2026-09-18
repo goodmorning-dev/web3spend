@@ -74,10 +74,20 @@ function ChartContainer({
   )
 }
 
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
-  const colorConfig = Object.entries(config).filter(([, config]) => config.theme ?? config.color)
+// A ChartConfig's keys end up interpolated, unescaped, into a <style> tag's
+// text via dangerouslySetInnerHTML below. A caller must never build a config
+// key from data it doesn't control (an imported category name, a merchant
+// string, ...) — this filter is a last line of defense against that,
+// dropping any entry whose key isn't a safe CSS custom-property fragment
+// rather than letting it break out of its declaration.
+const SAFE_CHART_KEY = /^[a-zA-Z0-9_-]+$/
 
-  if (!colorConfig.length) {
+const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+  const colorConfig = Object.entries(config).filter(
+    ([key, config]) => SAFE_CHART_KEY.test(key) && (config.theme ?? config.color),
+  )
+
+  if (!colorConfig.length || !SAFE_CHART_KEY.test(id)) {
     return null
   }
 

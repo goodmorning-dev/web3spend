@@ -28,4 +28,26 @@ describe('CategoryBreakdown', () => {
     expect(screen.getByText('Spending by category')).toBeInTheDocument()
     expect(screen.getByText('No cleared purchases in this period yet.')).toBeInTheDocument()
   })
+
+  it('treats a raw category string as plain text, never as a chart config key that could inject CSS', () => {
+    // shadcn's ChartContainer writes each ChartConfig key, unescaped, into a
+    // <style> tag; a category built from a ChartConfig key (as an earlier
+    // version of this component did) could close its declaration early and
+    // inject a new rule of its own.
+    const maliciousCategory = '5411 } .injected { --pwned: url(https://evil.example/leak); } /*'
+    const buckets: CategoryBucket[] = [{ category: maliciousCategory, spendMinor: 500, share: 1 }]
+
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+
+    // rendered as ordinary, auto-escaped text in the category list
+    expect(screen.getByText(maliciousCategory)).toBeInTheDocument()
+
+    // never reaches a <style> tag's contents as an injected rule
+    const styleText = [...document.querySelectorAll('style')]
+      .map((style) => style.textContent)
+      .join('\n')
+    expect(styleText).not.toContain('--pwned')
+    expect(styleText).not.toContain('.injected')
+    expect(styleText).not.toContain('evil.example')
+  })
 })

@@ -38,15 +38,21 @@ function CategoryBreakdown({ buckets, currency }: CategoryBreakdownProps) {
 
   const totalSpendMinor = buckets.reduce((sum, bucket) => sum + bucket.spendMinor, 0)
 
+  // Etherfi's raw category text is untrusted and shown as-is (MVP-PLAN §5);
+  // it must never become a ChartConfig key, since shadcn's ChartContainer
+  // interpolates those keys unescaped into a <style> tag (see chart.tsx's
+  // ChartStyle). A synthetic, index-based key keeps the config safe while
+  // `label` still carries the real category text as plain, auto-escaped
+  // React content.
   const chartConfig = Object.fromEntries(
     buckets.map((bucket, index) => [
-      bucket.category,
+      `category-${index}`,
       { label: bucket.category, color: colorForIndex(index) },
     ]),
   ) satisfies ChartConfig
 
   const data = buckets.map((bucket, index) => ({
-    category: bucket.category,
+    categoryKey: `category-${index}`,
     spendMinor: bucket.spendMinor / 100,
     fill: colorForIndex(index),
   }))
@@ -71,13 +77,13 @@ function CategoryBreakdown({ buckets, currency }: CategoryBreakdownProps) {
               <Pie
                 data={data}
                 dataKey="spendMinor"
-                nameKey="category"
+                nameKey="categoryKey"
                 innerRadius={56}
                 outerRadius={78}
                 strokeWidth={2}
               >
                 {data.map((entry) => (
-                  <Cell key={entry.category} fill={entry.fill} />
+                  <Cell key={entry.categoryKey} fill={entry.fill} />
                 ))}
               </Pie>
             </PieChart>
