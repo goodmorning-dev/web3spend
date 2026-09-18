@@ -15,27 +15,13 @@ import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import { useYearFilteredTransactions } from '@/hooks/useYearFilteredTransactions'
-import { formatUtcDateKey } from '@/utils/dates'
+import { formatUtcDate, formatUtcDateKey } from '@/utils/dates'
 
 /**
- * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
- * preserved and labeled, never reinterpreted in the viewer's local zone. A
- * purchase at Jan 31 23:30 UTC must read as Jan 31, not Feb 1 for a viewer
- * ahead of UTC.
- */
-function formatUtcDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
-}
-
-/**
- * The charts, heatmap, and transaction table land in the rest of Milestone 2
- * (TECHNICAL-PLAN §13); the KPI row already reflects the shared
- * currency/card/period filters (MVP-PLAN §5).
+ * The Milestone 2 dashboard: KPIs, the daily spend and category charts, and
+ * the activity heatmap, all scoped to the shared currency/card/period
+ * filters (MVP-PLAN §5). Selecting a heatmap day moves to the full
+ * transaction table on its own page, scoped to that day.
  */
 function DashboardPage() {
   const navigate = useNavigate()
@@ -104,12 +90,11 @@ function DashboardPage() {
                 navigate('/app/transactions')
               }}
             />
-            <p className="text-xs text-text-faint">
-              {overallSummary.latestImportedAt && (
-                <>Last import: {formatUtcDate(overallSummary.latestImportedAt)} (UTC). </>
-              )}
-              The transaction table is coming soon.
-            </p>
+            {overallSummary.latestImportedAt && (
+              <p className="text-xs text-text-faint">
+                Last import: {formatUtcDate(overallSummary.latestImportedAt)} (UTC).
+              </p>
+            )}
           </div>
         )}
 
