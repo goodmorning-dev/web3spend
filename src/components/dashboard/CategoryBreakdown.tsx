@@ -84,7 +84,9 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
           <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
           <ViewAllButton onClick={onViewAll} />
         </div>
-        <p className="text-sm text-text-faint">No cleared purchases in this period yet.</p>
+        <p className="flex flex-1 items-center text-sm text-text-faint">
+          No cleared purchases in this period yet.
+        </p>
       </div>
     )
   }
@@ -121,7 +123,7 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
         <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
         <ViewAllButton onClick={onViewAll} />
       </div>
-      <div className="flex flex-col items-center gap-4 sm:flex-row">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 sm:flex-row">
         <div className="relative shrink-0">
           <ChartContainer
             config={chartConfig}
