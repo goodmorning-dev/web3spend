@@ -129,6 +129,7 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
           >
             <PieChart>
               <ChartTooltip
+                isAnimationActive={false}
                 content={
                   <ChartTooltipContent
                     formatter={(value) => formatMoney(Math.round(Number(value) * 100), currency)}

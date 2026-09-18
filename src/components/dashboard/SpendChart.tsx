@@ -199,6 +199,7 @@ function SpendChart({ trend, currency }: SpendChartProps) {
             tickFormatter={(value: number) => formatCompactMoney(value, currency)}
           />
           <Tooltip
+            isAnimationActive={false}
             cursor={{ stroke: 'var(--color-border)', strokeDasharray: '3 3' }}
             content={({ active, payload, label }) => (
               <SpendChartTooltip
