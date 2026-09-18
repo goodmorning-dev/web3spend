@@ -14,13 +14,13 @@ function renderHome() {
 describe('Home', () => {
   it('states the privacy promise up front', () => {
     renderHome()
-    expect(screen.getByText(/processed and stored only in this browser/i)).toBeInTheDocument()
+    expect(screen.getByText(/read, stored, and calculated on this device/i)).toBeInTheDocument()
   })
 
   it('explains how it works in three steps', () => {
     renderHome()
     expect(screen.getByText('Export from Etherfi')).toBeInTheDocument()
-    expect(screen.getByText('Import it here')).toBeInTheDocument()
+    expect(screen.getByText('Import here')).toBeInTheDocument()
     expect(screen.getByText('See your spending')).toBeInTheDocument()
   })
 
