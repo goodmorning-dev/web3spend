@@ -122,4 +122,121 @@ describe('App routing', () => {
       await screen.findByRole('heading', { name: 'Transactions', level: 1 }),
     ).toBeInTheDocument()
   })
+
+  async function seedMultiDayMultiCurrency() {
+    await db.cards.put({
+      id: 'card-1',
+      last4: '1234',
+      cardHolderKey: 'jane doe',
+      label: 'Card ****1234',
+    })
+    await db.transactions.bulkPut([
+      {
+        id: 'target-day',
+        cardId: 'card-1',
+        timestampUtc: '2026-01-05T00:00:00.000Z',
+        type: 'card_spend',
+        description: 'Coffee on the target day',
+        status: 'CLEARED',
+        amountMinor: 450,
+        currency: 'EUR',
+        originalAmountMinor: 450,
+        originalCurrency: 'EUR',
+        cashbackMinor: 9,
+        cashbackCurrency: 'EUR',
+        categoryRaw: 'Cat',
+        spendingMode: 'Direct Pay',
+        identityKey: 'k1',
+        importId: 'import-1',
+      },
+      {
+        id: 'other-day',
+        cardId: 'card-1',
+        timestampUtc: '2026-01-10T00:00:00.000Z',
+        type: 'card_spend',
+        description: 'Groceries on a different day',
+        status: 'CLEARED',
+        amountMinor: 2000,
+        currency: 'EUR',
+        originalAmountMinor: 2000,
+        originalCurrency: 'EUR',
+        cashbackMinor: 40,
+        cashbackCurrency: 'EUR',
+        categoryRaw: 'Cat',
+        spendingMode: 'Direct Pay',
+        identityKey: 'k2',
+        importId: 'import-1',
+      },
+      {
+        id: 'same-day-other-currency',
+        cardId: 'card-1',
+        timestampUtc: '2026-01-05T12:00:00.000Z',
+        type: 'card_spend',
+        description: 'USD purchase on the target day',
+        status: 'CLEARED',
+        amountMinor: 500,
+        currency: 'USD',
+        originalAmountMinor: 500,
+        originalCurrency: 'USD',
+        cashbackMinor: 10,
+        cashbackCurrency: 'USD',
+        categoryRaw: 'Cat',
+        spendingMode: 'Direct Pay',
+        identityKey: 'k3',
+        importId: 'import-1',
+      },
+    ])
+    await db.imports.put({
+      id: 'import-1',
+      fileHash: 'hash',
+      importedAt: '2026-01-11T00:00:00.000Z',
+      parserVersion: '1',
+      rowCounts: { added: 3, updated: 0, unsupported: 0 },
+    })
+  }
+
+  it("clicking a heatmap day shows only that day's transactions, respecting the currency filter, with a visible way to clear it (MVP-PLAN §5)", async () => {
+    const user = userEvent.setup()
+    await seedMultiDayMultiCurrency()
+
+    renderAt('/app')
+    await screen.findByRole('grid', { name: /calendar heatmap/i })
+
+    const targetCell = screen.getByRole('gridcell', { name: /^2026-01-05:/ })
+    await user.click(targetCell)
+
+    // each transaction row renders twice: once in the mobile receipt list,
+    // once in the desktop table, only one of which is visible at a given
+    // viewport width
+    await screen.findByRole('heading', { name: 'Transactions', level: 1 })
+    expect(screen.getAllByText('Coffee on the target day')).toHaveLength(2)
+    expect(screen.queryByText('Groceries on a different day')).not.toBeInTheDocument()
+    // same calendar day, but a different currency than the selected EUR filter
+    expect(screen.queryByText('USD purchase on the target day')).not.toBeInTheDocument()
+
+    const dayChip = screen.getByText(/^Day: /)
+    expect(dayChip).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /clear day filter/i }))
+
+    expect(screen.queryByText(/^Day: /)).not.toBeInTheDocument()
+    expect(screen.getAllByText('Coffee on the target day')).toHaveLength(2)
+    expect(screen.getAllByText('Groceries on a different day')).toHaveLength(2)
+  })
+
+  it('selecting a day by keyboard also narrows the transaction list to it', async () => {
+    const user = userEvent.setup()
+    await seedMultiDayMultiCurrency()
+
+    renderAt('/app')
+    const grid = await screen.findByRole('grid', { name: /calendar heatmap/i })
+    grid.focus()
+    // Jan 1, 2026 (index 0) is a Thursday; four ArrowDown presses move to
+    // index 4, Jan 5, without crossing into a new week column.
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}{Enter}')
+
+    await screen.findByRole('heading', { name: 'Transactions', level: 1 })
+    expect(screen.getAllByText('Coffee on the target day')).toHaveLength(2)
+    expect(screen.queryByText('Groceries on a different day')).not.toBeInTheDocument()
+  })
 })

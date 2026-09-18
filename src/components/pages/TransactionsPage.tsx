@@ -1,3 +1,4 @@
+import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { FilterSelectOption } from '@/components/shell/FilterSelect'
 import TransactionsTable from '@/components/transactions/TransactionsTable'
@@ -6,6 +7,7 @@ import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import type { StandardTransaction } from '@/types/transaction'
+import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
 const ALL_STATUSES = 'all'
 const ALL_CATEGORIES = 'all'
@@ -33,11 +35,17 @@ function matchesSearch(transaction: StandardTransaction, query: string): boolean
  */
 function TransactionsPage() {
   const overallSummary = useDashboardSummary()
-  const { filters, options } = useDashboardFilters()
+  const { filters, options, clearDay } = useDashboardFilters()
   const transactions = useFilteredTransactions(filters)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState(ALL_STATUSES)
   const [category, setCategory] = useState(ALL_CATEGORIES)
+
+  // Set by picking a day on the Dashboard's activity heatmap (MVP-PLAN §5);
+  // narrows the already currency/card/period-scoped set further, the same
+  // way search and the dropdowns below do.
+  const selectedDateKey =
+    filters?.day !== undefined ? formatUtcDateKey(filters.year, filters.month, filters.day) : null
 
   const cardLabelById = useMemo(() => {
     const map = new Map<string, string>()
@@ -74,8 +82,12 @@ function TransactionsPage() {
       .filter((transaction) => status === ALL_STATUSES || transaction.status === status)
       .filter((transaction) => category === ALL_CATEGORIES || transaction.categoryRaw === category)
       .filter((transaction) => matchesSearch(transaction, query))
+      .filter(
+        (transaction) =>
+          !selectedDateKey || getUtcDateKey(transaction.timestampUtc) === selectedDateKey,
+      )
       .sort((a, b) => b.timestampUtc.localeCompare(a.timestampUtc))
-  }, [transactions, search, status, category])
+  }, [transactions, search, status, category, selectedDateKey])
 
   if (overallSummary === undefined) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
@@ -99,6 +111,19 @@ function TransactionsPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="font-heading text-xl font-semibold">Transactions</h1>
+      {selectedDateKey && (
+        <div className="flex items-center gap-1.5 self-start rounded-full border border-border bg-secondary py-1 pr-1.5 pl-3 text-xs font-medium text-secondary-foreground">
+          <span>Day: {formatUtcDate(`${selectedDateKey}T00:00:00.000Z`)}</span>
+          <button
+            type="button"
+            onClick={clearDay}
+            aria-label="Clear day filter"
+            className="flex size-4 items-center justify-center rounded-full text-text-faint hover:bg-muted hover:text-foreground"
+          >
+            <X className="size-3" />
+          </button>
+        </div>
+      )}
       <TransactionsToolbar
         search={search}
         onSearchChange={setSearch}
