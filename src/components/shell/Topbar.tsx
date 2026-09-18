@@ -45,6 +45,7 @@ function Topbar() {
                 { value: 'all', label: 'All cards' },
                 ...options.cards.map((card) => ({ value: card.id, label: card.label })),
               ]}
+              triggerClassName="min-w-[150px]"
             />
             <FilterSelect
               ariaLabel="Currency"
@@ -55,6 +56,7 @@ function Topbar() {
                 value: currency,
                 label: currency,
               }))}
+              triggerClassName="min-w-[92px]"
             />
             <FilterSelect
               ariaLabel="Period"
@@ -68,6 +70,7 @@ function Topbar() {
                 value: `${period.year}-${period.month}`,
                 label: formatUtcMonthLabel(period.year, period.month),
               }))}
+              triggerClassName="min-w-[168px]"
             />
           </>
         )}
