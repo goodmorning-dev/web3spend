@@ -21,6 +21,12 @@ describe('Sidebar', () => {
       '/app/transactions',
     )
     expect(screen.getByRole('link', { name: /import/i })).toHaveAttribute('href', '/app/import')
+    // rendered twice: once as a phone bottom-bar tab, once pinned to the
+    // bottom of the desktop sidebar, only one of which is visible at a
+    // given viewport width
+    for (const link of screen.getAllByRole('link', { name: /settings/i })) {
+      expect(link).toHaveAttribute('href', '/app/settings')
+    }
   })
 
   it('marks the Dashboard link active only on the exact /app route, not on nested pages', () => {
@@ -31,5 +37,13 @@ describe('Sidebar', () => {
       'aria-current',
       'page',
     )
+  })
+
+  it('marks both Settings links active on /app/settings', () => {
+    renderAt('/app/settings')
+
+    for (const link of screen.getAllByRole('link', { name: /settings/i })) {
+      expect(link).toHaveAttribute('aria-current', 'page')
+    }
   })
 })

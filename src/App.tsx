@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import DashboardPage from '@/components/pages/DashboardPage'
 import ImportPage from '@/components/pages/ImportPage'
+import SettingsPage from '@/components/pages/SettingsPage'
 import TransactionsPage from '@/components/pages/TransactionsPage'
 import AppShell from '@/components/shell/AppShell'
 import Home from '@/components/Home'
@@ -14,6 +15,7 @@ function App() {
         <Route index element={<DashboardPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="import" element={<ImportPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
