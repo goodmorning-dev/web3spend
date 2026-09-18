@@ -1,5 +1,6 @@
 import type { StandardTransaction } from '@/types/transaction'
 import { assertSingleCurrency } from './assertSingleCurrency'
+import { isEligiblePurchase } from './eligibility'
 
 export interface CategoryBucket {
   /** Etherfi's own raw category text; the MVP does not map it to a taxonomy. */
@@ -11,14 +12,15 @@ export interface CategoryBucket {
 
 /**
  * MVP-PLAN §5: sorted (descending) spend by category with amount and share,
- * from cleared purchases only.
+ * from cleared purchases only (a refund-like negative-amount row is
+ * excluded, per MVP-PLAN §6, not counted as negative spend in its category).
  */
 export function aggregateByCategory(transactions: StandardTransaction[]): CategoryBucket[] {
   assertSingleCurrency(transactions)
 
   const totalsByCategory = new Map<string, number>()
   for (const transaction of transactions) {
-    if (transaction.status !== 'CLEARED') {
+    if (!isEligiblePurchase(transaction)) {
       continue
     }
     totalsByCategory.set(

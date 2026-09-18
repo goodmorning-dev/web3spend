@@ -1,6 +1,7 @@
 import { daysInUtcYear, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 import type { StandardTransaction } from '@/types/transaction'
 import { assertSingleCurrency } from './assertSingleCurrency'
+import { isEligiblePurchase } from './eligibility'
 
 const INTENSITY_LEVELS = 4
 
@@ -13,10 +14,11 @@ export interface DayActivity {
 
 /**
  * TECHNICAL-PLAN §9: a GitHub-contribution-style year grid, one cell per
- * calendar day, shaded by that day's cleared spend. Levels are quantile
- * buckets over the observed spending days (not a fixed threshold), so the
- * scale stays meaningful regardless of a user's typical spend level.
- * `transactions` must already be filtered to this currency/card/year.
+ * calendar day, shaded by that day's cleared spend (a refund-like negative
+ * row is excluded, per MVP-PLAN §6). Levels are quantile buckets over the
+ * observed spending days (not a fixed threshold), so the scale stays
+ * meaningful regardless of a user's typical spend level. `transactions`
+ * must already be filtered to this currency/card/year.
  */
 export function computeYearActivity(
   transactions: StandardTransaction[],
@@ -26,7 +28,7 @@ export function computeYearActivity(
 
   const spendByDay = new Map<string, number>()
   for (const transaction of transactions) {
-    if (transaction.status !== 'CLEARED') {
+    if (!isEligiblePurchase(transaction)) {
       continue
     }
     const key = getUtcDateKey(transaction.timestampUtc)

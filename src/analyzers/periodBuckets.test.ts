@@ -80,6 +80,51 @@ describe('bucketByDay', () => {
     const result = bucketByDay([makeTransaction({ status: 'PENDING', amountMinor: 999 })], 2026, 1)
     expect(result.every((bucket) => bucket.spendMinor === 0)).toBe(true)
   })
+
+  it('excludes a refund-like row (negative amount) from its day instead of subtracting it', () => {
+    const result = bucketByDay(
+      [
+        makeTransaction({ id: '1', timestampUtc: '2026-01-05T08:00:00.000Z', amountMinor: 1000 }),
+        makeTransaction({
+          id: '2',
+          timestampUtc: '2026-01-05T20:00:00.000Z',
+          amountMinor: -400,
+        }),
+      ],
+      2026,
+      1,
+    )
+
+    const day5 = result.find((bucket) => bucket.key === '2026-01-05')
+    expect(day5?.spendMinor).toBe(1000)
+  })
+
+  it("reports a day's rate as unavailable, not a mixed-currency figure, when its cashback currencies differ", () => {
+    const result = bucketByDay(
+      [
+        makeTransaction({
+          id: '1',
+          timestampUtc: '2026-01-05T08:00:00.000Z',
+          currency: 'EUR',
+          cashbackCurrency: 'EUR',
+          cashbackMinor: 20,
+        }),
+        makeTransaction({
+          id: '2',
+          timestampUtc: '2026-01-05T20:00:00.000Z',
+          currency: 'EUR',
+          cashbackCurrency: 'USD',
+          cashbackMinor: 30,
+        }),
+      ],
+      2026,
+      1,
+    )
+
+    const day5 = result.find((bucket) => bucket.key === '2026-01-05')
+    expect(day5?.effectiveCashbackPct).toBeNull()
+    expect(day5?.cashbackMinor).toBe(20)
+  })
 })
 
 describe('bucketByMonth', () => {
@@ -116,5 +161,54 @@ describe('bucketByMonth', () => {
       cashbackMinor: 30,
       effectiveCashbackPct: (30 / 3000) * 100,
     })
+  })
+
+  it('excludes a refund-like row (negative amount) from its month instead of subtracting it', () => {
+    const result = bucketByMonth(
+      [
+        makeTransaction({ id: '1', timestampUtc: '2026-03-01T00:00:00.000Z', amountMinor: 1000 }),
+        makeTransaction({ id: '2', timestampUtc: '2026-03-31T00:00:00.000Z', amountMinor: -400 }),
+      ],
+      2026,
+    )
+
+    const march = result.find((bucket) => bucket.key === '2026-03')
+    expect(march?.spendMinor).toBe(1000)
+  })
+
+  it("reports a month's rate as unavailable, without affecting a different month, when its cashback currencies differ", () => {
+    const result = bucketByMonth(
+      [
+        makeTransaction({
+          id: '1',
+          timestampUtc: '2026-03-01T00:00:00.000Z',
+          currency: 'EUR',
+          cashbackCurrency: 'EUR',
+          cashbackMinor: 20,
+        }),
+        makeTransaction({
+          id: '2',
+          timestampUtc: '2026-03-31T00:00:00.000Z',
+          currency: 'EUR',
+          cashbackCurrency: 'USD',
+          cashbackMinor: 30,
+        }),
+        makeTransaction({
+          id: '3',
+          timestampUtc: '2026-04-01T00:00:00.000Z',
+          currency: 'EUR',
+          cashbackCurrency: 'EUR',
+          amountMinor: 1000,
+          cashbackMinor: 25,
+        }),
+      ],
+      2026,
+    )
+
+    const march = result.find((bucket) => bucket.key === '2026-03')
+    const april = result.find((bucket) => bucket.key === '2026-04')
+    expect(march?.effectiveCashbackPct).toBeNull()
+    expect(march?.cashbackMinor).toBe(20)
+    expect(april?.effectiveCashbackPct).toBe((25 / 1000) * 100)
   })
 })

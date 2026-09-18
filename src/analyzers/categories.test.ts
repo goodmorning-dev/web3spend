@@ -69,4 +69,13 @@ describe('aggregateByCategory', () => {
       ]),
     ).toThrow()
   })
+
+  it('excludes a refund-like row (negative amount) instead of subtracting it from its category', () => {
+    const result = aggregateByCategory([
+      makeTransaction({ id: '1', categoryRaw: 'Groceries', amountMinor: 1000 }),
+      makeTransaction({ id: '2', categoryRaw: 'Groceries', amountMinor: -400 }),
+    ])
+
+    expect(result).toEqual([{ category: 'Groceries', spendMinor: 1000, share: 1 }])
+  })
 })

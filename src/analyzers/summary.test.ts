@@ -78,4 +78,40 @@ describe('summarizeTransactions', () => {
       ]),
     ).toThrow()
   })
+
+  it('excludes a refund-like row (negative amount) from cleared spend instead of subtracting it', () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ id: '1', amountMinor: 1000, cashbackMinor: 0 }),
+      makeTransaction({ id: '2', amountMinor: -400, cashbackMinor: 0 }),
+    ])
+
+    expect(summary.clearedSpendMinor).toBe(1000)
+  })
+
+  it("excludes a refund-like row's cashback too, even if it reports some", () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ id: '1', amountMinor: 1000, cashbackMinor: 30 }),
+      makeTransaction({ id: '2', amountMinor: -400, cashbackMinor: 5 }),
+    ])
+
+    expect(summary.clearedCashbackMinor).toBe(30)
+  })
+
+  it('reports unavailable, not a mixed-currency figure, when cashback currencies differ', () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ id: '1', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 20 }),
+      makeTransaction({ id: '2', currency: 'EUR', cashbackCurrency: 'USD', cashbackMinor: 30 }),
+    ])
+
+    expect(summary.effectiveCashbackPct).toBeNull()
+  })
+
+  it('still sums the cashback that is in a compatible currency when another row is not', () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ id: '1', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 20 }),
+      makeTransaction({ id: '2', currency: 'EUR', cashbackCurrency: 'USD', cashbackMinor: 30 }),
+    ])
+
+    expect(summary.clearedCashbackMinor).toBe(20)
+  })
 })

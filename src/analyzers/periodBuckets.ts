@@ -1,21 +1,44 @@
 import { daysInUtcMonth, formatUtcDateKey, formatUtcMonthKey, getUtcMonth } from '@/utils/dates'
 import type { StandardTransaction } from '@/types/transaction'
 import { assertSingleCurrency } from './assertSingleCurrency'
+import { hasCompatibleCashbackCurrency, isEligiblePurchase } from './eligibility'
 
 export interface PeriodBucket {
   key: string
   spendMinor: number
   cashbackMinor: number
-  /** null ("unavailable") rather than 0 when this bucket has no cleared spend. */
+  /** null ("unavailable") rather than 0 when this bucket has no cleared spend,
+   * or when its cashback couldn't be safely combined across currencies. */
   effectiveCashbackPct: number | null
 }
 
-function toBucket(key: string, spendMinor: number, cashbackMinor: number): PeriodBucket {
+interface BucketAccumulator {
+  spendMinor: number
+  cashbackMinor: number
+  cashbackCurrencyMismatch: boolean
+}
+
+function createAccumulator(): BucketAccumulator {
+  return { spendMinor: 0, cashbackMinor: 0, cashbackCurrencyMismatch: false }
+}
+
+function addToAccumulator(accumulator: BucketAccumulator, transaction: StandardTransaction): void {
+  accumulator.spendMinor += transaction.amountMinor
+  if (hasCompatibleCashbackCurrency(transaction)) {
+    accumulator.cashbackMinor += transaction.cashbackMinor
+  } else {
+    accumulator.cashbackCurrencyMismatch = true
+  }
+}
+
+function toBucket(key: string, accumulator: BucketAccumulator): PeriodBucket {
+  const { spendMinor, cashbackMinor, cashbackCurrencyMismatch } = accumulator
   return {
     key,
     spendMinor,
     cashbackMinor,
-    effectiveCashbackPct: spendMinor > 0 ? (cashbackMinor / spendMinor) * 100 : null,
+    effectiveCashbackPct:
+      !cashbackCurrencyMismatch && spendMinor > 0 ? (cashbackMinor / spendMinor) * 100 : null,
   }
 }
 
@@ -23,7 +46,8 @@ function toBucket(key: string, spendMinor: number, cashbackMinor: number): Perio
  * MVP-PLAN §5: daily spend/cashback totals within a selected month, one
  * bucket per calendar day including zero-spend days, so a chart's x-axis
  * stays continuous. `transactions` must already be filtered to this
- * currency/card/year/month (see filters.ts); cleared rows only.
+ * currency/card/year/month (see filters.ts); a refund-like row (negative
+ * amount) is excluded, per MVP-PLAN §6, the same as everywhere else.
  */
 export function bucketByDay(
   transactions: StandardTransaction[],
@@ -32,54 +56,47 @@ export function bucketByDay(
 ): PeriodBucket[] {
   assertSingleCurrency(transactions)
 
-  const spendByDay = new Map<number, number>()
-  const cashbackByDay = new Map<number, number>()
+  const byDay = new Map<number, BucketAccumulator>()
   for (const transaction of transactions) {
-    if (transaction.status !== 'CLEARED') {
+    if (!isEligiblePurchase(transaction)) {
       continue
     }
     const day = new Date(transaction.timestampUtc).getUTCDate()
-    spendByDay.set(day, (spendByDay.get(day) ?? 0) + transaction.amountMinor)
-    cashbackByDay.set(day, (cashbackByDay.get(day) ?? 0) + transaction.cashbackMinor)
+    const accumulator = byDay.get(day) ?? createAccumulator()
+    addToAccumulator(accumulator, transaction)
+    byDay.set(day, accumulator)
   }
 
   const days = daysInUtcMonth(year, month)
   return Array.from({ length: days }, (_, index) => {
     const day = index + 1
-    return toBucket(
-      formatUtcDateKey(year, month, day),
-      spendByDay.get(day) ?? 0,
-      cashbackByDay.get(day) ?? 0,
-    )
+    return toBucket(formatUtcDateKey(year, month, day), byDay.get(day) ?? createAccumulator())
   })
 }
 
 /**
  * MVP-PLAN §5: monthly spend/cashback totals within a selected year, one
  * bucket per calendar month including zero-spend months. `transactions`
- * must already be filtered to this currency/card/year (see filters.ts);
- * cleared rows only.
+ * must already be filtered to this currency/card/year (see filters.ts); a
+ * refund-like row (negative amount) is excluded, per MVP-PLAN §6, the same
+ * as everywhere else.
  */
 export function bucketByMonth(transactions: StandardTransaction[], year: number): PeriodBucket[] {
   assertSingleCurrency(transactions)
 
-  const spendByMonth = new Map<number, number>()
-  const cashbackByMonth = new Map<number, number>()
+  const byMonth = new Map<number, BucketAccumulator>()
   for (const transaction of transactions) {
-    if (transaction.status !== 'CLEARED') {
+    if (!isEligiblePurchase(transaction)) {
       continue
     }
     const month = getUtcMonth(transaction.timestampUtc)
-    spendByMonth.set(month, (spendByMonth.get(month) ?? 0) + transaction.amountMinor)
-    cashbackByMonth.set(month, (cashbackByMonth.get(month) ?? 0) + transaction.cashbackMinor)
+    const accumulator = byMonth.get(month) ?? createAccumulator()
+    addToAccumulator(accumulator, transaction)
+    byMonth.set(month, accumulator)
   }
 
   return Array.from({ length: 12 }, (_, index) => {
     const month = index + 1
-    return toBucket(
-      formatUtcMonthKey(year, month),
-      spendByMonth.get(month) ?? 0,
-      cashbackByMonth.get(month) ?? 0,
-    )
+    return toBucket(formatUtcMonthKey(year, month), byMonth.get(month) ?? createAccumulator())
   })
 }

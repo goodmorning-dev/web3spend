@@ -110,4 +110,21 @@ describe('computeYearActivity', () => {
       ),
     ).toThrow()
   })
+
+  it('excludes a refund-like row (negative amount) from its day instead of subtracting it', () => {
+    const result = computeYearActivity(
+      [
+        makeTransaction({ id: '1', timestampUtc: '2026-06-01T08:00:00.000Z', amountMinor: 1000 }),
+        makeTransaction({
+          id: '2',
+          timestampUtc: '2026-06-01T20:00:00.000Z',
+          amountMinor: -400,
+        }),
+      ],
+      2026,
+    )
+
+    const day = result.find((entry) => entry.key === '2026-06-01')
+    expect(day?.spendMinor).toBe(1000)
+  })
 })
