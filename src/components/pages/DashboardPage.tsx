@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   aggregateByCategory,
   bucketByDay,
@@ -14,6 +15,7 @@ import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import { useYearFilteredTransactions } from '@/hooks/useYearFilteredTransactions'
+import { formatUtcDateKey } from '@/utils/dates'
 
 /**
  * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
@@ -36,8 +38,9 @@ function formatUtcDate(iso: string): string {
  * currency/card/period filters (MVP-PLAN §5).
  */
 function DashboardPage() {
+  const navigate = useNavigate()
   const overallSummary = useDashboardSummary()
-  const { filters } = useDashboardFilters()
+  const { filters, setDay } = useDashboardFilters()
   const filteredTransactions = useFilteredTransactions(filters)
   const yearFilteredTransactions = useYearFilteredTransactions(filters)
   // Set once a file finishes processing in this component's lifetime, so a
@@ -93,6 +96,13 @@ function DashboardPage() {
               activity={computeYearActivity(yearFilteredTransactions, filters.year)}
               year={filters.year}
               currency={filters.currency}
+              selectedDateKey={
+                filters.day ? formatUtcDateKey(filters.year, filters.month, filters.day) : null
+              }
+              onSelectDay={(year, month, day) => {
+                setDay(year, month, day)
+                navigate('/app/transactions')
+              }}
             />
             <p className="text-xs text-text-faint">
               {overallSummary.latestImportedAt && (
