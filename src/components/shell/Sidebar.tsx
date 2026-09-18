@@ -8,9 +8,22 @@ const NAV_ITEMS = [
   { to: '/app/import', end: false, label: 'Import', icon: Upload },
 ]
 
+const SETTINGS_ITEM = { to: '/app/settings', end: false, label: 'Settings', icon: Settings }
+
+const NAV_LINK_CLASS =
+  'flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-[10.5px] font-medium transition-colors sm:flex-row sm:gap-2.5 sm:px-3 sm:py-2 sm:text-sm'
+
+function navLinkTone(isActive: boolean): string {
+  return isActive
+    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+    : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'
+}
+
 /**
  * A left sidebar on desktop; a bottom tab bar on phones (MVP-PLAN's phone
- * support requirement), same breakpoint as Tailwind's default `sm`.
+ * support requirement), same breakpoint as Tailwind's default `sm`. Settings
+ * rides along as a fourth tab on the phone bar, but gets its own bottom-
+ * pinned spot on desktop instead of sitting in that same primary list.
  */
 function Sidebar() {
   return (
@@ -30,25 +43,35 @@ function Sidebar() {
             key={to}
             to={to}
             end={end}
-            className={({ isActive }) =>
-              cn(
-                'flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-[10.5px] font-medium transition-colors sm:flex-row sm:gap-2.5 sm:px-3 sm:py-2 sm:text-sm',
-                isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:text-sidebar-foreground',
-              )
-            }
+            className={({ isActive }) => cn(NAV_LINK_CLASS, navLinkTone(isActive))}
           >
             <Icon className="size-[17px] shrink-0" />
             <span>{label}</span>
           </NavLink>
         ))}
+        <NavLink
+          to={SETTINGS_ITEM.to}
+          className={({ isActive }) => cn(NAV_LINK_CLASS, 'sm:hidden', navLinkTone(isActive))}
+        >
+          <Settings className="size-[17px] shrink-0" />
+          <span>{SETTINGS_ITEM.label}</span>
+        </NavLink>
       </nav>
 
-      <div className="mt-auto hidden items-center gap-2.5 px-3 py-2 text-sm font-medium text-text-faint sm:flex">
+      <NavLink
+        to={SETTINGS_ITEM.to}
+        className={({ isActive }) =>
+          cn(
+            'mt-auto hidden items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:flex',
+            isActive
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+              : 'text-text-faint hover:text-sidebar-foreground',
+          )
+        }
+      >
         <Settings className="size-4 shrink-0" />
         <span>Settings</span>
-      </div>
+      </NavLink>
     </aside>
   )
 }

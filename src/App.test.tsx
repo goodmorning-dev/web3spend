@@ -59,6 +59,14 @@ describe('App routing', () => {
     expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
   })
 
+  it('renders the Settings page within the shell at /app/settings', async () => {
+    renderAt('/app/settings')
+    // both the topbar title and the page's own heading say "Settings";
+    // the page heading is the h1
+    expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /delete all data/i })).toBeInTheDocument()
+  })
+
   it('redirects an unknown path to /home', () => {
     renderAt('/something-that-does-not-exist')
     expect(
