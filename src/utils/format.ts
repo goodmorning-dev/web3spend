@@ -22,3 +22,19 @@ export function formatCompactMoney(amount: number, currency: string): string {
     maximumFractionDigits: 1,
   }).format(amount)
 }
+
+/** Spend always reads as an outflow ("-€12.40"), matching the design
+ * reference, regardless of the sign the amount happens to be stored with
+ * (a refund-like row is already genuinely negative and keeps its own
+ * sign rather than getting a second one prepended). */
+export function formatSignedSpend(amountMinor: number, currency: string): string {
+  return amountMinor < 0
+    ? formatMoney(amountMinor, currency)
+    : `-${formatMoney(amountMinor, currency)}`
+}
+
+/** Cashback always reads as an inflow ("+€0.31"); it's never negative in
+ * this app's data model. */
+export function formatSignedCashback(cashbackMinor: number, currency: string): string {
+  return `+${formatMoney(cashbackMinor, currency)}`
+}

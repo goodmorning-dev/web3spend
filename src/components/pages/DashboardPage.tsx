@@ -40,10 +40,10 @@ function DashboardPage() {
   // screen instead of being unmounted the instant `hasData` flips to true.
   const [justImported, setJustImported] = useState(false)
 
-  const cardLabelById = useMemo(() => {
+  const cardLastFourById = useMemo(() => {
     const map = new Map<string, string>()
     for (const card of options?.cards ?? []) {
-      map.set(card.id, card.label)
+      map.set(card.id, card.last4)
     }
     return map
   }, [options])
@@ -136,7 +136,10 @@ function DashboardPage() {
                   <ChevronRight className="size-3.5" />
                 </button>
               </div>
-              <TransactionsTable transactions={recentTransactions} cardLabelById={cardLabelById} />
+              <TransactionsTable
+                transactions={recentTransactions}
+                cardLastFourById={cardLastFourById}
+              />
             </section>
             {overallSummary.latestImportedAt && (
               <p className="text-xs text-text-faint">
