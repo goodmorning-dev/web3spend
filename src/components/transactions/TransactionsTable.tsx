@@ -21,18 +21,75 @@ const STATUS_TONE: Record<TransactionStatus, string> = {
   UNKNOWN: 'bg-muted text-text-faint',
 }
 
-function StatusPill({ status }: { status: TransactionStatus }) {
+/** MVP-PLAN §6: a CLEARED row with a negative amount is refund-like and is
+ * excluded from every spend/cashback total the analyzers compute (see
+ * isEligiblePurchase); it must never read as an ordinary cleared purchase,
+ * since that would misrepresent why its amount doesn't show up anywhere
+ * else on the dashboard. This is a labeling fix only, not new accounting:
+ * the row still isn't netted against anything.
+ */
+function isRefundLike(transaction: StandardTransaction): boolean {
+  return transaction.status === 'CLEARED' && transaction.amountMinor < 0
+}
+
+interface StatusDisplay {
+  label: string
+  tone: string
+  hint?: string
+}
+
+function describeStatus(transaction: StandardTransaction): StatusDisplay {
+  if (isRefundLike(transaction)) {
+    return {
+      label: 'Refund-like',
+      tone: 'bg-warning/15 text-warning',
+      hint: 'A negative cleared amount; excluded from spend and cashback totals',
+    }
+  }
+  return { label: STATUS_LABELS[transaction.status], tone: STATUS_TONE[transaction.status] }
+}
+
+function StatusPill({ transaction }: { transaction: StandardTransaction }) {
+  const { label, tone, hint } = describeStatus(transaction)
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${STATUS_TONE[status]}`}
+      title={hint}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${tone}`}
     >
-      {STATUS_LABELS[status]}
+      {label}
     </span>
   )
 }
 
 function cardLabel(cardLabelById: Map<string, string>, cardId: string): string {
   return cardLabelById.get(cardId) ?? 'Unknown card'
+}
+
+function hasDifferentOriginalAmount(transaction: StandardTransaction): boolean {
+  return (
+    transaction.originalAmountMinor !== transaction.amountMinor ||
+    transaction.originalCurrency !== transaction.currency
+  )
+}
+
+/** MVP-PLAN §5: "show original amount/currency in details when different."
+ * A <details> disclosure keeps every row's normal height while still
+ * making the original figure genuinely inspectable, not just present in
+ * data no control ever surfaces. */
+function OriginalAmountDetails({ transaction }: { transaction: StandardTransaction }) {
+  if (!hasDifferentOriginalAmount(transaction)) {
+    return null
+  }
+  return (
+    <details className="mt-0.5">
+      <summary className="cursor-pointer text-[11px] font-medium text-text-faint select-none">
+        Original amount
+      </summary>
+      <p className="mt-0.5 text-xs text-text-dim tabular-nums">
+        {formatMoney(transaction.originalAmountMinor, transaction.originalCurrency)}
+      </p>
+    </details>
+  )
 }
 
 /** A plain table on wider screens, a stacked receipt-style list on phone
@@ -56,12 +113,16 @@ function TransactionsTable({ transactions, cardLabelById }: TransactionsTablePro
                 {formatUtcDate(transaction.timestampUtc)} · {transaction.categoryRaw} ·{' '}
                 {cardLabel(cardLabelById, transaction.cardId)}
               </p>
+              <OriginalAmountDetails transaction={transaction} />
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
               <span className="text-sm font-semibold tabular-nums">
                 {formatMoney(transaction.amountMinor, transaction.currency)}
               </span>
-              <StatusPill status={transaction.status} />
+              <span className="text-xs tabular-nums text-positive">
+                {formatMoney(transaction.cashbackMinor, transaction.cashbackCurrency)}
+              </span>
+              <StatusPill transaction={transaction} />
             </div>
           </li>
         ))}
@@ -93,12 +154,13 @@ function TransactionsTable({ transactions, cardLabelById }: TransactionsTablePro
                 </td>
                 <td className="py-2 pr-3 text-right font-medium tabular-nums">
                   {formatMoney(transaction.amountMinor, transaction.currency)}
+                  <OriginalAmountDetails transaction={transaction} />
                 </td>
                 <td className="py-2 pr-3 text-right tabular-nums text-positive">
                   {formatMoney(transaction.cashbackMinor, transaction.cashbackCurrency)}
                 </td>
                 <td className="py-2 text-right">
-                  <StatusPill status={transaction.status} />
+                  <StatusPill transaction={transaction} />
                 </td>
               </tr>
             ))}
