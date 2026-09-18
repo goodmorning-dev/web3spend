@@ -1,0 +1,86 @@
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import { db } from '@/storage/db'
+import { resetDatabase } from '@/storage/test-helpers'
+import type { StandardTransaction } from '@/types/transaction'
+import { DashboardFiltersProvider, useDashboardFilters } from './DashboardFiltersContext'
+
+afterEach(resetDatabase)
+
+function makeTransaction(overrides: Partial<StandardTransaction> = {}): StandardTransaction {
+  return {
+    id: 'txn-1',
+    cardId: 'card-1',
+    timestampUtc: '2026-03-15T10:00:00.000Z',
+    type: 'card_spend',
+    description: 'Coffee Shop',
+    status: 'CLEARED',
+    amountMinor: 450,
+    currency: 'EUR',
+    originalAmountMinor: 450,
+    originalCurrency: 'EUR',
+    cashbackMinor: 9,
+    cashbackCurrency: 'EUR',
+    categoryRaw: 'Groceries',
+    spendingMode: 'Direct Pay',
+    identityKey: 'key-1',
+    importId: 'import-1',
+    ...overrides,
+  }
+}
+
+function renderWithProvider() {
+  return renderHook(() => useDashboardFilters(), {
+    wrapper: ({ children }) => <DashboardFiltersProvider>{children}</DashboardFiltersProvider>,
+  })
+}
+
+describe('useDashboardFilters', () => {
+  it('throws when used outside a DashboardFiltersProvider', () => {
+    expect(() => renderHook(() => useDashboardFilters())).toThrow(
+      /must be used within a DashboardFiltersProvider/,
+    )
+  })
+
+  it('has no filters (null) when there is no data yet', async () => {
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.options).toBeDefined())
+    expect(result.current.filters).toBeNull()
+  })
+
+  it('defaults to the first currency and the most recent period once data exists', async () => {
+    await db.transactions.bulkPut([
+      makeTransaction({ id: '1', currency: 'EUR', timestampUtc: '2026-01-01T00:00:00.000Z' }),
+      makeTransaction({ id: '2', currency: 'USD', timestampUtc: '2026-03-01T00:00:00.000Z' }),
+    ])
+
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.filters).not.toBeNull())
+
+    expect(result.current.filters).toEqual({
+      currency: 'EUR',
+      cardId: undefined,
+      year: 2026,
+      month: 3,
+    })
+  })
+
+  it('applies setCurrency, setCardId, and setPeriod on top of the defaults', async () => {
+    await db.transactions.put(
+      makeTransaction({ currency: 'EUR', timestampUtc: '2026-03-01T00:00:00.000Z' }),
+    )
+    await db.cards.put({ id: 'card-1', last4: '1234', cardHolderKey: 'jane doe', label: 'Card' })
+
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.filters).not.toBeNull())
+
+    act(() => result.current.setCurrency('USD'))
+    expect(result.current.filters?.currency).toBe('USD')
+
+    act(() => result.current.setCardId('card-1'))
+    expect(result.current.filters?.cardId).toBe('card-1')
+
+    act(() => result.current.setPeriod(2025, 6))
+    expect(result.current.filters).toMatchObject({ year: 2025, month: 6 })
+  })
+})

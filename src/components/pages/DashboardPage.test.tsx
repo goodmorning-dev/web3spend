@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
-import Dashboard from './Dashboard'
+import DashboardPage from './DashboardPage'
 
 const originalTz = process.env.TZ
 
@@ -15,9 +15,9 @@ afterEach(async () => {
   }
 })
 
-describe('Dashboard', () => {
+describe('DashboardPage', () => {
   it('shows the import prompt when there is no local data', async () => {
-    render(<Dashboard />)
+    render(<DashboardPage />)
     expect(
       await screen.findByRole('heading', { name: /import your etherfi export/i }),
     ).toBeInTheDocument()
@@ -76,7 +76,7 @@ describe('Dashboard', () => {
       rowCounts: { added: 2, updated: 0, unsupported: 0 },
     })
 
-    render(<Dashboard />)
+    render(<DashboardPage />)
 
     expect(await screen.findByRole('heading', { name: /your data/i })).toBeInTheDocument()
     expect(screen.getByText('2 transactions imported.')).toBeInTheDocument()
@@ -92,7 +92,6 @@ describe('Dashboard', () => {
       timeZone: 'UTC',
     })
     const wrongLocalText = new Date(timestampUtc).toLocaleDateString(undefined, dateFormatOptions)
-    // sanity check: this test only proves something if local and UTC actually differ
     expect(correctUtcText).not.toBe(wrongLocalText)
 
     await db.cards.put({
@@ -120,7 +119,7 @@ describe('Dashboard', () => {
       importId: 'import-1',
     })
 
-    render(<Dashboard />)
+    render(<DashboardPage />)
     await screen.findByRole('heading', { name: /your data/i })
 
     expect(document.body.textContent).toContain(correctUtcText)
