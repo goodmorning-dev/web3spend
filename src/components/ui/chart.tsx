@@ -147,11 +147,11 @@ function ChartTooltipContent({
       return null
     }
 
-    const [item] = payload
-    const key = `${labelKey ?? item?.dataKey ?? item?.name ?? 'value'}`
-    const itemConfig = getPayloadConfigFromPayload(config, item, key)
-    const value =
-      !labelKey && typeof label === 'string' ? (config[label]?.label ?? label) : itemConfig?.label
+    // `label` is the axis position (e.g. a day number), not the series —
+    // it must never fall back to a series' own itemConfig.label (e.g.
+    // "Spent"), which has nothing to do with which position this tooltip
+    // is for.
+    const value = !labelKey && typeof label === 'string' ? (config[label]?.label ?? label) : label
 
     if (labelFormatter) {
       return (
