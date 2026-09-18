@@ -157,10 +157,16 @@ describe('DashboardPage', () => {
 
     renderDashboardPage()
 
-    expect(await screen.findByText('Total spent')).toBeInTheDocument()
-    expect(screen.getByText('Cashback earned')).toBeInTheDocument()
+    expect(await screen.findByText('Cashback earned')).toBeInTheDocument()
     expect(screen.getByText('Effective cashback')).toBeInTheDocument()
     expect(screen.getByText('across 2 cleared purchases')).toBeInTheDocument()
+    // "Total spent" appears twice by design: the KPI card label, and again as
+    // the donut chart's center caption in the category breakdown below it.
+    expect(screen.getAllByText('Total spent')).toHaveLength(2)
+
+    expect(screen.getByText('Daily spend')).toBeInTheDocument()
+    expect(screen.getByText('Spending by category')).toBeInTheDocument()
+    expect(screen.getByText('Cat')).toBeInTheDocument()
   })
 
   it('formats the last import date in UTC, unaffected by the viewer local timezone', async () => {
@@ -208,7 +214,7 @@ describe('DashboardPage', () => {
     })
 
     renderDashboardPage()
-    await screen.findByText('Total spent')
+    await screen.findByText('Cashback earned')
 
     expect(document.body.textContent).toContain(correctUtcText)
     expect(document.body.textContent).not.toContain(wrongLocalText)
@@ -223,7 +229,7 @@ describe('DashboardPage', () => {
     const input = screen.getByLabelText(/choose an xlsx file/i)
     await user.upload(input, toFile(buildWorkbookWithOneUnsupportedRow()))
 
-    expect(await screen.findByText('Total spent')).toBeInTheDocument()
+    expect(await screen.findByText('Cashback earned')).toBeInTheDocument()
     expect(screen.getByText('1 added, 0 updated.')).toBeInTheDocument()
     expect(screen.getByText(/1 row could not be imported/i)).toBeInTheDocument()
   })
