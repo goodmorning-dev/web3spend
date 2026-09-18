@@ -1,12 +1,9 @@
 import { ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import { Cell, Pie, PieChart } from 'recharts'
 import type { CategoryBucket } from '@/analyzers'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart'
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
+import { cn } from '@/lib/utils'
 import { formatMoney, formatPercent } from '@/utils/format'
 
 interface CategoryBreakdownProps {
@@ -77,6 +74,8 @@ function ViewAllButton({ onClick }: { onClick: () => void }) {
 
 /** MVP-PLAN §5: sorted spend by category, from cleared purchases only. */
 function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+
   if (buckets.length === 0) {
     return (
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
@@ -130,14 +129,6 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
             className="mx-auto aspect-square h-[190px] w-[190px]"
           >
             <PieChart>
-              <ChartTooltip
-                isAnimationActive={false}
-                content={
-                  <ChartTooltipContent
-                    formatter={(value) => formatMoney(Math.round(Number(value) * 100), currency)}
-                  />
-                }
-              />
               <Pie
                 data={data}
                 dataKey="spendMinor"
@@ -147,23 +138,52 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
                 paddingAngle={2.5}
                 strokeWidth={2}
                 isAnimationActive={false}
+                onMouseEnter={(_, index) => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
               >
-                {data.map((entry) => (
-                  <Cell key={entry.categoryKey} fill={entry.fill} />
+                {data.map((entry, index) => (
+                  <Cell
+                    key={entry.categoryKey}
+                    fill={entry.fill}
+                    className="cursor-pointer transition-opacity"
+                    fillOpacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.32}
+                  />
                 ))}
               </Pie>
             </PieChart>
           </ChartContainer>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-xl font-semibold tabular-nums">
-              {formatMoney(totalSpendMinor, currency)}
-            </span>
-            <span className="text-[11.5px] font-medium text-text-faint">Total spent</span>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+            {hoveredIndex === null ? (
+              <>
+                <span className="text-xl font-semibold tabular-nums">
+                  {formatMoney(totalSpendMinor, currency)}
+                </span>
+                <span className="text-[11.5px] font-medium text-text-faint">Total spent</span>
+              </>
+            ) : (
+              <>
+                <span className="text-xl font-semibold tabular-nums">
+                  {formatMoney(visibleBuckets[hoveredIndex].spendMinor, currency)}
+                </span>
+                <span className="w-full truncate text-[11.5px] font-medium text-text-faint">
+                  {visibleBuckets[hoveredIndex].category} ·{' '}
+                  {formatPercent(visibleBuckets[hoveredIndex].share * 100, 0)}
+                </span>
+              </>
+            )}
           </div>
         </div>
         <ul className="flex w-full min-w-0 flex-col gap-2">
           {visibleBuckets.map((bucket, index) => (
-            <li key={bucket.category} className="flex items-center gap-2 text-sm">
+            <li
+              key={bucket.category}
+              className={cn(
+                '-mx-1.5 flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-sm transition-colors',
+                hoveredIndex === index && 'bg-muted',
+              )}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
               <span
                 className="size-2.5 shrink-0 rounded-[2px]"
                 style={{

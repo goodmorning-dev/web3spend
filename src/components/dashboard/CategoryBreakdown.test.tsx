@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { CategoryBucket } from '@/analyzers'
@@ -135,6 +135,60 @@ describe('CategoryBreakdown', () => {
     render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     expect(screen.getByText(longCategory)).toHaveAttribute('title', longCategory)
+  })
+
+  function donutCenterText(): string {
+    return document.querySelector('.pointer-events-none.absolute')!.textContent!
+  }
+
+  it('highlights a hovered category row and swaps the donut center to its amount and share, matching the design reference (no tooltip)', async () => {
+    const user = userEvent.setup()
+    const buckets: CategoryBucket[] = [
+      { category: 'Food', spendMinor: 700, share: 0.7 },
+      { category: 'Transport', spendMinor: 300, share: 0.3 },
+    ]
+
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
+
+    // no floating tooltip anywhere: the reference hovers via highlight only
+    expect(document.querySelector('.recharts-tooltip-wrapper')).not.toBeInTheDocument()
+
+    const totalText = formatMoney(1000, 'EUR').replace(/\s+/g, ' ')
+    const transportText = formatMoney(300, 'EUR').replace(/\s+/g, ' ')
+    expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${totalText}Total spent`)
+
+    const transportRow = screen.getByText('Transport').closest('li')!
+    await user.hover(transportRow)
+
+    expect(transportRow.className).toContain('bg-muted')
+    expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${transportText}Transport · 30%`)
+
+    await user.unhover(transportRow)
+
+    expect(transportRow.className).not.toContain('bg-muted')
+    expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${totalText}Total spent`)
+  })
+
+  it('dims every other pie slice while one is hovered', () => {
+    const buckets: CategoryBucket[] = [
+      { category: 'Food', spendMinor: 700, share: 0.7 },
+      { category: 'Transport', spendMinor: 300, share: 0.3 },
+    ]
+
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
+
+    const sectorsBefore = document.querySelectorAll('.recharts-pie .recharts-sector')
+    expect(sectorsBefore).toHaveLength(2)
+
+    fireEvent.mouseEnter(sectorsBefore[1])
+
+    // re-query rather than reuse the pre-hover NodeList: Recharts replaces
+    // the sector elements on this state update rather than updating them
+    // in place, so the old references would report stale attributes.
+    const sectorsAfter = document.querySelectorAll('.recharts-pie .recharts-sector')
+    expect(donutCenterText().replace(/\s+/g, ' ')).toContain('Transport · 30%')
+    expect(sectorsAfter[0]).toHaveAttribute('fill-opacity', '0.32')
+    expect(sectorsAfter[1]).toHaveAttribute('fill-opacity', '1')
   })
 
   it('calls onViewAll when "View all" is clicked', async () => {
