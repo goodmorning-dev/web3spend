@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import { utils, write, type WorkBook } from 'xlsx'
 import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
@@ -88,9 +89,11 @@ afterEach(async () => {
 
 function renderDashboardPage() {
   return render(
-    <DashboardFiltersProvider>
-      <DashboardPage />
-    </DashboardFiltersProvider>,
+    <MemoryRouter>
+      <DashboardFiltersProvider>
+        <DashboardPage />
+      </DashboardFiltersProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -167,6 +170,10 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Daily spend')).toBeInTheDocument()
     expect(screen.getByText('Spending by category')).toBeInTheDocument()
     expect(screen.getByText('Cat')).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('grid', { name: /calendar heatmap of daily spending in 2026/i }),
+    ).toBeInTheDocument()
   })
 
   it('formats the last import date in UTC, unaffected by the viewer local timezone', async () => {

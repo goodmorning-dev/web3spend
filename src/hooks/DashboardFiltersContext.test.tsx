@@ -83,4 +83,48 @@ describe('useDashboardFilters', () => {
     act(() => result.current.setPeriod(2025, 6))
     expect(result.current.filters).toMatchObject({ year: 2025, month: 6 })
   })
+
+  it('sets year, month, and day together via setDay, even for a month other than the current period', async () => {
+    await db.transactions.put(
+      makeTransaction({ currency: 'EUR', timestampUtc: '2026-03-01T00:00:00.000Z' }),
+    )
+
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.filters).not.toBeNull())
+    expect(result.current.filters).toMatchObject({ year: 2026, month: 3 })
+
+    act(() => result.current.setDay(2026, 7, 15))
+
+    expect(result.current.filters).toMatchObject({ year: 2026, month: 7, day: 15 })
+  })
+
+  it('clears the day filter without disturbing the period it moved to', async () => {
+    await db.transactions.put(
+      makeTransaction({ currency: 'EUR', timestampUtc: '2026-03-01T00:00:00.000Z' }),
+    )
+
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.filters).not.toBeNull())
+
+    act(() => result.current.setDay(2026, 7, 15))
+    act(() => result.current.clearDay())
+
+    expect(result.current.filters).toMatchObject({ year: 2026, month: 7 })
+    expect(result.current.filters?.day).toBeUndefined()
+  })
+
+  it('clears an existing day filter when the period is changed directly', async () => {
+    await db.transactions.put(
+      makeTransaction({ currency: 'EUR', timestampUtc: '2026-03-01T00:00:00.000Z' }),
+    )
+
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.filters).not.toBeNull())
+
+    act(() => result.current.setDay(2026, 3, 15))
+    expect(result.current.filters?.day).toBe(15)
+
+    act(() => result.current.setPeriod(2026, 4))
+    expect(result.current.filters?.day).toBeUndefined()
+  })
 })

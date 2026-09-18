@@ -6,6 +6,10 @@ export interface SelectedFilters {
   cardId?: string
   year: number
   month: number
+  /** Set by picking a day on the activity heatmap (MVP-PLAN §5: "clicking a
+   * cell filters the transaction table to that day"); undefined means no
+   * day-level narrowing beyond the selected period. */
+  day?: number
 }
 
 export interface DashboardFiltersContextValue {
@@ -14,7 +18,16 @@ export interface DashboardFiltersContextValue {
   options: DashboardFilterOptions | undefined
   setCurrency: (currency: string) => void
   setCardId: (cardId: string | undefined) => void
+  /** Changing the period directly is a broader "look at a different month"
+   * action, distinct from picking a day, so it also clears any day filter
+   * rather than leaving a day selected that may no longer be in view. */
   setPeriod: (year: number, month: number) => void
+  /** The heatmap spans a full year, so a selected day can fall outside the
+   * currently selected month; this moves the period to match it, keeping
+   * the period control and the day filter always consistent with each
+   * other. Currency and card selection are left untouched. */
+  setDay: (year: number, month: number, day: number) => void
+  clearDay: () => void
 }
 
 const DashboardFiltersContext = createContext<DashboardFiltersContextValue | null>(null)
@@ -48,7 +61,9 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     options,
     setCurrency: (currency) => setOverrides((prev) => ({ ...prev, currency })),
     setCardId: (cardId) => setOverrides((prev) => ({ ...prev, cardId })),
-    setPeriod: (year, month) => setOverrides((prev) => ({ ...prev, year, month })),
+    setPeriod: (year, month) => setOverrides((prev) => ({ ...prev, year, month, day: undefined })),
+    setDay: (year, month, day) => setOverrides((prev) => ({ ...prev, year, month, day })),
+    clearDay: () => setOverrides((prev) => ({ ...prev, day: undefined })),
   }
 
   return (

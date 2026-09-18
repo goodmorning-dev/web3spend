@@ -1,12 +1,21 @@
 import { useState } from 'react'
-import { aggregateByCategory, bucketByDay, summarizeTransactions } from '@/analyzers'
+import { useNavigate } from 'react-router-dom'
+import {
+  aggregateByCategory,
+  bucketByDay,
+  computeYearActivity,
+  summarizeTransactions,
+} from '@/analyzers'
 import ImportFlow from '@/components/ImportFlow'
+import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap'
 import CategoryBreakdown from '@/components/dashboard/CategoryBreakdown'
 import KpiRow from '@/components/dashboard/KpiRow'
 import SpendChart from '@/components/dashboard/SpendChart'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
+import { useYearFilteredTransactions } from '@/hooks/useYearFilteredTransactions'
+import { formatUtcDateKey } from '@/utils/dates'
 
 /**
  * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
@@ -29,9 +38,11 @@ function formatUtcDate(iso: string): string {
  * currency/card/period filters (MVP-PLAN §5).
  */
 function DashboardPage() {
+  const navigate = useNavigate()
   const overallSummary = useDashboardSummary()
-  const { filters } = useDashboardFilters()
+  const { filters, setDay } = useDashboardFilters()
   const filteredTransactions = useFilteredTransactions(filters)
+  const yearFilteredTransactions = useYearFilteredTransactions(filters)
   // Set once a file finishes processing in this component's lifetime, so a
   // first import's result (including any unsupported-row warnings) stays on
   // screen instead of being unmounted the instant `hasData` flips to true.
@@ -42,8 +53,10 @@ function DashboardPage() {
   }
 
   const hasData = overallSummary.transactionCount > 0
+  const periodDataReady =
+    filters !== null && filteredTransactions !== undefined && yearFilteredTransactions !== undefined
 
-  if (hasData && !justImported && (!filters || filteredTransactions === undefined)) {
+  if (hasData && !justImported && !periodDataReady) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
   }
 
@@ -59,30 +72,46 @@ function DashboardPage() {
         </section>
       )}
 
-      {hasData && filters && filteredTransactions !== undefined && (
-        <div className="flex flex-col gap-4">
-          <KpiRow
-            summary={summarizeTransactions(filteredTransactions)}
-            currency={filters.currency}
-          />
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
-            <SpendChart
-              buckets={bucketByDay(filteredTransactions, filters.year, filters.month)}
+      {hasData &&
+        periodDataReady &&
+        filters &&
+        filteredTransactions &&
+        yearFilteredTransactions && (
+          <div className="flex flex-col gap-4">
+            <KpiRow
+              summary={summarizeTransactions(filteredTransactions)}
               currency={filters.currency}
             />
-            <CategoryBreakdown
-              buckets={aggregateByCategory(filteredTransactions)}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
+              <SpendChart
+                buckets={bucketByDay(filteredTransactions, filters.year, filters.month)}
+                currency={filters.currency}
+              />
+              <CategoryBreakdown
+                buckets={aggregateByCategory(filteredTransactions)}
+                currency={filters.currency}
+              />
+            </div>
+            <ActivityHeatmap
+              activity={computeYearActivity(yearFilteredTransactions, filters.year)}
+              year={filters.year}
               currency={filters.currency}
+              selectedDateKey={
+                filters.day ? formatUtcDateKey(filters.year, filters.month, filters.day) : null
+              }
+              onSelectDay={(year, month, day) => {
+                setDay(year, month, day)
+                navigate('/app/transactions')
+              }}
             />
+            <p className="text-xs text-text-faint">
+              {overallSummary.latestImportedAt && (
+                <>Last import: {formatUtcDate(overallSummary.latestImportedAt)} (UTC). </>
+              )}
+              The transaction table is coming soon.
+            </p>
           </div>
-          <p className="text-xs text-text-faint">
-            {overallSummary.latestImportedAt && (
-              <>Last import: {formatUtcDate(overallSummary.latestImportedAt)} (UTC). </>
-            )}
-            The activity heatmap and transaction table are coming soon.
-          </p>
-        </div>
-      )}
+        )}
 
       {(!hasData || justImported) && <ImportFlow onImported={() => setJustImported(true)} />}
     </div>
