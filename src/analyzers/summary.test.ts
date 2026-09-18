@@ -126,4 +126,32 @@ describe('summarizeTransactions', () => {
 
     expect(summary.clearedCashbackMinor).toBe(20)
   })
+
+  it('marks cashback incomplete when any cleared purchase has a mismatched cashback currency', () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ id: '1', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 20 }),
+      makeTransaction({ id: '2', currency: 'EUR', cashbackCurrency: 'USD', cashbackMinor: 30 }),
+    ])
+
+    expect(summary.cashbackComplete).toBe(false)
+  })
+
+  it('marks cashback complete when every cleared purchase has a matching cashback currency', () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ id: '1', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 20 }),
+      makeTransaction({ id: '2', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 30 }),
+    ])
+
+    expect(summary.cashbackComplete).toBe(true)
+  })
+
+  it('marks cashback complete when there is no cleared spend at all, unlike effectiveCashbackPct', () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ status: 'PENDING' }),
+      makeTransaction({ status: 'CANCELLED' }),
+    ])
+
+    expect(summary.effectiveCashbackPct).toBeNull()
+    expect(summary.cashbackComplete).toBe(true)
+  })
 })

@@ -22,8 +22,16 @@ function KpiRow({ summary, currency }: KpiRowProps) {
       <KpiCard
         icon={<TrendingUp className="size-5" />}
         label="Cashback earned"
-        value={formatMoney(summary.clearedCashbackMinor, currency)}
-        hint="recorded on cleared purchases"
+        value={
+          summary.cashbackComplete
+            ? formatMoney(summary.clearedCashbackMinor, currency)
+            : 'Unavailable'
+        }
+        hint={
+          summary.cashbackComplete
+            ? 'recorded on cleared purchases'
+            : 'unavailable: some cleared purchases recorded cashback in another currency'
+        }
         tone="positive"
       />
       <KpiCard

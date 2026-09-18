@@ -5,7 +5,15 @@ import { hasCompatibleCashbackCurrency, isEligiblePurchase } from './eligibility
 export interface PeriodSummary {
   clearedSpendMinor: number
   clearedCount: number
+  /** Sums only cashback reported in the same currency as its purchase; see
+   * `cashbackComplete` below for whether that covers every cleared purchase. */
   clearedCashbackMinor: number
+  /** false when at least one cleared purchase's cashback currency didn't
+   * match its spend currency, so `clearedCashbackMinor` excludes it and
+   * understates the real total. A caller must not infer this from
+   * `effectiveCashbackPct` being null, since that also happens with zero
+   * cleared spend. */
+  cashbackComplete: boolean
   /** null ("unavailable") rather than 0 when there's no cleared spend to divide by, or when
    * cashback couldn't be safely combined across currencies. */
   effectiveCashbackPct: number | null
@@ -61,6 +69,7 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
     clearedSpendMinor,
     clearedCount,
     clearedCashbackMinor,
+    cashbackComplete: !cashbackCurrencyMismatch,
     effectiveCashbackPct:
       !cashbackCurrencyMismatch && clearedSpendMinor > 0
         ? (clearedCashbackMinor / clearedSpendMinor) * 100
