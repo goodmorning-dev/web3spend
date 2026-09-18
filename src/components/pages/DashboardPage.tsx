@@ -18,9 +18,10 @@ import { useYearFilteredTransactions } from '@/hooks/useYearFilteredTransactions
 import { formatUtcDate, formatUtcDateKey } from '@/utils/dates'
 
 /**
- * The charts, heatmap, and transaction table land in the rest of Milestone 2
- * (TECHNICAL-PLAN §13); the KPI row already reflects the shared
- * currency/card/period filters (MVP-PLAN §5).
+ * The Milestone 2 dashboard: KPIs, the daily spend and category charts, and
+ * the activity heatmap, all scoped to the shared currency/card/period
+ * filters (MVP-PLAN §5). Selecting a heatmap day moves to the full
+ * transaction table on its own page, scoped to that day.
  */
 function DashboardPage() {
   const navigate = useNavigate()
@@ -89,12 +90,11 @@ function DashboardPage() {
                 navigate('/app/transactions')
               }}
             />
-            <p className="text-xs text-text-faint">
-              {overallSummary.latestImportedAt && (
-                <>Last import: {formatUtcDate(overallSummary.latestImportedAt)} (UTC). </>
-              )}
-              The transaction table is coming soon.
-            </p>
+            {overallSummary.latestImportedAt && (
+              <p className="text-xs text-text-faint">
+                Last import: {formatUtcDate(overallSummary.latestImportedAt)} (UTC).
+              </p>
+            )}
           </div>
         )}
 
