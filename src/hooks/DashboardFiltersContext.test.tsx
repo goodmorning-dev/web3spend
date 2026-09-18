@@ -127,4 +127,63 @@ describe('useDashboardFilters', () => {
     act(() => result.current.setPeriod(2026, 4))
     expect(result.current.filters?.day).toBeUndefined()
   })
+
+  it('resetFilters clears a stale card override so data re-imported with new IDs is not silently hidden', async () => {
+    // reproduces: select a card, delete all data, re-import (which assigns
+    // fresh card IDs) - without a reset, the old card's ID lingers as an
+    // override and filters out every newly imported transaction, since
+    // none of them belong to a card ID that exists anymore.
+    await db.cards.put({
+      id: 'card-old',
+      last4: '1234',
+      cardHolderKey: 'jane doe',
+      label: 'Old Card',
+    })
+    await db.transactions.put(
+      makeTransaction({
+        cardId: 'card-old',
+        currency: 'EUR',
+        timestampUtc: '2026-03-01T00:00:00.000Z',
+      }),
+    )
+
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.filters).not.toBeNull())
+
+    act(() => result.current.setCardId('card-old'))
+    expect(result.current.filters?.cardId).toBe('card-old')
+
+    // simulate "delete everything, then re-import": the old card and its
+    // transaction are gone, replaced by a transaction under a brand new
+    // card ID, exactly as a fresh import would produce
+    await resetDatabase()
+    await db.cards.put({
+      id: 'card-new',
+      last4: '5678',
+      cardHolderKey: 'jane doe',
+      label: 'New Card',
+    })
+    await db.transactions.put(
+      makeTransaction({
+        id: 'txn-2',
+        cardId: 'card-new',
+        currency: 'EUR',
+        timestampUtc: '2026-04-01T00:00:00.000Z',
+      }),
+    )
+
+    act(() => result.current.resetFilters())
+
+    // a longer timeout than the default: this waits on the same live query
+    // resolving twice in a row (once for the reset-to-empty-data state,
+    // once for the re-imported data), which can occasionally take a beat
+    // longer than 1s under a loaded test run.
+    await waitFor(
+      () => {
+        expect(result.current.filters).toMatchObject({ currency: 'EUR', year: 2026, month: 4 })
+        expect(result.current.filters?.cardId).toBeUndefined()
+      },
+      { timeout: 3000 },
+    )
+  })
 })

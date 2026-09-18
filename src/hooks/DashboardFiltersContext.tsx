@@ -28,6 +28,13 @@ export interface DashboardFiltersContextValue {
    * other. Currency and card selection are left untouched. */
   setDay: (year: number, month: number, day: number) => void
   clearDay: () => void
+  /** Clears every override back to whatever the data itself defaults to.
+   * A stale card/currency/period override survives on its own even once
+   * the data it referred to is gone, so after deleting all local data a
+   * caller must reset explicitly; otherwise a re-import that assigns new
+   * card IDs would still get filtered by the deleted card's old ID and
+   * silently appear empty. */
+  resetFilters: () => void
 }
 
 const DashboardFiltersContext = createContext<DashboardFiltersContextValue | null>(null)
@@ -64,6 +71,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     setPeriod: (year, month) => setOverrides((prev) => ({ ...prev, year, month, day: undefined })),
     setDay: (year, month, day) => setOverrides((prev) => ({ ...prev, year, month, day })),
     clearDay: () => setOverrides((prev) => ({ ...prev, day: undefined })),
+    resetFilters: () => setOverrides({}),
   }
 
   return (

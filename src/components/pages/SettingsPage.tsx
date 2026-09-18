@@ -12,6 +12,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { deleteAllData } from '@/storage/deleteAllData'
 
 /**
@@ -21,11 +22,27 @@ import { deleteAllData } from '@/storage/deleteAllData'
  * warn about beyond that.
  */
 function SettingsPage() {
+  const { resetFilters } = useDashboardFilters()
   const [deleted, setDeleted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleConfirmDelete() {
-    await deleteAllData()
-    setDeleted(true)
+    setError(null)
+    try {
+      await deleteAllData()
+      // A card/currency/period override selected before deleting would
+      // otherwise survive as a stale filter; a later re-import assigns new
+      // card IDs, so that leftover override would silently filter out
+      // every transaction it produces.
+      resetFilters()
+      setDeleted(true)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `We couldn't delete your data: ${err.message}. Nothing was changed; you can try again.`
+          : "We couldn't delete your data. Nothing was changed; you can try again.",
+      )
+    }
   }
 
   return (
@@ -72,6 +89,12 @@ function SettingsPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        )}
+
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
         )}
       </section>
     </div>
