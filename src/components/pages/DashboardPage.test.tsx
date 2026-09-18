@@ -167,6 +167,10 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Daily spend')).toBeInTheDocument()
     expect(screen.getByText('Spending by category')).toBeInTheDocument()
     expect(screen.getByText('Cat')).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('img', { name: /calendar heatmap of daily spending in 2026/i }),
+    ).toBeInTheDocument()
   })
 
   it('formats the last import date in UTC, unaffected by the viewer local timezone', async () => {
