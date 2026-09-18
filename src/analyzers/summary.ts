@@ -4,6 +4,7 @@ import { hasCompatibleCashbackCurrency, isEligiblePurchase } from './eligibility
 
 export interface PeriodSummary {
   clearedSpendMinor: number
+  clearedCount: number
   clearedCashbackMinor: number
   /** null ("unavailable") rather than 0 when there's no cleared spend to divide by, or when
    * cashback couldn't be safely combined across currencies. */
@@ -26,6 +27,7 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
   assertSingleCurrency(transactions)
 
   let clearedSpendMinor = 0
+  let clearedCount = 0
   let clearedCashbackMinor = 0
   let cashbackCurrencyMismatch = false
   let pendingSpendMinor = 0
@@ -47,6 +49,7 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
     }
 
     clearedSpendMinor += transaction.amountMinor
+    clearedCount += 1
     if (hasCompatibleCashbackCurrency(transaction)) {
       clearedCashbackMinor += transaction.cashbackMinor
     } else {
@@ -56,6 +59,7 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
 
   return {
     clearedSpendMinor,
+    clearedCount,
     clearedCashbackMinor,
     effectiveCashbackPct:
       !cashbackCurrencyMismatch && clearedSpendMinor > 0

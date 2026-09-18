@@ -32,9 +32,21 @@ describe('summarizeTransactions', () => {
     ])
 
     expect(summary.clearedSpendMinor).toBe(3000)
+    expect(summary.clearedCount).toBe(2)
     expect(summary.clearedCashbackMinor).toBe(50)
     // 50/3000 * 100, not an average of each row's own rate (3% and 1%)
     expect(summary.effectiveCashbackPct).toBeCloseTo((50 / 3000) * 100)
+  })
+
+  it('does not count a refund-like row, a pending row, or a cancelled row toward clearedCount', () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ id: '1', status: 'CLEARED', amountMinor: 1000 }),
+      makeTransaction({ id: '2', status: 'CLEARED', amountMinor: -400 }),
+      makeTransaction({ id: '3', status: 'PENDING' }),
+      makeTransaction({ id: '4', status: 'CANCELLED' }),
+    ])
+
+    expect(summary.clearedCount).toBe(1)
   })
 
   it('reports unavailable (null), not 0%, when there is no cleared spend', () => {

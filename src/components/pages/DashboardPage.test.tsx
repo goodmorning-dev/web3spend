@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { utils, write, type WorkBook } from 'xlsx'
+import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import DashboardPage from './DashboardPage'
@@ -85,15 +86,23 @@ afterEach(async () => {
   }
 })
 
+function renderDashboardPage() {
+  return render(
+    <DashboardFiltersProvider>
+      <DashboardPage />
+    </DashboardFiltersProvider>,
+  )
+}
+
 describe('DashboardPage', () => {
   it('shows the import prompt when there is no local data', async () => {
-    render(<DashboardPage />)
+    renderDashboardPage()
     expect(
       await screen.findByRole('heading', { name: /import your etherfi export/i }),
     ).toBeInTheDocument()
   })
 
-  it('shows a data summary once transactions exist', async () => {
+  it('shows the KPI row, scoped to the default (most recent) period, once transactions exist', async () => {
     await db.cards.put({
       id: 'card-1',
       last4: '1234',
@@ -146,22 +155,24 @@ describe('DashboardPage', () => {
       rowCounts: { added: 2, updated: 0, unsupported: 0 },
     })
 
-    render(<DashboardPage />)
+    renderDashboardPage()
 
-    expect(await screen.findByRole('heading', { name: /your data/i })).toBeInTheDocument()
-    expect(screen.getByText('2 transactions imported.')).toBeInTheDocument()
+    expect(await screen.findByText('Total spent')).toBeInTheDocument()
+    expect(screen.getByText('Cashback earned')).toBeInTheDocument()
+    expect(screen.getByText('Effective cashback')).toBeInTheDocument()
+    expect(screen.getByText('across 2 cleared purchases')).toBeInTheDocument()
   })
 
-  it('formats the observed transaction range in UTC, unaffected by the viewer local timezone', async () => {
-    const timestampUtc = '2026-01-31T23:30:00.000Z'
+  it('formats the last import date in UTC, unaffected by the viewer local timezone', async () => {
+    const importedAt = '2026-01-31T23:30:00.000Z'
     const dateFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' } as const
 
     process.env.TZ = 'Pacific/Kiritimati' // UTC+14: far enough ahead to flip the calendar day
-    const correctUtcText = new Date(timestampUtc).toLocaleDateString(undefined, {
+    const correctUtcText = new Date(importedAt).toLocaleDateString(undefined, {
       ...dateFormatOptions,
       timeZone: 'UTC',
     })
-    const wrongLocalText = new Date(timestampUtc).toLocaleDateString(undefined, dateFormatOptions)
+    const wrongLocalText = new Date(importedAt).toLocaleDateString(undefined, dateFormatOptions)
     expect(correctUtcText).not.toBe(wrongLocalText)
 
     await db.cards.put({
@@ -173,7 +184,7 @@ describe('DashboardPage', () => {
     await db.transactions.put({
       id: 'txn-1',
       cardId: 'card-1',
-      timestampUtc,
+      timestampUtc: '2026-01-15T00:00:00.000Z',
       type: 'card_spend',
       description: 'A',
       status: 'CLEARED',
@@ -188,9 +199,16 @@ describe('DashboardPage', () => {
       identityKey: 'k1',
       importId: 'import-1',
     })
+    await db.imports.put({
+      id: 'import-1',
+      fileHash: 'hash',
+      importedAt,
+      parserVersion: '1',
+      rowCounts: { added: 1, updated: 0, unsupported: 0 },
+    })
 
-    render(<DashboardPage />)
-    await screen.findByRole('heading', { name: /your data/i })
+    renderDashboardPage()
+    await screen.findByText('Total spent')
 
     expect(document.body.textContent).toContain(correctUtcText)
     expect(document.body.textContent).not.toContain(wrongLocalText)
@@ -198,14 +216,14 @@ describe('DashboardPage', () => {
 
   it('keeps the import result, including unsupported-row warnings, visible once the first import completes', async () => {
     const user = userEvent.setup()
-    render(<DashboardPage />)
+    renderDashboardPage()
 
     await screen.findByRole('heading', { name: /import your etherfi export/i })
 
     const input = screen.getByLabelText(/choose an xlsx file/i)
     await user.upload(input, toFile(buildWorkbookWithOneUnsupportedRow()))
 
-    expect(await screen.findByRole('heading', { name: /your data/i })).toBeInTheDocument()
+    expect(await screen.findByText('Total spent')).toBeInTheDocument()
     expect(screen.getByText('1 added, 0 updated.')).toBeInTheDocument()
     expect(screen.getByText(/1 row could not be imported/i)).toBeInTheDocument()
   })

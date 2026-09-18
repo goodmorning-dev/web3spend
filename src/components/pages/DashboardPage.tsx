@@ -1,6 +1,10 @@
 import { useState } from 'react'
+import { summarizeTransactions } from '@/analyzers'
 import ImportFlow from '@/components/ImportFlow'
+import KpiRow from '@/components/dashboard/KpiRow'
+import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
+import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 
 /**
  * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
@@ -18,22 +22,28 @@ function formatUtcDate(iso: string): string {
 }
 
 /**
- * The M1 stand-in for the real Dashboard: enough to prove import, upsert,
- * and restore-on-reopen work end to end. KPIs, charts, the heatmap, and the
- * transaction table land in the rest of Milestone 2 (TECHNICAL-PLAN §13).
+ * The charts, heatmap, and transaction table land in the rest of Milestone 2
+ * (TECHNICAL-PLAN §13); the KPI row already reflects the shared
+ * currency/card/period filters (MVP-PLAN §5).
  */
 function DashboardPage() {
-  const summary = useDashboardSummary()
+  const overallSummary = useDashboardSummary()
+  const { filters } = useDashboardFilters()
+  const filteredTransactions = useFilteredTransactions(filters)
   // Set once a file finishes processing in this component's lifetime, so a
   // first import's result (including any unsupported-row warnings) stays on
   // screen instead of being unmounted the instant `hasData` flips to true.
   const [justImported, setJustImported] = useState(false)
 
-  if (summary === undefined) {
+  if (overallSummary === undefined) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
   }
 
-  const hasData = summary.transactionCount > 0
+  const hasData = overallSummary.transactionCount > 0
+
+  if (hasData && !justImported && (!filters || filteredTransactions === undefined)) {
+    return <p className="text-sm text-muted-foreground">Loading...</p>
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,28 +57,19 @@ function DashboardPage() {
         </section>
       )}
 
-      {hasData && (
-        <section className="flex flex-col gap-2">
-          <h1 className="font-heading text-xl font-semibold">Your data</h1>
-          <p className="text-sm text-muted-foreground">
-            {summary.transactionCount} transaction{summary.transactionCount === 1 ? '' : 's'}{' '}
-            imported.
+      {hasData && filters && filteredTransactions !== undefined && (
+        <div className="flex flex-col gap-4">
+          <KpiRow
+            summary={summarizeTransactions(filteredTransactions)}
+            currency={filters.currency}
+          />
+          <p className="text-xs text-text-faint">
+            {overallSummary.latestImportedAt && (
+              <>Last import: {formatUtcDate(overallSummary.latestImportedAt)} (UTC). </>
+            )}
+            Charts, the activity heatmap, and the transaction table are coming soon.
           </p>
-          {summary.earliestTimestampUtc && summary.latestTimestampUtc && (
-            <p className="text-sm text-muted-foreground">
-              Observed transactions from {formatUtcDate(summary.earliestTimestampUtc)} to{' '}
-              {formatUtcDate(summary.latestTimestampUtc)} (UTC).
-            </p>
-          )}
-          {summary.latestImportedAt && (
-            <p className="text-sm text-muted-foreground">
-              Last import: {formatUtcDate(summary.latestImportedAt)} (UTC).
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground">
-            KPIs, charts, and the transaction table are coming soon.
-          </p>
-        </section>
+        </div>
       )}
 
       {(!hasData || justImported) && <ImportFlow onImported={() => setJustImported(true)} />}
