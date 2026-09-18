@@ -100,6 +100,34 @@ describe('CategoryBreakdown', () => {
     expect(screen.getByText(formatMoney(1000, 'EUR').replace(/\s+/g, ' '))).toBeInTheDocument()
   })
 
+  it('never gives "Other" the same color as the first category (they sit next to each other in the pie)', () => {
+    const buckets: CategoryBucket[] = [
+      { category: 'Food', spendMinor: 500, share: 0.5 },
+      { category: 'Shopping', spendMinor: 200, share: 0.2 },
+      { category: 'Transport', spendMinor: 100, share: 0.1 },
+      { category: 'Health', spendMinor: 80, share: 0.08 },
+      { category: 'Utilities', spendMinor: 70, share: 0.07 },
+      { category: 'Entertainment', spendMinor: 30, share: 0.03 },
+      { category: 'Subscriptions', spendMinor: 20, share: 0.02 },
+    ]
+
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
+
+    function swatchColorFor(category: string): string {
+      return (screen.getByText(category).previousElementSibling as HTMLElement).style
+        .backgroundColor
+    }
+
+    const colors = ['Food', 'Shopping', 'Transport', 'Health', 'Utilities'].map(swatchColorFor)
+    const otherColor = swatchColorFor('Other')
+
+    // Other is the last slice, adjacent to both the first slice (pie wraps
+    // around) and the one right before it; a repeated color is fine
+    // elsewhere (they aren't neighbors), but not for either of these two.
+    expect(otherColor).not.toBe(colors[0])
+    expect(otherColor).not.toBe(colors[colors.length - 1])
+  })
+
   it('shows the full category name on hover via a title attribute, even when truncated', () => {
     const longCategory = 'Service Stations (with or without Ancillary Services)'
     const buckets: CategoryBucket[] = [{ category: longCategory, spendMinor: 100, share: 1 }]

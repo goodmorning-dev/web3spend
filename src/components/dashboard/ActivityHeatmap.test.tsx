@@ -56,6 +56,37 @@ describe('ActivityHeatmap', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('renders the tooltip outside the scrollable grid wrapper, so it never gets clipped by it', async () => {
+    // The grid wrapper needs overflow-x-auto for wide/narrow screens, but
+    // setting only overflow-x forces overflow-y's computed value to 'auto'
+    // too (a CSS spec quirk), which would silently clip a tooltip nested
+    // inside it for any cell near the top of the grid, where the tooltip
+    // (anchored above the cell) pokes above the wrapper's own top edge.
+    const user = userEvent.setup()
+    const activity = makeYearActivity(2026)
+    activity[3] = { key: '2026-01-04', spendMinor: 1200, level: 2 } // day-of-year index 3, row 0
+
+    render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
+
+    const cell = document.getElementById('heatmap-day-3')!
+    await user.hover(cell)
+
+    const tooltipText = screen.getByText(`${formatMoney(1200, 'EUR')} spent`.replace(/\s+/g, ' '))
+    const scrollWrapper = cell.closest('svg')!.parentElement!
+    expect(scrollWrapper.className).toContain('overflow-x-auto')
+    expect(scrollWrapper.contains(tooltipText)).toBe(false)
+  })
+
+  it('shows a currency-scoped description under the Activity title', () => {
+    const activity = makeYearActivity(2026)
+
+    render(<ActivityHeatmap activity={activity} year={2026} currency="USD" onSelectDay={vi.fn()} />)
+
+    expect(
+      screen.getByText('Daily spend, USD · darker means more spent that day'),
+    ).toBeInTheDocument()
+  })
+
   it('calls onSelectDay with the year, month, and day for the clicked cell', async () => {
     const user = userEvent.setup()
     const activity = makeYearActivity(2026)

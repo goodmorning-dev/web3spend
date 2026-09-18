@@ -15,18 +15,30 @@ interface CategoryBreakdownProps {
   onViewAll: () => void
 }
 
-const PALETTE = [
+// Reserved for a real category so it's never reused for "Other" too: with
+// a 5-color palette and up to 5 real categories + 1 "Other" slice (6 total),
+// naively cycling `index % 5` would give the 6th slice (Other, last) the
+// same color as the 1st, and a pie's last and first slices sit next to each
+// other. "Other" always gets OTHER_COLOR instead; real categories cycle
+// through the remaining 4 colors when Other is present, or all 5 when it
+// isn't (in which case 5 slices exactly fill the palette with no repeats).
+const REAL_CATEGORY_PALETTE = [
   'var(--color-chart-1)',
   'var(--color-chart-2)',
   'var(--color-chart-3)',
   'var(--color-chart-4)',
-  'var(--color-chart-5)',
 ]
+const FULL_PALETTE = [...REAL_CATEGORY_PALETTE, 'var(--color-chart-5)']
+const OTHER_COLOR = 'var(--color-chart-5)'
 
 const MAX_VISIBLE_CATEGORIES = 5
 
-function colorForIndex(index: number): string {
-  return PALETTE[index % PALETTE.length]
+function colorForVisibleIndex(index: number, total: number, hasOther: boolean): string {
+  if (hasOther && index === total - 1) {
+    return OTHER_COLOR
+  }
+  const palette = hasOther ? REAL_CATEGORY_PALETTE : FULL_PALETTE
+  return palette[index % palette.length]
 }
 
 /** The donut and list only ever show a handful of slices legibly; beyond
@@ -79,6 +91,7 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
 
   const totalSpendMinor = buckets.reduce((sum, bucket) => sum + bucket.spendMinor, 0)
   const visibleBuckets = rollupTopCategories(buckets)
+  const hasOther = buckets.length > MAX_VISIBLE_CATEGORIES
 
   // Etherfi's raw category text is untrusted and shown as-is (MVP-PLAN §5);
   // it must never become a ChartConfig key, since shadcn's ChartContainer
@@ -89,14 +102,17 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
   const chartConfig = Object.fromEntries(
     visibleBuckets.map((bucket, index) => [
       `category-${index}`,
-      { label: bucket.category, color: colorForIndex(index) },
+      {
+        label: bucket.category,
+        color: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
+      },
     ]),
   ) satisfies ChartConfig
 
   const data = visibleBuckets.map((bucket, index) => ({
     categoryKey: `category-${index}`,
     spendMinor: bucket.spendMinor / 100,
-    fill: colorForIndex(index),
+    fill: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
   }))
 
   return (
@@ -127,6 +143,7 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
                 outerRadius={90}
                 paddingAngle={2.5}
                 strokeWidth={2}
+                isAnimationActive={false}
               >
                 {data.map((entry) => (
                   <Cell key={entry.categoryKey} fill={entry.fill} />
@@ -146,7 +163,9 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
             <li key={bucket.category} className="flex items-center gap-2 text-sm">
               <span
                 className="size-2.5 shrink-0 rounded-[2px]"
-                style={{ backgroundColor: colorForIndex(index) }}
+                style={{
+                  backgroundColor: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
+                }}
                 aria-hidden="true"
               />
               <span className="min-w-0 flex-1 truncate text-text-dim" title={bucket.category}>
