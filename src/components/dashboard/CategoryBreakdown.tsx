@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { Cell, Pie, PieChart } from 'recharts'
 import type { CategoryBucket } from '@/analyzers'
 import {
@@ -11,6 +12,7 @@ import { formatMoney, formatPercent } from '@/utils/format'
 interface CategoryBreakdownProps {
   buckets: CategoryBucket[]
   currency: string
+  onViewAll: () => void
 }
 
 const PALETTE = [
@@ -21,22 +23,62 @@ const PALETTE = [
   'var(--color-chart-5)',
 ]
 
+const MAX_VISIBLE_CATEGORIES = 4
+
 function colorForIndex(index: number): string {
   return PALETTE[index % PALETTE.length]
 }
 
+/** The donut and list only ever show a handful of slices legibly; beyond
+ * `MAX_VISIBLE_CATEGORIES`, the remainder rolls up into a synthetic "Other"
+ * bucket. This is a presentation-only grouping, not a real category
+ * taxonomy (MVP-PLAN §5 still shows Etherfi's raw category text as-is
+ * everywhere else, e.g. the transaction table). */
+function rollupTopCategories(buckets: CategoryBucket[]): CategoryBucket[] {
+  if (buckets.length <= MAX_VISIBLE_CATEGORIES) {
+    return buckets
+  }
+  const visible = buckets.slice(0, MAX_VISIBLE_CATEGORIES)
+  const rest = buckets.slice(MAX_VISIBLE_CATEGORIES)
+  return [
+    ...visible,
+    {
+      category: 'Other',
+      spendMinor: rest.reduce((sum, bucket) => sum + bucket.spendMinor, 0),
+      share: rest.reduce((sum, bucket) => sum + bucket.share, 0),
+    },
+  ]
+}
+
+function ViewAllButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline"
+    >
+      View all
+      <ChevronRight className="size-3.5" />
+    </button>
+  )
+}
+
 /** MVP-PLAN §5: sorted spend by category, from cleared purchases only. */
-function CategoryBreakdown({ buckets, currency }: CategoryBreakdownProps) {
+function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownProps) {
   if (buckets.length === 0) {
     return (
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
-        <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
+          <ViewAllButton onClick={onViewAll} />
+        </div>
         <p className="text-sm text-text-faint">No cleared purchases in this period yet.</p>
       </div>
     )
   }
 
   const totalSpendMinor = buckets.reduce((sum, bucket) => sum + bucket.spendMinor, 0)
+  const visibleBuckets = rollupTopCategories(buckets)
 
   // Etherfi's raw category text is untrusted and shown as-is (MVP-PLAN §5);
   // it must never become a ChartConfig key, since shadcn's ChartContainer
@@ -45,13 +87,13 @@ function CategoryBreakdown({ buckets, currency }: CategoryBreakdownProps) {
   // `label` still carries the real category text as plain, auto-escaped
   // React content.
   const chartConfig = Object.fromEntries(
-    buckets.map((bucket, index) => [
+    visibleBuckets.map((bucket, index) => [
       `category-${index}`,
       { label: bucket.category, color: colorForIndex(index) },
     ]),
   ) satisfies ChartConfig
 
-  const data = buckets.map((bucket, index) => ({
+  const data = visibleBuckets.map((bucket, index) => ({
     categoryKey: `category-${index}`,
     spendMinor: bucket.spendMinor / 100,
     fill: colorForIndex(index),
@@ -59,7 +101,10 @@ function CategoryBreakdown({ buckets, currency }: CategoryBreakdownProps) {
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
-      <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
+        <ViewAllButton onClick={onViewAll} />
+      </div>
       <div className="flex flex-col items-center gap-4 sm:flex-row">
         <div className="relative shrink-0">
           <ChartContainer
@@ -96,7 +141,7 @@ function CategoryBreakdown({ buckets, currency }: CategoryBreakdownProps) {
           </div>
         </div>
         <ul className="flex w-full min-w-0 flex-col gap-2">
-          {buckets.map((bucket, index) => (
+          {visibleBuckets.map((bucket, index) => (
             <li key={bucket.category} className="flex items-center gap-2 text-sm">
               <span
                 className="size-2.5 shrink-0 rounded-[2px]"

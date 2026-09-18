@@ -10,3 +10,15 @@ export function formatPercent(value: number | null, fractionDigits = 2): string 
   }
   return `${value.toFixed(fractionDigits)}%`
 }
+
+/** `amount` is already in major currency units (e.g. euros, not cents), for
+ * chart axis labels where full precision (`formatMoney`) would be too wide,
+ * e.g. "€2.8K" instead of "€2,840.00". */
+export function formatCompactMoney(amount: number, currency: string): string {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(amount)
+}
