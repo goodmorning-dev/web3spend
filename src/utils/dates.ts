@@ -46,3 +46,18 @@ export function formatUtcMonthLabel(year: number, month: number): string {
     timeZone: 'UTC',
   })
 }
+
+/**
+ * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
+ * preserved and labeled, never reinterpreted in the viewer's local zone. A
+ * purchase at Jan 31 23:30 UTC must read as Jan 31, not Feb 1 for a viewer
+ * ahead of UTC.
+ */
+export function formatUtcDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}

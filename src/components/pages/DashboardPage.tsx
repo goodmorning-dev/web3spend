@@ -15,22 +15,7 @@ import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import { useYearFilteredTransactions } from '@/hooks/useYearFilteredTransactions'
-import { formatUtcDateKey } from '@/utils/dates'
-
-/**
- * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
- * preserved and labeled, never reinterpreted in the viewer's local zone. A
- * purchase at Jan 31 23:30 UTC must read as Jan 31, not Feb 1 for a viewer
- * ahead of UTC.
- */
-function formatUtcDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  })
-}
+import { formatUtcDate, formatUtcDateKey } from '@/utils/dates'
 
 /**
  * The charts, heatmap, and transaction table land in the rest of Milestone 2

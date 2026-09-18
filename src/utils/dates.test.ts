@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   daysInUtcMonth,
   daysInUtcYear,
+  formatUtcDate,
   formatUtcDateKey,
   formatUtcMonthKey,
   formatUtcMonthLabel,
@@ -93,6 +94,30 @@ describe('formatUtcMonthLabel', () => {
       // and still January everywhere ahead of UTC; this just needs to not throw
       // or silently compute the wrong month under either kind of offset.
       expect(formatUtcMonthLabel(2026, 1)).not.toContain('2025')
+    } finally {
+      if (originalTz === undefined) {
+        delete process.env.TZ
+      } else {
+        process.env.TZ = originalTz
+      }
+    }
+  })
+})
+
+describe('formatUtcDate', () => {
+  it('does not shift to the next day for a viewer ahead of UTC', () => {
+    const originalTz = process.env.TZ
+    process.env.TZ = 'Pacific/Kiritimati' // UTC+14
+    try {
+      const timestampUtc = '2026-01-31T23:30:00.000Z'
+      const expected = new Date(timestampUtc).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC',
+      })
+      expect(formatUtcDate(timestampUtc)).toBe(expected)
+      expect(formatUtcDate(timestampUtc)).not.toContain('Feb')
     } finally {
       if (originalTz === undefined) {
         delete process.env.TZ
