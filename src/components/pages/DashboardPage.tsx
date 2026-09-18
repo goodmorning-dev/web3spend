@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { summarizeTransactions } from '@/analyzers'
+import { aggregateByCategory, bucketByDay, summarizeTransactions } from '@/analyzers'
 import ImportFlow from '@/components/ImportFlow'
+import CategoryBreakdown from '@/components/dashboard/CategoryBreakdown'
 import KpiRow from '@/components/dashboard/KpiRow'
+import SpendChart from '@/components/dashboard/SpendChart'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
@@ -63,11 +65,21 @@ function DashboardPage() {
             summary={summarizeTransactions(filteredTransactions)}
             currency={filters.currency}
           />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
+            <SpendChart
+              buckets={bucketByDay(filteredTransactions, filters.year, filters.month)}
+              currency={filters.currency}
+            />
+            <CategoryBreakdown
+              buckets={aggregateByCategory(filteredTransactions)}
+              currency={filters.currency}
+            />
+          </div>
           <p className="text-xs text-text-faint">
             {overallSummary.latestImportedAt && (
               <>Last import: {formatUtcDate(overallSummary.latestImportedAt)} (UTC). </>
             )}
-            Charts, the activity heatmap, and the transaction table are coming soon.
+            The activity heatmap and transaction table are coming soon.
           </p>
         </div>
       )}
