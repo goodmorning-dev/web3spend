@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { DayActivity } from '@/analyzers'
 import { formatUtcDate } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
@@ -63,6 +63,25 @@ function ActivityHeatmap({
   const [focusedIndex, setFocusedIndex] = useState(() => Math.max(selectedIndex, 0))
   const [hasFocus, setHasFocus] = useState(false)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const clearHoverTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => clearTimeout(clearHoverTimeout.current), [])
+
+  // The 3px gap between cells means a mouse moving between two adjacent
+  // ones briefly crosses neither, firing a mouseleave right before the
+  // next mouseenter; clearing the hover immediately made the tooltip pop
+  // in and out at every cell boundary. Deferring the clear briefly, and
+  // cancelling it if a new cell is hovered in that window, keeps it
+  // visible through a continuous move instead.
+  function hoverDay(index: number) {
+    clearTimeout(clearHoverTimeout.current)
+    setHoveredIndex(index)
+  }
+
+  function scheduleUnhoverDay() {
+    clearTimeout(clearHoverTimeout.current)
+    clearHoverTimeout.current = setTimeout(() => setHoveredIndex(null), 100)
+  }
 
   // Keeps keyboard focus following the selected day (e.g. after it's set
   // from outside, such as clicking a different heatmap) without an effect:
@@ -227,8 +246,8 @@ function ActivityHeatmap({
                   strokeDasharray={isFocused && !isSelected ? '1.5,1.5' : undefined}
                   className="cursor-pointer"
                   onClick={() => selectIndex(index)}
-                  onMouseEnter={() => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
+                  onMouseEnter={() => hoverDay(index)}
+                  onMouseLeave={scheduleUnhoverDay}
                 />
               )
             })}
@@ -263,7 +282,7 @@ function HeatmapTooltip({
 }) {
   return (
     <div
-      className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full rounded-[10px] border border-border bg-secondary px-3 py-2.5 whitespace-nowrap shadow-lg"
+      className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full rounded-[10px] border border-border bg-secondary px-3 py-2.5 whitespace-nowrap shadow-lg transition-[left,top] duration-150 ease-out"
       style={{ left: x, top: y - 10 }}
     >
       <div className="text-[10.5px] font-semibold tracking-[0.06em] text-text-faint uppercase">

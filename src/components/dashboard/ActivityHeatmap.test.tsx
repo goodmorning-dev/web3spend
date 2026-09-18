@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { DayActivity } from '@/analyzers'
@@ -51,9 +51,40 @@ describe('ActivityHeatmap', () => {
     ).toBeInTheDocument()
 
     await user.unhover(cell)
+    // the clear is deliberately debounced (see scheduleUnhoverDay) so
+    // moving between adjacent cells, across the gap between them, doesn't
+    // flicker the tooltip off and back on; it doesn't clear synchronously.
+    await waitFor(() => {
+      expect(
+        screen.queryByText(`${formatMoney(4500, 'EUR')} spent`.replace(/\s+/g, ' ')),
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  it('does not flicker off when moving straight from one cell to an adjacent one', () => {
+    const activity = makeYearActivity(2026)
+    activity[14] = { key: '2026-01-15', spendMinor: 4500, level: 3 } // heatmap-day-14
+    activity[15] = { key: '2026-01-16', spendMinor: 1200, level: 1 } // heatmap-day-15
+
+    render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
+
+    const cellA = document.getElementById('heatmap-day-14')!
+    const cellB = document.getElementById('heatmap-day-15')!
+
+    fireEvent.mouseEnter(cellA)
     expect(
-      screen.queryByText(`${formatMoney(4500, 'EUR')} spent`.replace(/\s+/g, ' ')),
-    ).not.toBeInTheDocument()
+      screen.getByText(`${formatMoney(4500, 'EUR')} spent`.replace(/\s+/g, ' ')),
+    ).toBeInTheDocument()
+
+    // leaving one cell and entering its neighbor right away, as a real
+    // mouse move across the gap between them would, must cancel the
+    // pending clear rather than let the tooltip disappear in between.
+    fireEvent.mouseLeave(cellA)
+    fireEvent.mouseEnter(cellB)
+
+    expect(
+      screen.getByText(`${formatMoney(1200, 'EUR')} spent`.replace(/\s+/g, ' ')),
+    ).toBeInTheDocument()
   })
 
   it('renders the tooltip outside the scrollable grid wrapper, so it never gets clipped by it', async () => {
