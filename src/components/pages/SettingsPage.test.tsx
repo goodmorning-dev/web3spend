@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DashboardFiltersProvider, useDashboardFilters } from '@/hooks/DashboardFiltersContext'
@@ -9,8 +9,23 @@ import SettingsPage from './SettingsPage'
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   return resetDatabase()
 })
+
+function dispatchBeforeInstallPrompt(overrides: Partial<Event> = {}) {
+  const event = new Event('beforeinstallprompt', { cancelable: true })
+  Object.assign(event, { preventDefault: () => {}, ...overrides })
+  window.dispatchEvent(event)
+}
+
+function stubIosSafariUserAgent() {
+  vi.stubGlobal('navigator', {
+    ...window.navigator,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+  })
+}
 
 async function seedSomeData() {
   await db.cards.put({ id: 'card-1', last4: '1234', cardHolderKey: 'jane doe', label: 'Card' })
@@ -65,6 +80,37 @@ function CardFilterProbe() {
 }
 
 describe('SettingsPage', () => {
+  it('shows no install section on a browser that offers neither an install prompt nor is iOS Safari', () => {
+    renderSettingsPage()
+    expect(screen.queryByRole('heading', { name: 'Install Web3Spend' })).not.toBeInTheDocument()
+  })
+
+  it('offers an install button once the browser fires beforeinstallprompt, and installing hides it', async () => {
+    const user = userEvent.setup()
+    const prompt = vi.fn().mockResolvedValue(undefined)
+    const userChoice = Promise.resolve({ outcome: 'accepted' as const })
+    renderSettingsPage()
+
+    act(() => dispatchBeforeInstallPrompt({ prompt, userChoice }))
+
+    expect(await screen.findByRole('button', { name: /install app/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /install app/i }))
+
+    expect(prompt).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Install Web3Spend' })).not.toBeInTheDocument()
+    })
+  })
+
+  it('shows manual Add to Home Screen steps on iOS Safari instead of a button', () => {
+    stubIosSafariUserAgent()
+    renderSettingsPage()
+
+    expect(screen.getByRole('heading', { name: 'Install Web3Spend' })).toBeInTheDocument()
+    expect(screen.getByText(/add to home screen/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /install app/i })).not.toBeInTheDocument()
+  })
+
   it('explains that data is local to this browser before offering to delete it', () => {
     renderSettingsPage()
 
