@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { categoryMergeKey, preferredCategoryLabel } from './category'
+import { categoryMergeKey, displayCategoryLabel } from './category'
 
 describe('categoryMergeKey', () => {
   it('strips a leading MCC code, case-insensitively', () => {
@@ -20,14 +20,14 @@ describe('categoryMergeKey', () => {
   })
 })
 
-describe('preferredCategoryLabel', () => {
-  it('prefers the MCC-coded variant when one is present', () => {
-    expect(
-      preferredCategoryLabel(['Grocery Stores and Supermarkets', '5411 - Grocery Stores and Supermarkets']),
-    ).toBe('5411 - Grocery Stores and Supermarkets')
+describe('displayCategoryLabel', () => {
+  it('strips a leading MCC code for display, preserving case', () => {
+    expect(displayCategoryLabel('5411 - Grocery Stores and Supermarkets')).toBe(
+      'Grocery Stores and Supermarkets',
+    )
   })
 
-  it('falls back to whichever variant was given when none has a code', () => {
-    expect(preferredCategoryLabel(['Bakeries'])).toBe('Bakeries')
+  it('leaves a category with no MCC prefix unchanged', () => {
+    expect(displayCategoryLabel('Bakeries')).toBe('Bakeries')
   })
 })

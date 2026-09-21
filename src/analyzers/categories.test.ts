@@ -95,9 +95,9 @@ describe('aggregateByCategory', () => {
       }),
     ])
 
-    // the MCC-coded label wins as the more specific representative
+    // shown without the code either way
     expect(result).toEqual([
-      { category: '5411 - Grocery Stores and Supermarkets', spendMinor: 4000, share: 1 },
+      { category: 'Grocery Stores and Supermarkets', spendMinor: 4000, share: 1 },
     ])
   })
 })

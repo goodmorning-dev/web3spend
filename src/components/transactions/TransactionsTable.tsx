@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { transactionCashbackPct } from '@/analyzers'
 import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
 import { categoryColorFor } from '@/utils/avatar'
+import { displayCategoryLabel } from '@/utils/category'
 import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
 import { formatMoney, formatPercent, formatSignedCashback, formatSignedSpend } from '@/utils/format'
 
@@ -225,8 +226,10 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
             </div>
             <div className="flex items-center justify-between gap-1.5">
               <p className="flex min-w-0 items-center gap-1 text-xs text-text-faint">
-                <CategoryDot category={transaction.categoryRaw} />
-                <span className="min-w-0 truncate">{transaction.categoryRaw}</span>
+                <CategoryDot category={displayCategoryLabel(transaction.categoryRaw)} />
+                <span className="min-w-0 truncate">
+                  {displayCategoryLabel(transaction.categoryRaw)}
+                </span>
               </p>
               <span className="shrink-0 whitespace-nowrap text-xs text-text-faint">
                 {cardDisplay(cardLastFourById, transaction.cardId)}
@@ -277,8 +280,8 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
                 <td className="py-2 pr-3">{transaction.description}</td>
                 <td className="py-2 pr-3 text-text-dim">
                   <span className="inline-flex items-center gap-1.5">
-                    <CategoryDot category={transaction.categoryRaw} />
-                    {transaction.categoryRaw}
+                    <CategoryDot category={displayCategoryLabel(transaction.categoryRaw)} />
+                    {displayCategoryLabel(transaction.categoryRaw)}
                   </span>
                 </td>
                 <td className="py-2 pr-3 text-text-dim">

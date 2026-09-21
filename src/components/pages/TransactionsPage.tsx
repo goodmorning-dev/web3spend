@@ -7,7 +7,7 @@ import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import type { StandardTransaction } from '@/types/transaction'
-import { categoryMergeKey, preferredCategoryLabel } from '@/utils/category'
+import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
 import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
 const ALL_STATUSES = 'all'
@@ -68,16 +68,15 @@ function TransactionsPage() {
     // Etherfi's export mixes MCC-coded and bare variants of what's
     // otherwise the same category (e.g. "5411 - Grocery Stores and
     // Supermarkets" alongside plain "Grocery Stores and Supermarkets");
-    // grouped here by merge key so they show up as one option, not two.
-    const labelsByKey = new Map<string, Set<string>>()
+    // grouped here by merge key so they show up as one option, not two,
+    // and shown without the code either way.
+    const labelByKey = new Map<string, string>()
     for (const transaction of transactions ?? []) {
       const key = categoryMergeKey(transaction.categoryRaw)
-      const labels = labelsByKey.get(key) ?? new Set<string>()
-      labels.add(transaction.categoryRaw)
-      labelsByKey.set(key, labels)
+      labelByKey.set(key, displayCategoryLabel(transaction.categoryRaw))
     }
-    const options = [...labelsByKey.entries()]
-      .map(([value, labels]) => ({ value, label: preferredCategoryLabel(labels) }))
+    const options = [...labelByKey.entries()]
+      .map(([value, label]) => ({ value, label }))
       .sort((a, b) => a.label.localeCompare(b.label))
     return [{ value: ALL_CATEGORIES, label: 'All categories' }, ...options]
   }, [transactions])

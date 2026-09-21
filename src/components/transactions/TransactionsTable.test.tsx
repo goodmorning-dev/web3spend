@@ -178,6 +178,17 @@ describe('TransactionsTable', () => {
     expect(screen.getAllByText(normalizeWhitespace(formatMoney(500, 'USD')))).toHaveLength(2)
   })
 
+  it('shows a category without its leading MCC code', () => {
+    const transaction = makeTransaction({
+      categoryRaw: '5411 - Grocery Stores and Supermarkets',
+    })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    expect(screen.getAllByText('Grocery Stores and Supermarkets')).toHaveLength(2)
+    expect(screen.queryByText('5411 - Grocery Stores and Supermarkets')).not.toBeInTheDocument()
+  })
+
   it('shows no original-amount disclosure when it matches the settled amount and currency', () => {
     const transaction = makeTransaction({
       amountMinor: 450,
