@@ -16,6 +16,8 @@ function HeroCard() {
       <img
         src={heroCardImage}
         alt="A Web3Spend card, surrounded by callouts for spending insights, recorded cashback, on-device privacy, and support for all currencies"
+        width={1000}
+        height={563}
         className="relative z-10 w-full max-w-full"
       />
     </div>
