@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { transactionCashbackPct } from '@/analyzers'
 import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
 import { categoryColorFor } from '@/utils/avatar'
@@ -110,13 +110,16 @@ interface HoveredDate {
  * give. Fixed positioning (from the hovered cell's own viewport rect)
  * rather than a relative-container offset, since dates sit in a scrollable
  * table with many rows, each of which would otherwise need its own offset
- * math. */
+ * math. Purely a visual reinforcement of the trigger's own `aria-label`
+ * (below): a screen reader gets the full timestamp either way, tooltip
+ * shown or not. */
 function DateTooltip({ hovered }: { hovered: HoveredDate | null }) {
   if (!hovered) {
     return null
   }
   return (
     <div
+      aria-hidden="true"
       className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-[10px] border border-border bg-secondary px-3 py-2.5 whitespace-nowrap shadow-lg"
       style={{ left: hovered.left, top: hovered.top - 8 }}
     >
@@ -137,9 +140,9 @@ function useDateHover() {
 
   useEffect(() => () => clearTimeout(clearTimeoutRef.current), [])
 
-  function showDate(event: MouseEvent<HTMLElement>, iso: string) {
+  function showDate(target: HTMLElement, iso: string) {
     clearTimeout(clearTimeoutRef.current)
-    const rect = event.currentTarget.getBoundingClientRect()
+    const rect = target.getBoundingClientRect()
     setHovered({ iso, left: rect.left + rect.width / 2, top: rect.top })
   }
 
@@ -149,6 +152,37 @@ function useDateHover() {
   }
 
   return { hovered, showDate, scheduleHideDate }
+}
+
+/** The visible short date, focusable and keyboard-reachable so the tooltip
+ * isn't mouse-only, with the full timestamp always available to a screen
+ * reader via `aria-label` regardless of whether the visual tooltip happens
+ * to be showing. */
+function DateCell({
+  transaction,
+  showDate,
+  scheduleHideDate,
+  className,
+}: {
+  transaction: StandardTransaction
+  showDate: (target: HTMLElement, iso: string) => void
+  scheduleHideDate: () => void
+  className: string
+}) {
+  const iso = transaction.timestampUtc
+  return (
+    <button
+      type="button"
+      className={`rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${className}`}
+      aria-label={formatUtcDateTime(iso)}
+      onMouseEnter={(event) => showDate(event.currentTarget, iso)}
+      onMouseLeave={scheduleHideDate}
+      onFocus={(event) => showDate(event.currentTarget, iso)}
+      onBlur={scheduleHideDate}
+    >
+      {formatUtcDate(iso)}
+    </button>
+  )
 }
 
 function cardDisplay(cardLastFourById: Map<string, string>, cardId: string): string {
@@ -210,13 +244,12 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
               </span>
             </div>
             <div className="flex items-center justify-between gap-1.5">
-              <span
+              <DateCell
+                transaction={transaction}
+                showDate={showDate}
+                scheduleHideDate={scheduleHideDate}
                 className="min-w-0 truncate text-xs text-text-faint"
-                onMouseEnter={(event) => showDate(event, transaction.timestampUtc)}
-                onMouseLeave={scheduleHideDate}
-              >
-                {formatUtcDate(transaction.timestampUtc)}
-              </span>
+              />
               <div className="flex shrink-0 items-center gap-1.5">
                 <span className="text-xs tabular-nums text-positive">
                   <CashbackAmount transaction={transaction} />
@@ -270,12 +303,13 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
           <tbody>
             {transactions.map((transaction) => (
               <tr key={transaction.id} className="border-b border-border/60 last:border-0">
-                <td
-                  className="py-2 pr-3 whitespace-nowrap text-text-faint"
-                  onMouseEnter={(event) => showDate(event, transaction.timestampUtc)}
-                  onMouseLeave={scheduleHideDate}
-                >
-                  {formatUtcDate(transaction.timestampUtc)}
+                <td className="py-2 pr-3 whitespace-nowrap text-text-faint">
+                  <DateCell
+                    transaction={transaction}
+                    showDate={showDate}
+                    scheduleHideDate={scheduleHideDate}
+                    className="whitespace-nowrap"
+                  />
                 </td>
                 <td className="py-2 pr-3">{transaction.description}</td>
                 <td className="py-2 pr-3 text-text-dim">

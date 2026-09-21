@@ -142,6 +142,29 @@ describe('TransactionsTable', () => {
     })
   })
 
+  it('makes the exact time reachable by keyboard, and always available to a screen reader', async () => {
+    const iso = '2026-03-15T10:30:45.000Z'
+    const transaction = makeTransaction({ timestampUtc: iso })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    const exactTime = formatUtcDateTime(iso)
+    // a focusable button, not inert text, and its accessible name carries
+    // the full timestamp regardless of whether the visual tooltip is showing
+    const dateButtons = screen.getAllByRole('button', { name: exactTime })
+    expect(dateButtons).toHaveLength(2)
+
+    expect(screen.queryByText(exactTime)).not.toBeInTheDocument()
+
+    fireEvent.focus(dateButtons[0])
+    expect(screen.getByText(exactTime)).toBeInTheDocument()
+
+    fireEvent.blur(dateButtons[0])
+    await waitFor(() => {
+      expect(screen.queryByText(exactTime)).not.toBeInTheDocument()
+    })
+  })
+
   it('shows the effective cashback rate next to the cashback amount', () => {
     // 9 minor units of cashback on 450 minor units of spend is exactly 2%.
     const transaction = makeTransaction({ amountMinor: 450, cashbackMinor: 9, currency: 'EUR' })
