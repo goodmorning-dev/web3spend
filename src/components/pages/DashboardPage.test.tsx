@@ -167,13 +167,18 @@ describe('DashboardPage', () => {
     // the donut chart's center caption in the category breakdown below it.
     expect(screen.getAllByText('Total spent')).toHaveLength(2)
 
-    expect(screen.getByText('Daily spend')).toBeInTheDocument()
+    expect(screen.getByText('Spending this month')).toBeInTheDocument()
     expect(screen.getByText('Spending by category')).toBeInTheDocument()
-    expect(screen.getByText('Cat')).toBeInTheDocument()
+    // "Cat" appears both in the category breakdown list and in the recent
+    // transactions preview below it, one raw category string rendered as-is
+    // in each place (MVP-PLAN §5).
+    expect(screen.getAllByText('Cat').length).toBeGreaterThan(0)
 
     expect(
       screen.getByRole('grid', { name: /calendar heatmap of daily spending in 2026/i }),
     ).toBeInTheDocument()
+
+    expect(screen.getByText('Recent transactions')).toBeInTheDocument()
   })
 
   it('formats the last import date in UTC, unaffected by the viewer local timezone', async () => {

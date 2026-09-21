@@ -33,7 +33,64 @@ function Topbar() {
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5">
+      {/* Phone widths: a deliberate 2-row grid (card+currency, then period)
+          instead of letting flex-wrap break these wherever they happen to
+          fit, plus a full-width import action below rather than wrapping
+          into whatever space is left on the filters' row. */}
+      <div className="flex w-full flex-col gap-2 sm:hidden">
+        {filters && options && (
+          <>
+            <div className="grid grid-cols-[1fr_auto] gap-2">
+              <FilterSelect
+                ariaLabel="Card"
+                icon={<CreditCard className="size-3.5 text-text-faint" />}
+                value={filters.cardId ?? 'all'}
+                onChange={(value) => setCardId(value === 'all' ? undefined : value)}
+                options={[
+                  { value: 'all', label: 'All cards' },
+                  ...options.cards.map((card) => ({ value: card.id, label: card.label })),
+                ]}
+                triggerClassName="w-full"
+              />
+              <FilterSelect
+                ariaLabel="Currency"
+                icon={<Coins className="size-3.5 text-text-faint" />}
+                value={filters.currency}
+                onChange={setCurrency}
+                options={options.currencies.map((currency) => ({
+                  value: currency,
+                  label: currency,
+                }))}
+                triggerClassName="w-auto"
+              />
+            </div>
+            <FilterSelect
+              ariaLabel="Period"
+              icon={<Calendar className="size-3.5 text-text-faint" />}
+              value={`${filters.year}-${filters.month}`}
+              onChange={(value) => {
+                const [year, month] = value.split('-').map(Number)
+                setPeriod(year, month)
+              }}
+              options={options.periods.map((period) => ({
+                value: `${period.year}-${period.month}`,
+                label: formatUtcMonthLabel(period.year, period.month),
+              }))}
+              triggerClassName="w-full"
+            />
+          </>
+        )}
+
+        <Button asChild size="sm" className="w-full">
+          <Link to="/app/import">
+            <Upload className="size-3.5" />
+            Import transactions
+          </Link>
+        </Button>
+      </div>
+
+      {/* sm and up: the original single-row layout, sized to content. */}
+      <div className="hidden flex-wrap items-center gap-2.5 sm:flex">
         {filters && options && (
           <>
             <FilterSelect
@@ -45,6 +102,7 @@ function Topbar() {
                 { value: 'all', label: 'All cards' },
                 ...options.cards.map((card) => ({ value: card.id, label: card.label })),
               ]}
+              triggerClassName="min-w-[150px]"
             />
             <FilterSelect
               ariaLabel="Currency"
@@ -55,6 +113,7 @@ function Topbar() {
                 value: currency,
                 label: currency,
               }))}
+              triggerClassName="min-w-[92px]"
             />
             <FilterSelect
               ariaLabel="Period"
@@ -68,6 +127,7 @@ function Topbar() {
                 value: `${period.year}-${period.month}`,
                 label: formatUtcMonthLabel(period.year, period.month),
               }))}
+              triggerClassName="min-w-[168px]"
             />
           </>
         )}

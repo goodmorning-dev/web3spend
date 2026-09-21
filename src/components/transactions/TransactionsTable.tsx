@@ -1,14 +1,16 @@
 import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
+import { avatarColorFor, categoryColorFor, initialsFor } from '@/utils/avatar'
 import { formatUtcDate } from '@/utils/dates'
-import { formatMoney } from '@/utils/format'
+import { formatMoney, formatSignedCashback, formatSignedSpend } from '@/utils/format'
 
 interface TransactionsTableProps {
   transactions: StandardTransaction[]
-  cardLabelById: Map<string, string>
+  /** cardId -> last4, for the design reference's "•••• 1234" card display. */
+  cardLastFourById: Map<string, string>
 }
 
 const STATUS_LABELS: Record<TransactionStatus, string> = {
-  CLEARED: 'Cleared',
+  CLEARED: 'Settled',
   PENDING: 'Pending',
   CANCELLED: 'Cancelled',
   UNKNOWN: 'Unknown',
@@ -49,20 +51,51 @@ function describeStatus(transaction: StandardTransaction): StatusDisplay {
   return { label: STATUS_LABELS[transaction.status], tone: STATUS_TONE[transaction.status] }
 }
 
-function StatusPill({ transaction }: { transaction: StandardTransaction }) {
+function StatusPill({
+  transaction,
+  compact = false,
+}: {
+  transaction: StandardTransaction
+  /** Tighter padding/gap for the mobile row, which has less room to work with. */
+  compact?: boolean
+}) {
   const { label, tone, hint } = describeStatus(transaction)
   return (
     <span
       title={hint}
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap ${tone}`}
+      className={`inline-flex items-center rounded-full text-[11px] font-medium whitespace-nowrap ${compact ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'} ${tone}`}
     >
+      <span className="size-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
       {label}
     </span>
   )
 }
 
-function cardLabel(cardLabelById: Map<string, string>, cardId: string): string {
-  return cardLabelById.get(cardId) ?? 'Unknown card'
+function MerchantAvatar({ merchant }: { merchant: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[10px] font-semibold text-white"
+      style={{ backgroundColor: avatarColorFor(merchant) }}
+    >
+      {initialsFor(merchant)}
+    </span>
+  )
+}
+
+function CategoryDot({ category }: { category: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block size-[7px] shrink-0 rounded-[2px]"
+      style={{ backgroundColor: categoryColorFor(category) }}
+    />
+  )
+}
+
+function cardDisplay(cardLastFourById: Map<string, string>, cardId: string): string {
+  const lastFour = cardLastFourById.get(cardId)
+  return lastFour ? `•••• ${lastFour}` : 'Unknown card'
 }
 
 function hasDifferentOriginalAmount(transaction: StandardTransaction): boolean {
@@ -94,7 +127,7 @@ function OriginalAmountDetails({ transaction }: { transaction: StandardTransacti
 
 /** A plain table on wider screens, a stacked receipt-style list on phone
  * widths where a 7-column table would no longer be legible. */
-function TransactionsTable({ transactions, cardLabelById }: TransactionsTableProps) {
+function TransactionsTable({ transactions, cardLastFourById }: TransactionsTableProps) {
   if (transactions.length === 0) {
     return <p className="text-sm text-text-faint">No transactions match your filters.</p>
   }
@@ -105,25 +138,38 @@ function TransactionsTable({ transactions, cardLabelById }: TransactionsTablePro
         {transactions.map((transaction) => (
           <li
             key={transaction.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3"
+            className="flex flex-col gap-1.5 rounded-xl border border-border bg-card p-3"
           >
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{transaction.description}</p>
-              <p className="truncate text-xs text-text-faint">
-                {formatUtcDate(transaction.timestampUtc)} · {transaction.categoryRaw} ·{' '}
-                {cardLabel(cardLabelById, transaction.cardId)}
+            <div className="flex items-center gap-2.5">
+              <MerchantAvatar merchant={transaction.description} />
+              <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                {transaction.description}
               </p>
-              <OriginalAmountDetails transaction={transaction} />
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              <span className="text-sm font-semibold tabular-nums">
-                {formatMoney(transaction.amountMinor, transaction.currency)}
+              <span className="shrink-0 text-sm font-semibold tabular-nums">
+                {formatSignedSpend(transaction.amountMinor, transaction.currency)}
               </span>
-              <span className="text-xs tabular-nums text-positive">
-                {formatMoney(transaction.cashbackMinor, transaction.cashbackCurrency)}
-              </span>
-              <StatusPill transaction={transaction} />
             </div>
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="min-w-0 truncate text-xs text-text-faint">
+                {formatUtcDate(transaction.timestampUtc)}
+              </span>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className="text-xs tabular-nums text-positive">
+                  {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
+                </span>
+                <StatusPill transaction={transaction} compact />
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-1.5">
+              <p className="flex min-w-0 items-center gap-1 text-xs text-text-faint">
+                <CategoryDot category={transaction.categoryRaw} />
+                <span className="min-w-0 truncate">{transaction.categoryRaw}</span>
+              </p>
+              <span className="shrink-0 whitespace-nowrap text-xs text-text-faint">
+                {cardDisplay(cardLastFourById, transaction.cardId)}
+              </span>
+            </div>
+            <OriginalAmountDetails transaction={transaction} />
           </li>
         ))}
       </ul>
@@ -132,13 +178,27 @@ function TransactionsTable({ transactions, cardLabelById }: TransactionsTablePro
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-text-faint">
-              <th className="py-2 pr-3 font-medium">Date</th>
-              <th className="py-2 pr-3 font-medium">Merchant</th>
-              <th className="py-2 pr-3 font-medium">Category</th>
-              <th className="py-2 pr-3 font-medium">Card</th>
-              <th className="py-2 pr-3 text-right font-medium">Amount</th>
-              <th className="py-2 pr-3 text-right font-medium">Cashback</th>
-              <th className="py-2 text-right font-medium">Status</th>
+              <th className="py-2 pr-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
+                Date
+              </th>
+              <th className="py-2 pr-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
+                Merchant
+              </th>
+              <th className="py-2 pr-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
+                Category
+              </th>
+              <th className="py-2 pr-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
+                Card
+              </th>
+              <th className="py-2 pr-3 text-right text-[10px] font-semibold tracking-[0.06em] uppercase">
+                Amount
+              </th>
+              <th className="py-2 pr-3 text-right text-[10px] font-semibold tracking-[0.06em] uppercase">
+                Cashback
+              </th>
+              <th className="py-2 text-right text-[10px] font-semibold tracking-[0.06em] uppercase">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -147,17 +207,27 @@ function TransactionsTable({ transactions, cardLabelById }: TransactionsTablePro
                 <td className="py-2 pr-3 whitespace-nowrap text-text-faint">
                   {formatUtcDate(transaction.timestampUtc)}
                 </td>
-                <td className="py-2 pr-3">{transaction.description}</td>
-                <td className="py-2 pr-3 text-text-dim">{transaction.categoryRaw}</td>
+                <td className="py-2 pr-3">
+                  <div className="flex items-center gap-2.5">
+                    <MerchantAvatar merchant={transaction.description} />
+                    {transaction.description}
+                  </div>
+                </td>
                 <td className="py-2 pr-3 text-text-dim">
-                  {cardLabel(cardLabelById, transaction.cardId)}
+                  <span className="inline-flex items-center gap-1.5">
+                    <CategoryDot category={transaction.categoryRaw} />
+                    {transaction.categoryRaw}
+                  </span>
+                </td>
+                <td className="py-2 pr-3 text-text-dim">
+                  {cardDisplay(cardLastFourById, transaction.cardId)}
                 </td>
                 <td className="py-2 pr-3 text-right font-medium tabular-nums">
-                  {formatMoney(transaction.amountMinor, transaction.currency)}
+                  {formatSignedSpend(transaction.amountMinor, transaction.currency)}
                   <OriginalAmountDetails transaction={transaction} />
                 </td>
                 <td className="py-2 pr-3 text-right tabular-nums text-positive">
-                  {formatMoney(transaction.cashbackMinor, transaction.cashbackCurrency)}
+                  {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
                 </td>
                 <td className="py-2 text-right">
                   <StatusPill transaction={transaction} />

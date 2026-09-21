@@ -77,7 +77,7 @@ function ChartContainer({
 // A ChartConfig's keys end up interpolated, unescaped, into a <style> tag's
 // text via dangerouslySetInnerHTML below. A caller must never build a config
 // key from data it doesn't control (an imported category name, a merchant
-// string, ...) — this filter is a last line of defense against that,
+// string, ...). This filter is a last line of defense against that,
 // dropping any entry whose key isn't a safe CSS custom-property fragment
 // rather than letting it break out of its declaration.
 const SAFE_CHART_KEY = /^[a-zA-Z0-9_-]+$/
@@ -147,8 +147,8 @@ function ChartTooltipContent({
       return null
     }
 
-    // `label` is the axis position (e.g. a day number), not the series —
-    // it must never fall back to a series' own itemConfig.label (e.g.
+    // `label` is the axis position (e.g. a day number), not the series.
+    // It must never fall back to a series' own itemConfig.label (e.g.
     // "Spent"), which has nothing to do with which position this tooltip
     // is for.
     const value = !labelKey && typeof label === 'string' ? (config[label]?.label ?? label) : label
