@@ -1,0 +1,74 @@
+name: Deploy staging (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; let an in-flight one finish rather than
+# cancelling it, so staging never gets stuck mid-deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Matches the locked Vitest/jsdom versions' engine requirements
+          # (Vitest 5 needs ^22.12 / ^24 / >=26), so this stays correct if
+          # tests are ever added to this workflow.
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Tells vite.config.ts to use the /web3spend/ subpath GitHub Pages
+          # serves this repo at, instead of the domain-root path a real
+          # production host would use.
+          GITHUB_PAGES: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/smoke-test-staging.mjs
+        env:
+          # A direct visit and a refresh at a deep route, in a fresh
+          # browser context with no service worker: GitHub Pages has no
+          # server-side rewrites, so this only works if 404.html's redirect
+          # and index.html's matching decode script are both still correct.
+          # A previously-cached service worker could otherwise mask a
+          # broken redirect for a returning visitor while a first-time one
+          # just sees a 404.
+          STAGING_URL: ${{ needs.deploy.outputs.page_url }}

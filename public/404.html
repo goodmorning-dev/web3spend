@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Web3Spend</title>
+    <script>
+      // GitHub Pages has no server-side rewrites, so a deep link (or a
+      // refresh on one) hits this 404 page instead of the SPA. Re-encode the
+      // path into a query string and redirect to the real index.html, which
+      // main.tsx's matching decode script turns back into a normal path
+      // before the router reads it. pathSegmentsToKeep is 1 because this
+      // repo is served from /web3spend/, not the domain root.
+      // https://github.com/rafgraph/spa-github-pages (MIT)
+      var pathSegmentsToKeep = 1
+      var l = window.location
+      l.replace(
+        l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname
+            .split('/')
+            .slice(0, 1 + pathSegmentsToKeep)
+            .join('/') +
+          '/?/' +
+          l.pathname
+            .slice(1)
+            .split('/')
+            .slice(pathSegmentsToKeep)
+            .join('/')
+            .replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash,
+      )
+    </script>
+  </head>
+  <body></body>
+</html>

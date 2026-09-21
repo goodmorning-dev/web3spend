@@ -5,8 +5,14 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// GitHub Pages serves this repo at /web3spend/, not the domain root a future
+// production host would use, so the subpath base only applies when the
+// staging workflow sets GITHUB_PAGES.
+const base = process.env.GITHUB_PAGES ? '/web3spend/' : '/'
+
 // https://vite.dev/config/
 export default defineConfig({
+  base,
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
