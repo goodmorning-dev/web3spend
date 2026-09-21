@@ -141,7 +141,7 @@ describe('CategoryBreakdown', () => {
     return document.querySelector('.pointer-events-none.absolute')!.textContent!
   }
 
-  it('highlights a hovered category row and swaps the donut center to its amount and share, matching the design reference (no tooltip)', async () => {
+  it('highlights a hovered category row and swaps the donut center to its amount, keeping the "Total spent" label throughout (no tooltip)', async () => {
     const user = userEvent.setup()
     const buckets: CategoryBucket[] = [
       { category: 'Food', spendMinor: 700, share: 0.7 },
@@ -161,12 +161,14 @@ describe('CategoryBreakdown', () => {
     await user.hover(transportRow)
 
     expect(transportRow.className).toContain('bg-muted')
-    expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${transportText}Transport · 30%`)
+    // the label always reads "Total spent"; only the amount swaps to the
+    // hovered category's own spend, never its name or share.
+    expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${transportText}Total spent`)
 
     await user.unhover(transportRow)
 
     // the clear is deliberately debounced (see scheduleUnhover) so moving
-    // between adjacent slices/rows doesn't flash back to "Total spent" in
+    // between adjacent slices/rows doesn't flash back to the grand total in
     // between; that means it doesn't happen synchronously with unhover.
     await waitFor(() => {
       expect(transportRow.className).not.toContain('bg-muted')
@@ -174,7 +176,7 @@ describe('CategoryBreakdown', () => {
     })
   })
 
-  it('does not flash back to the total when moving straight from one row to another', async () => {
+  it('does not flash back to the grand total when moving straight from one row to another', () => {
     const buckets: CategoryBucket[] = [
       { category: 'Food', spendMinor: 700, share: 0.7 },
       { category: 'Transport', spendMinor: 300, share: 0.3 },
@@ -184,18 +186,21 @@ describe('CategoryBreakdown', () => {
 
     const foodRow = screen.getByText('Food').closest('li')!
     const transportRow = screen.getByText('Transport').closest('li')!
+    const foodText = formatMoney(700, 'EUR').replace(/\s+/g, ' ')
+    const transportText = formatMoney(300, 'EUR').replace(/\s+/g, ' ')
+    const totalText = formatMoney(1000, 'EUR').replace(/\s+/g, ' ')
 
     fireEvent.mouseEnter(foodRow)
-    expect(donutCenterText()).toContain('Food · 70%')
+    expect(donutCenterText().replace(/\s+/g, ' ')).toContain(foodText)
 
     // leaving one row and entering the next right away, as a real mouse
     // move between adjacent rows would, must cancel the pending clear
-    // rather than let it fire and revert to "Total spent" momentarily.
+    // rather than let it fire and revert to the grand total momentarily.
     fireEvent.mouseLeave(foodRow)
     fireEvent.mouseEnter(transportRow)
 
-    expect(donutCenterText()).not.toContain('Total spent')
-    expect(donutCenterText()).toContain('Transport · 30%')
+    expect(donutCenterText().replace(/\s+/g, ' ')).not.toContain(totalText)
+    expect(donutCenterText().replace(/\s+/g, ' ')).toContain(transportText)
   })
 
   it('dims every other pie slice while one is hovered', () => {
@@ -215,7 +220,8 @@ describe('CategoryBreakdown', () => {
     // the sector elements on this state update rather than updating them
     // in place, so the old references would report stale attributes.
     const sectorsAfter = document.querySelectorAll('.recharts-pie .recharts-sector')
-    expect(donutCenterText().replace(/\s+/g, ' ')).toContain('Transport · 30%')
+    const transportText = formatMoney(300, 'EUR').replace(/\s+/g, ' ')
+    expect(donutCenterText().replace(/\s+/g, ' ')).toContain(transportText)
     expect(sectorsAfter[0]).toHaveAttribute('fill-opacity', '0.32')
     expect(sectorsAfter[1]).toHaveAttribute('fill-opacity', '1')
   })

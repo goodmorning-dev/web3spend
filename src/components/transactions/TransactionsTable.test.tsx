@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
+import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
 import TransactionsTable from './TransactionsTable'
 
@@ -106,12 +107,84 @@ describe('TransactionsTable', () => {
     expect(screen.getAllByText(expected)).toHaveLength(2)
   })
 
-  it('shows a merchant avatar with initials derived from its name', () => {
+  it('shows only the merchant name, with no avatar or initials badge', () => {
     const transaction = makeTransaction({ description: 'Coffee Shop' })
 
     render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
 
-    expect(screen.getAllByText('CS')).toHaveLength(2)
+    expect(screen.getAllByText('Coffee Shop')).toHaveLength(2)
+    expect(screen.queryByText('CS')).not.toBeInTheDocument()
+  })
+
+  it("shows the transaction's exact time in a chart-style tooltip on hover, not a native title", async () => {
+    const iso = '2026-03-15T10:30:45.000Z'
+    const transaction = makeTransaction({ timestampUtc: iso })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    const dateCells = screen.getAllByText(formatUtcDate(iso))
+    expect(dateCells).toHaveLength(2)
+    for (const cell of dateCells) {
+      expect(cell).not.toHaveAttribute('title')
+    }
+
+    const exactTime = formatUtcDateTime(iso)
+    expect(screen.queryByText(exactTime)).not.toBeInTheDocument()
+
+    fireEvent.mouseEnter(dateCells[0])
+    expect(screen.getByText(exactTime)).toBeInTheDocument()
+
+    fireEvent.mouseLeave(dateCells[0])
+    // the clear is deliberately debounced, same reasoning as the donut and
+    // the heatmap tooltips, so it doesn't happen synchronously with mouseleave.
+    await waitFor(() => {
+      expect(screen.queryByText(exactTime)).not.toBeInTheDocument()
+    })
+  })
+
+  it('makes the exact time reachable by keyboard, and always available to a screen reader', async () => {
+    const iso = '2026-03-15T10:30:45.000Z'
+    const transaction = makeTransaction({ timestampUtc: iso })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    const exactTime = formatUtcDateTime(iso)
+    // a focusable button, not inert text, and its accessible name carries
+    // the full timestamp regardless of whether the visual tooltip is showing
+    const dateButtons = screen.getAllByRole('button', { name: exactTime })
+    expect(dateButtons).toHaveLength(2)
+
+    expect(screen.queryByText(exactTime)).not.toBeInTheDocument()
+
+    fireEvent.focus(dateButtons[0])
+    expect(screen.getByText(exactTime)).toBeInTheDocument()
+
+    fireEvent.blur(dateButtons[0])
+    await waitFor(() => {
+      expect(screen.queryByText(exactTime)).not.toBeInTheDocument()
+    })
+  })
+
+  it('shows the effective cashback rate next to the cashback amount', () => {
+    // 9 minor units of cashback on 450 minor units of spend is exactly 2%.
+    const transaction = makeTransaction({ amountMinor: 450, cashbackMinor: 9, currency: 'EUR' })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    expect(screen.getAllByText('(2.0%)')).toHaveLength(2)
+  })
+
+  it('shows no cashback rate when the cashback currency does not match the spend currency', () => {
+    const transaction = makeTransaction({
+      amountMinor: 450,
+      currency: 'EUR',
+      cashbackMinor: 9,
+      cashbackCurrency: 'USD',
+    })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    expect(screen.queryByText(/\(\d/)).not.toBeInTheDocument()
   })
 
   it("makes a transaction's original amount inspectable when it differs from the settled amount", () => {
@@ -126,6 +199,17 @@ describe('TransactionsTable', () => {
 
     expect(screen.getAllByText('Original amount')).toHaveLength(2)
     expect(screen.getAllByText(normalizeWhitespace(formatMoney(500, 'USD')))).toHaveLength(2)
+  })
+
+  it('shows a category without its leading MCC code', () => {
+    const transaction = makeTransaction({
+      categoryRaw: '5411 - Grocery Stores and Supermarkets',
+    })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    expect(screen.getAllByText('Grocery Stores and Supermarkets')).toHaveLength(2)
+    expect(screen.queryByText('5411 - Grocery Stores and Supermarkets')).not.toBeInTheDocument()
   })
 
   it('shows no original-amount disclosure when it matches the settled amount and currency', () => {

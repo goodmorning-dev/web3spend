@@ -7,6 +7,7 @@ import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import type { StandardTransaction } from '@/types/transaction'
+import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
 import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
 const ALL_STATUSES = 'all'
@@ -64,13 +65,20 @@ function TransactionsPage() {
   }, [transactions])
 
   const categoryOptions = useMemo<FilterSelectOption[]>(() => {
-    const categories = distinctSorted(
-      (transactions ?? []).map((transaction) => transaction.categoryRaw),
-    )
-    return [
-      { value: ALL_CATEGORIES, label: 'All categories' },
-      ...categories.map((value) => ({ value, label: value })),
-    ]
+    // Etherfi's export mixes MCC-coded and bare variants of what's
+    // otherwise the same category (e.g. "5411 - Grocery Stores and
+    // Supermarkets" alongside plain "Grocery Stores and Supermarkets");
+    // grouped here by merge key so they show up as one option, not two,
+    // and shown without the code either way.
+    const labelByKey = new Map<string, string>()
+    for (const transaction of transactions ?? []) {
+      const key = categoryMergeKey(transaction.categoryRaw)
+      labelByKey.set(key, displayCategoryLabel(transaction.categoryRaw))
+    }
+    const options = [...labelByKey.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+    return [{ value: ALL_CATEGORIES, label: 'All categories' }, ...options]
   }, [transactions])
 
   const visibleTransactions = useMemo(() => {
@@ -80,7 +88,10 @@ function TransactionsPage() {
     const query = search.trim().toLowerCase()
     return transactions
       .filter((transaction) => status === ALL_STATUSES || transaction.status === status)
-      .filter((transaction) => category === ALL_CATEGORIES || transaction.categoryRaw === category)
+      .filter(
+        (transaction) =>
+          category === ALL_CATEGORIES || categoryMergeKey(transaction.categoryRaw) === category,
+      )
       .filter((transaction) => matchesSearch(transaction, query))
       .filter(
         (transaction) =>
@@ -95,12 +106,9 @@ function TransactionsPage() {
 
   if (overallSummary.transactionCount === 0) {
     return (
-      <div className="flex flex-col gap-2">
-        <h1 className="font-heading text-xl font-semibold">Transactions</h1>
-        <p className="text-sm text-muted-foreground">
-          Import your Etherfi export to see transactions here.
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Import your Etherfi export to see transactions here.
+      </p>
     )
   }
 
@@ -110,7 +118,6 @@ function TransactionsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-heading text-xl font-semibold">Transactions</h1>
       {selectedDateKey && (
         <div className="flex items-center gap-1.5 self-start rounded-full border border-border bg-secondary py-1 pr-1.5 pl-3 text-xs font-medium text-secondary-foreground">
           <span>Day: {formatUtcDate(`${selectedDateKey}T00:00:00.000Z`)}</span>

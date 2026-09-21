@@ -78,4 +78,26 @@ describe('aggregateByCategory', () => {
 
     expect(result).toEqual([{ category: 'Groceries', spendMinor: 1000, share: 1 }])
   })
+
+  it('merges an MCC-coded and a bare variant of the same category into one bucket', () => {
+    // Etherfi's export mixes both forms for what is otherwise the same
+    // category (observed on PENDING rows in practice).
+    const result = aggregateByCategory([
+      makeTransaction({
+        id: '1',
+        categoryRaw: '5411 - Grocery Stores and Supermarkets',
+        amountMinor: 3000,
+      }),
+      makeTransaction({
+        id: '2',
+        categoryRaw: 'Grocery Stores and Supermarkets',
+        amountMinor: 1000,
+      }),
+    ])
+
+    // shown without the code either way
+    expect(result).toEqual([
+      { category: 'Grocery Stores and Supermarkets', spendMinor: 4000, share: 1 },
+    ])
+  })
 })

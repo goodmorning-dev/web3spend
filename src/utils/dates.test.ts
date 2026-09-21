@@ -4,6 +4,7 @@ import {
   daysInUtcYear,
   formatUtcDate,
   formatUtcDateKey,
+  formatUtcDateTime,
   formatUtcMonthKey,
   formatUtcMonthLabel,
   getUtcDateKey,
@@ -118,6 +119,38 @@ describe('formatUtcDate', () => {
       })
       expect(formatUtcDate(timestampUtc)).toBe(expected)
       expect(formatUtcDate(timestampUtc)).not.toContain('Feb')
+    } finally {
+      if (originalTz === undefined) {
+        delete process.env.TZ
+      } else {
+        process.env.TZ = originalTz
+      }
+    }
+  })
+})
+
+describe('formatUtcDateTime', () => {
+  it('includes hour, minute, and second alongside the date', () => {
+    const timestampUtc = '2026-03-15T10:30:45.000Z'
+    const expected = new Date(timestampUtc).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: 'UTC',
+      timeZoneName: 'short',
+    })
+    expect(formatUtcDateTime(timestampUtc)).toBe(expected)
+  })
+
+  it('does not shift to the next day for a viewer ahead of UTC', () => {
+    const originalTz = process.env.TZ
+    process.env.TZ = 'Pacific/Kiritimati' // UTC+14
+    try {
+      const timestampUtc = '2026-01-31T23:30:45.000Z'
+      expect(formatUtcDateTime(timestampUtc)).not.toContain('Feb')
     } finally {
       if (originalTz === undefined) {
         delete process.env.TZ

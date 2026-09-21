@@ -1,7 +1,10 @@
+import { useEffect, useRef, useState } from 'react'
+import { transactionCashbackPct } from '@/analyzers'
 import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
-import { avatarColorFor, categoryColorFor, initialsFor } from '@/utils/avatar'
-import { formatUtcDate } from '@/utils/dates'
-import { formatMoney, formatSignedCashback, formatSignedSpend } from '@/utils/format'
+import { categoryColorFor } from '@/utils/avatar'
+import { displayCategoryLabel } from '@/utils/category'
+import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
+import { formatMoney, formatPercent, formatSignedCashback, formatSignedSpend } from '@/utils/format'
 
 interface TransactionsTableProps {
   transactions: StandardTransaction[]
@@ -71,18 +74,6 @@ function StatusPill({
   )
 }
 
-function MerchantAvatar({ merchant }: { merchant: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[10px] font-semibold text-white"
-      style={{ backgroundColor: avatarColorFor(merchant) }}
-    >
-      {initialsFor(merchant)}
-    </span>
-  )
-}
-
 function CategoryDot({ category }: { category: string }) {
   return (
     <span
@@ -90,6 +81,107 @@ function CategoryDot({ category }: { category: string }) {
       className="inline-block size-[7px] shrink-0 rounded-[2px]"
       style={{ backgroundColor: categoryColorFor(category) }}
     />
+  )
+}
+
+/** The cashback amount, plus its effective rate against the spend on the
+ * same row when it can be safely computed (see transactionCashbackPct). */
+function CashbackAmount({ transaction }: { transaction: StandardTransaction }) {
+  const pct = transactionCashbackPct(transaction)
+  return (
+    <>
+      {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
+      {pct !== null && (
+        <span className="ml-1 font-normal text-text-faint">({formatPercent(pct, 1)})</span>
+      )}
+    </>
+  )
+}
+
+interface HoveredDate {
+  iso: string
+  left: number
+  top: number
+}
+
+/** A custom tooltip matching the design reference's `.chart-tooltip` styling,
+ * the same box the spend chart's and the activity heatmap's tooltips use,
+ * replacing the native browser tooltip a `title` attribute would otherwise
+ * give. Fixed positioning (from the hovered cell's own viewport rect)
+ * rather than a relative-container offset, since dates sit in a scrollable
+ * table with many rows, each of which would otherwise need its own offset
+ * math. Purely a visual reinforcement of the trigger's own `aria-label`
+ * (below): a screen reader gets the full timestamp either way, tooltip
+ * shown or not. */
+function DateTooltip({ hovered }: { hovered: HoveredDate | null }) {
+  if (!hovered) {
+    return null
+  }
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-[10px] border border-border bg-secondary px-3 py-2.5 whitespace-nowrap shadow-lg"
+      style={{ left: hovered.left, top: hovered.top - 8 }}
+    >
+      <div className="text-xs font-medium tabular-nums text-foreground">
+        {formatUtcDateTime(hovered.iso)}
+      </div>
+    </div>
+  )
+}
+
+/** Same debounced-clear reasoning as the donut and the heatmap: a mouse
+ * moving from one row's date to the next fires a mouseleave right before
+ * the next mouseenter, and clearing immediately would flash the tooltip
+ * off and back on in between. */
+function useDateHover() {
+  const [hovered, setHovered] = useState<HoveredDate | null>(null)
+  const clearTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => clearTimeout(clearTimeoutRef.current), [])
+
+  function showDate(target: HTMLElement, iso: string) {
+    clearTimeout(clearTimeoutRef.current)
+    const rect = target.getBoundingClientRect()
+    setHovered({ iso, left: rect.left + rect.width / 2, top: rect.top })
+  }
+
+  function scheduleHideDate() {
+    clearTimeout(clearTimeoutRef.current)
+    clearTimeoutRef.current = setTimeout(() => setHovered(null), 100)
+  }
+
+  return { hovered, showDate, scheduleHideDate }
+}
+
+/** The visible short date, focusable and keyboard-reachable so the tooltip
+ * isn't mouse-only, with the full timestamp always available to a screen
+ * reader via `aria-label` regardless of whether the visual tooltip happens
+ * to be showing. */
+function DateCell({
+  transaction,
+  showDate,
+  scheduleHideDate,
+  className,
+}: {
+  transaction: StandardTransaction
+  showDate: (target: HTMLElement, iso: string) => void
+  scheduleHideDate: () => void
+  className: string
+}) {
+  const iso = transaction.timestampUtc
+  return (
+    <button
+      type="button"
+      className={`rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${className}`}
+      aria-label={formatUtcDateTime(iso)}
+      onMouseEnter={(event) => showDate(event.currentTarget, iso)}
+      onMouseLeave={scheduleHideDate}
+      onFocus={(event) => showDate(event.currentTarget, iso)}
+      onBlur={scheduleHideDate}
+    >
+      {formatUtcDate(iso)}
+    </button>
   )
 }
 
@@ -128,12 +220,15 @@ function OriginalAmountDetails({ transaction }: { transaction: StandardTransacti
 /** A plain table on wider screens, a stacked receipt-style list on phone
  * widths where a 7-column table would no longer be legible. */
 function TransactionsTable({ transactions, cardLastFourById }: TransactionsTableProps) {
+  const { hovered, showDate, scheduleHideDate } = useDateHover()
+
   if (transactions.length === 0) {
     return <p className="text-sm text-text-faint">No transactions match your filters.</p>
   }
 
   return (
     <>
+      <DateTooltip hovered={hovered} />
       <ul className="flex flex-col gap-2 sm:hidden">
         {transactions.map((transaction) => (
           <li
@@ -141,7 +236,6 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
             className="flex flex-col gap-1.5 rounded-xl border border-border bg-card p-3"
           >
             <div className="flex items-center gap-2.5">
-              <MerchantAvatar merchant={transaction.description} />
               <p className="min-w-0 flex-1 truncate text-sm font-medium">
                 {transaction.description}
               </p>
@@ -150,20 +244,25 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
               </span>
             </div>
             <div className="flex items-center justify-between gap-1.5">
-              <span className="min-w-0 truncate text-xs text-text-faint">
-                {formatUtcDate(transaction.timestampUtc)}
-              </span>
+              <DateCell
+                transaction={transaction}
+                showDate={showDate}
+                scheduleHideDate={scheduleHideDate}
+                className="min-w-0 truncate text-xs text-text-faint"
+              />
               <div className="flex shrink-0 items-center gap-1.5">
                 <span className="text-xs tabular-nums text-positive">
-                  {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
+                  <CashbackAmount transaction={transaction} />
                 </span>
                 <StatusPill transaction={transaction} compact />
               </div>
             </div>
             <div className="flex items-center justify-between gap-1.5">
               <p className="flex min-w-0 items-center gap-1 text-xs text-text-faint">
-                <CategoryDot category={transaction.categoryRaw} />
-                <span className="min-w-0 truncate">{transaction.categoryRaw}</span>
+                <CategoryDot category={displayCategoryLabel(transaction.categoryRaw)} />
+                <span className="min-w-0 truncate">
+                  {displayCategoryLabel(transaction.categoryRaw)}
+                </span>
               </p>
               <span className="shrink-0 whitespace-nowrap text-xs text-text-faint">
                 {cardDisplay(cardLastFourById, transaction.cardId)}
@@ -205,18 +304,18 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
             {transactions.map((transaction) => (
               <tr key={transaction.id} className="border-b border-border/60 last:border-0">
                 <td className="py-2 pr-3 whitespace-nowrap text-text-faint">
-                  {formatUtcDate(transaction.timestampUtc)}
+                  <DateCell
+                    transaction={transaction}
+                    showDate={showDate}
+                    scheduleHideDate={scheduleHideDate}
+                    className="whitespace-nowrap"
+                  />
                 </td>
-                <td className="py-2 pr-3">
-                  <div className="flex items-center gap-2.5">
-                    <MerchantAvatar merchant={transaction.description} />
-                    {transaction.description}
-                  </div>
-                </td>
+                <td className="py-2 pr-3">{transaction.description}</td>
                 <td className="py-2 pr-3 text-text-dim">
                   <span className="inline-flex items-center gap-1.5">
-                    <CategoryDot category={transaction.categoryRaw} />
-                    {transaction.categoryRaw}
+                    <CategoryDot category={displayCategoryLabel(transaction.categoryRaw)} />
+                    {displayCategoryLabel(transaction.categoryRaw)}
                   </span>
                 </td>
                 <td className="py-2 pr-3 text-text-dim">
@@ -227,7 +326,7 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
                   <OriginalAmountDetails transaction={transaction} />
                 </td>
                 <td className="py-2 pr-3 text-right tabular-nums text-positive">
-                  {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
+                  <CashbackAmount transaction={transaction} />
                 </td>
                 <td className="py-2 text-right">
                   <StatusPill transaction={transaction} />

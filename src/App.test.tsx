@@ -43,10 +43,10 @@ describe('App routing', () => {
 
   it('renders the Transactions page within the shell at /app/transactions', async () => {
     renderAt('/app/transactions')
-    // both the topbar title and the page's own heading say "Transactions";
-    // the page heading is the h1
+    // the page title comes from Topbar; the page itself has no second,
+    // duplicate heading of its own
     expect(
-      await screen.findByRole('heading', { name: 'Transactions', level: 1 }),
+      await screen.findByRole('heading', { name: 'Transactions', level: 2 }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument()
   })
@@ -61,9 +61,9 @@ describe('App routing', () => {
 
   it('renders the Settings page within the shell at /app/settings', async () => {
     renderAt('/app/settings')
-    // both the topbar title and the page's own heading say "Settings";
-    // the page heading is the h1
-    expect(await screen.findByRole('heading', { name: 'Settings', level: 1 })).toBeInTheDocument()
+    // the page title comes from Topbar; the page itself has no second,
+    // duplicate heading of its own
+    expect(await screen.findByRole('heading', { name: 'Settings', level: 2 })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /delete all data/i })).toBeInTheDocument()
   })
 
@@ -119,7 +119,7 @@ describe('App routing', () => {
     await user.click(cell)
 
     expect(
-      await screen.findByRole('heading', { name: 'Transactions', level: 1 }),
+      await screen.findByRole('heading', { name: 'Transactions', level: 2 }),
     ).toBeInTheDocument()
   })
 
@@ -133,7 +133,7 @@ describe('App routing', () => {
     await user.keyboard('{Enter}')
 
     expect(
-      await screen.findByRole('heading', { name: 'Transactions', level: 1 }),
+      await screen.findByRole('heading', { name: 'Transactions', level: 2 }),
     ).toBeInTheDocument()
   })
 
@@ -222,7 +222,7 @@ describe('App routing', () => {
     // each transaction row renders twice: once in the mobile receipt list,
     // once in the desktop table, only one of which is visible at a given
     // viewport width
-    await screen.findByRole('heading', { name: 'Transactions', level: 1 })
+    await screen.findByRole('heading', { name: 'Transactions', level: 2 })
     expect(screen.getAllByText('Coffee on the target day')).toHaveLength(2)
     expect(screen.queryByText('Groceries on a different day')).not.toBeInTheDocument()
     // same calendar day, but a different currency than the selected EUR filter
@@ -249,7 +249,7 @@ describe('App routing', () => {
     // index 4, Jan 5, without crossing into a new week column.
     await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}{Enter}')
 
-    await screen.findByRole('heading', { name: 'Transactions', level: 1 })
+    await screen.findByRole('heading', { name: 'Transactions', level: 2 })
     expect(screen.getAllByText('Coffee on the target day')).toHaveLength(2)
     expect(screen.queryByText('Groceries on a different day')).not.toBeInTheDocument()
   })

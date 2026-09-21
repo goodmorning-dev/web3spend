@@ -61,3 +61,21 @@ export function formatUtcDate(iso: string): string {
     timeZone: 'UTC',
   })
 }
+
+/** Same date, plus hour/minute/second, for a hover title on a row that
+ * otherwise only shows the day. Every timestamp this app stores already
+ * includes a time of day (see parseTimestampUtc), but this stays a
+ * separate function from formatUtcDate rather than the row's default
+ * display, since a full timestamp is more detail than most glances need. */
+export function formatUtcDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+  })
+}
