@@ -43,12 +43,14 @@ function TransactionsToolbar({
         value={status}
         options={statusOptions}
         onChange={onStatusChange}
+        triggerClassName="w-full sm:w-auto"
       />
       <FilterSelect
         ariaLabel="Category"
         value={category}
         options={categoryOptions}
         onChange={onCategoryChange}
+        triggerClassName="w-full sm:w-auto"
       />
     </div>
   )

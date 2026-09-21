@@ -79,6 +79,19 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
 
   useEffect(() => () => clearTimeout(clearHoverTimeout.current), [])
 
+  // A filter change (period, card, currency) gives `buckets` a new
+  // reference with a different shape; a hoveredIndex left over from the
+  // previous shape can point past the end of the new visibleBuckets array
+  // (or, even if still in range, highlight a different category than the
+  // one the pointer is actually over). Reset it during render on the same
+  // prop-change-adjusts-state pattern ActivityHeatmap uses for its selected
+  // index, rather than an effect that would let one bad render through.
+  const [prevBuckets, setPrevBuckets] = useState(buckets)
+  if (buckets !== prevBuckets) {
+    setPrevBuckets(buckets)
+    setHoveredIndex(null)
+  }
+
   // Moving the mouse from one slice/row to the next (across the small gap
   // paddingAngle leaves between slices, or the gap between list rows) fires
   // a mouseleave right before the next mouseenter; clearing the hover
@@ -136,6 +149,8 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
     fill: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
   }))
 
+  const hoveredBucket = hoveredIndex !== null ? visibleBuckets[hoveredIndex] : undefined
+
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-3">
@@ -173,7 +188,7 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
             </PieChart>
           </ChartContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-            {hoveredIndex === null ? (
+            {hoveredBucket === undefined ? (
               <>
                 <span className="text-xl font-semibold tabular-nums">
                   {formatMoney(totalSpendMinor, currency)}
@@ -183,11 +198,10 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
             ) : (
               <>
                 <span className="text-xl font-semibold tabular-nums">
-                  {formatMoney(visibleBuckets[hoveredIndex].spendMinor, currency)}
+                  {formatMoney(hoveredBucket.spendMinor, currency)}
                 </span>
                 <span className="w-full truncate text-[11.5px] font-medium text-text-faint">
-                  {visibleBuckets[hoveredIndex].category} ·{' '}
-                  {formatPercent(visibleBuckets[hoveredIndex].share * 100, 0)}
+                  {hoveredBucket.category} · {formatPercent(hoveredBucket.share * 100, 0)}
                 </span>
               </>
             )}

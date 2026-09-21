@@ -160,10 +160,15 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
                 <StatusPill transaction={transaction} compact />
               </div>
             </div>
-            <p className="flex min-w-0 items-center gap-1 text-xs text-text-faint">
-              <CategoryDot category={transaction.categoryRaw} />
-              <span className="min-w-0 truncate">{transaction.categoryRaw}</span>
-            </p>
+            <div className="flex items-center justify-between gap-1.5">
+              <p className="flex min-w-0 items-center gap-1 text-xs text-text-faint">
+                <CategoryDot category={transaction.categoryRaw} />
+                <span className="min-w-0 truncate">{transaction.categoryRaw}</span>
+              </p>
+              <span className="shrink-0 whitespace-nowrap text-xs text-text-faint">
+                {cardDisplay(cardLastFourById, transaction.cardId)}
+              </span>
+            </div>
             <OriginalAmountDetails transaction={transaction} />
           </li>
         ))}

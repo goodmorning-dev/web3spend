@@ -37,7 +37,10 @@ function FilterSelect({
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         aria-label={ariaLabel}
-        className={cn('bg-secondary text-secondary-foreground', triggerClassName)}
+        className={cn(
+          'border-white/15 text-secondary-foreground dark:bg-white/[0.07] dark:hover:bg-white/[0.1]',
+          triggerClassName,
+        )}
       >
         {icon}
         <SelectValue />

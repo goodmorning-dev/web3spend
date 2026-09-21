@@ -64,6 +64,13 @@ function ActivityHeatmap({
   const [hasFocus, setHasFocus] = useState(false)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const clearHoverTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  // The tooltip sits outside the horizontally-scrollable grid (so it isn't
+  // itself clipped by overflow-x), but its x is computed from the SVG's own
+  // (unscrolled) coordinate space; without subtracting how far the grid has
+  // scrolled, it drifts away from the actual hovered cell once the user
+  // scrolls to a later month.
+  const [scrollLeft, setScrollLeft] = useState(0)
 
   useEffect(() => () => clearTimeout(clearHoverTimeout.current), [])
 
@@ -178,7 +185,11 @@ function ActivityHeatmap({
         </div>
       </div>
       <div className="relative">
-        <div className="overflow-x-auto pb-3">
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto pb-3"
+          onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}
+        >
           <svg
             viewBox={`0 0 ${width} ${height}`}
             width={width}
@@ -257,7 +268,12 @@ function ActivityHeatmap({
           <HeatmapTooltip
             day={activity[hoveredIndex]}
             currency={currency}
-            x={PAD_LEFT + Math.floor((hoveredIndex + jan1Weekday) / 7) * STEP + CELL / 2}
+            x={
+              PAD_LEFT +
+              Math.floor((hoveredIndex + jan1Weekday) / 7) * STEP +
+              CELL / 2 -
+              scrollLeft
+            }
             y={PAD_TOP + ((hoveredIndex + jan1Weekday) % 7) * STEP}
           />
         )}
