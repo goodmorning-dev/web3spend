@@ -178,7 +178,7 @@ function ActivityHeatmap({
         </div>
       </div>
       <div className="relative">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto pb-3">
           <svg
             viewBox={`0 0 ${width} ${height}`}
             width={width}
