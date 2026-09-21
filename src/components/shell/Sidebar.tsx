@@ -1,5 +1,6 @@
 import { LayoutDashboard, Receipt, Settings, Upload } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
+import logoImage from '@/assets/logo.webp'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
@@ -29,9 +30,7 @@ function Sidebar() {
   return (
     <aside className="sticky bottom-0 z-20 flex w-full shrink-0 flex-row items-center justify-around gap-0 border-t border-sidebar-border bg-sidebar p-2 sm:top-0 sm:bottom-auto sm:h-screen sm:w-56 sm:flex-col sm:items-stretch sm:justify-start sm:gap-6 sm:border-t-0 sm:border-r sm:p-4">
       <div className="hidden items-center gap-2.5 px-1.5 sm:flex">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary font-heading text-base font-bold text-primary-foreground">
-          W
-        </div>
+        <img src={logoImage} alt="" className="size-8 shrink-0" />
         <span className="font-heading text-base font-semibold text-sidebar-foreground">
           Web3Spend
         </span>
