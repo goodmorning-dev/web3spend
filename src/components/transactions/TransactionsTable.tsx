@@ -51,12 +51,19 @@ function describeStatus(transaction: StandardTransaction): StatusDisplay {
   return { label: STATUS_LABELS[transaction.status], tone: STATUS_TONE[transaction.status] }
 }
 
-function StatusPill({ transaction }: { transaction: StandardTransaction }) {
+function StatusPill({
+  transaction,
+  compact = false,
+}: {
+  transaction: StandardTransaction
+  /** Tighter padding/gap for the mobile row, which has less room to work with. */
+  compact?: boolean
+}) {
   const { label, tone, hint } = describeStatus(transaction)
   return (
     <span
       title={hint}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium whitespace-nowrap ${tone}`}
+      className={`inline-flex items-center rounded-full text-[11px] font-medium whitespace-nowrap ${compact ? 'gap-1 px-2 py-0.5' : 'gap-1.5 px-2.5 py-1'} ${tone}`}
     >
       <span className="size-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
       {label}
@@ -131,26 +138,33 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
         {transactions.map((transaction) => (
           <li
             key={transaction.id}
-            className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
+            className="flex flex-col gap-1.5 rounded-xl border border-border bg-card p-3"
           >
-            <MerchantAvatar merchant={transaction.description} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{transaction.description}</p>
-              <p className="truncate text-xs text-text-faint">
-                {formatUtcDate(transaction.timestampUtc)} · {transaction.categoryRaw} ·{' '}
-                {cardDisplay(cardLastFourById, transaction.cardId)}
+            <div className="flex items-center gap-2.5">
+              <MerchantAvatar merchant={transaction.description} />
+              <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                {transaction.description}
               </p>
-              <OriginalAmountDetails transaction={transaction} />
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              <span className="text-sm font-semibold tabular-nums">
+              <span className="shrink-0 text-sm font-semibold tabular-nums">
                 {formatSignedSpend(transaction.amountMinor, transaction.currency)}
               </span>
-              <span className="text-xs tabular-nums text-positive">
-                {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
-              </span>
-              <StatusPill transaction={transaction} />
             </div>
+            <div className="flex items-center justify-between gap-1.5">
+              <span className="min-w-0 truncate text-xs text-text-faint">
+                {formatUtcDate(transaction.timestampUtc)}
+              </span>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className="text-xs tabular-nums text-positive">
+                  {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
+                </span>
+                <StatusPill transaction={transaction} compact />
+              </div>
+            </div>
+            <p className="flex min-w-0 items-center gap-1 text-xs text-text-faint">
+              <CategoryDot category={transaction.categoryRaw} />
+              <span className="min-w-0 truncate">{transaction.categoryRaw}</span>
+            </p>
+            <OriginalAmountDetails transaction={transaction} />
           </li>
         ))}
       </ul>
