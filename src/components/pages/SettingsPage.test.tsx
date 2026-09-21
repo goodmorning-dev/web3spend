@@ -2,6 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DashboardFiltersProvider, useDashboardFilters } from '@/hooks/DashboardFiltersContext'
+import { InstallPromptProvider } from '@/hooks/InstallPromptContext'
 import { db } from '@/storage/db'
 import * as deleteAllDataModule from '@/storage/deleteAllData'
 import { resetDatabase } from '@/storage/test-helpers'
@@ -30,6 +31,17 @@ function stubIosSafariUserAgent() {
     ...window.navigator,
     userAgent:
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+  })
+}
+
+/** iPadOS Safari's default UA since iPadOS 13: it claims to be a Mac, and
+ * is distinguished from a real Mac only by reporting touch points. */
+function stubIpadDesktopModeUserAgent() {
+  vi.stubGlobal('navigator', {
+    ...window.navigator,
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+    maxTouchPoints: 5,
   })
 }
 
@@ -64,9 +76,11 @@ async function seedSomeData() {
 
 function renderSettingsPage() {
   return render(
-    <DashboardFiltersProvider>
-      <SettingsPage />
-    </DashboardFiltersProvider>,
+    <InstallPromptProvider>
+      <DashboardFiltersProvider>
+        <SettingsPage />
+      </DashboardFiltersProvider>
+    </InstallPromptProvider>,
   )
 }
 
@@ -115,6 +129,14 @@ describe('SettingsPage', () => {
     expect(screen.getByRole('heading', { name: 'Install Web3Spend' })).toBeInTheDocument()
     expect(screen.getByText(/add to home screen/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /install app/i })).not.toBeInTheDocument()
+  })
+
+  it('also shows manual steps on an iPad in desktop mode, whose UA otherwise claims to be a Mac', () => {
+    stubIpadDesktopModeUserAgent()
+    renderSettingsPage()
+
+    expect(screen.getByRole('heading', { name: 'Install Web3Spend' })).toBeInTheDocument()
+    expect(screen.getByText(/add to home screen/i)).toBeInTheDocument()
   })
 
   it('explains that data is local to this browser before offering to delete it', () => {
@@ -169,10 +191,12 @@ describe('SettingsPage', () => {
     const user = userEvent.setup()
     await seedSomeData()
     render(
-      <DashboardFiltersProvider>
-        <CardFilterProbe />
-        <SettingsPage />
-      </DashboardFiltersProvider>,
+      <InstallPromptProvider>
+        <DashboardFiltersProvider>
+          <CardFilterProbe />
+          <SettingsPage />
+        </DashboardFiltersProvider>
+      </InstallPromptProvider>,
     )
 
     await user.click(screen.getByRole('button', { name: /filter by card-1/i }))

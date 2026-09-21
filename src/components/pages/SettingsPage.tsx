@@ -13,15 +13,16 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
-import { isIosSafari, useInstallPrompt } from '@/hooks/useInstallPrompt'
+import { isIosDevice, useInstallPrompt } from '@/hooks/InstallPromptContext'
 import { deleteAllData } from '@/storage/deleteAllData'
 
 /**
  * MVP-PLAN §5 Milestone 3: "Add the PWA manifest, icons, and installation
- * guidance." Chrome/Edge/Android get a real "Install" button; iOS Safari
- * never offers the underlying browser prompt at all, so it gets manual
- * steps instead. Nothing renders once already installed, or on a browser
- * that offers neither (there's nothing actionable left to say).
+ * guidance." Chrome/Edge/Android get a real "Install" button; iOS (Safari,
+ * and any other iOS browser, since none of them offer the underlying
+ * install-prompt event at all) gets manual steps instead. Nothing renders
+ * once already installed, or on a browser that offers neither (there's
+ * nothing actionable left to say).
  */
 function InstallSection() {
   const { isInstalled, canPromptInstall, promptInstall } = useInstallPrompt()
@@ -46,7 +47,7 @@ function InstallSection() {
     )
   }
 
-  if (isIosSafari()) {
+  if (isIosDevice()) {
     return (
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 className="font-heading text-sm font-semibold">Install Web3Spend</h2>
