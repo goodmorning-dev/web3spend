@@ -7,6 +7,7 @@ import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import type { StandardTransaction } from '@/types/transaction'
+import { categoryMergeKey, preferredCategoryLabel } from '@/utils/category'
 import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
 const ALL_STATUSES = 'all'
@@ -64,13 +65,21 @@ function TransactionsPage() {
   }, [transactions])
 
   const categoryOptions = useMemo<FilterSelectOption[]>(() => {
-    const categories = distinctSorted(
-      (transactions ?? []).map((transaction) => transaction.categoryRaw),
-    )
-    return [
-      { value: ALL_CATEGORIES, label: 'All categories' },
-      ...categories.map((value) => ({ value, label: value })),
-    ]
+    // Etherfi's export mixes MCC-coded and bare variants of what's
+    // otherwise the same category (e.g. "5411 - Grocery Stores and
+    // Supermarkets" alongside plain "Grocery Stores and Supermarkets");
+    // grouped here by merge key so they show up as one option, not two.
+    const labelsByKey = new Map<string, Set<string>>()
+    for (const transaction of transactions ?? []) {
+      const key = categoryMergeKey(transaction.categoryRaw)
+      const labels = labelsByKey.get(key) ?? new Set<string>()
+      labels.add(transaction.categoryRaw)
+      labelsByKey.set(key, labels)
+    }
+    const options = [...labelsByKey.entries()]
+      .map(([value, labels]) => ({ value, label: preferredCategoryLabel(labels) }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+    return [{ value: ALL_CATEGORIES, label: 'All categories' }, ...options]
   }, [transactions])
 
   const visibleTransactions = useMemo(() => {
@@ -80,7 +89,10 @@ function TransactionsPage() {
     const query = search.trim().toLowerCase()
     return transactions
       .filter((transaction) => status === ALL_STATUSES || transaction.status === status)
-      .filter((transaction) => category === ALL_CATEGORIES || transaction.categoryRaw === category)
+      .filter(
+        (transaction) =>
+          category === ALL_CATEGORIES || categoryMergeKey(transaction.categoryRaw) === category,
+      )
       .filter((transaction) => matchesSearch(transaction, query))
       .filter(
         (transaction) =>
