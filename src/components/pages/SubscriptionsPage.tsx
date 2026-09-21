@@ -1,9 +1,10 @@
-import { Info, Repeat } from 'lucide-react'
-import { detectSubscriptions } from '@/analyzers'
+import { ChevronDown, Info, Repeat } from 'lucide-react'
+import { useMemo } from 'react'
+import { detectSubscriptions, type SubscriptionGroup } from '@/analyzers'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useCurrencyScopedTransactions } from '@/hooks/useCurrencyScopedTransactions'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
-import { formatUtcMonthLabel } from '@/utils/dates'
+import { formatUtcDate, formatUtcMonthLabel } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
 
 function monthLabel(monthKey: string): string {
@@ -11,43 +12,62 @@ function monthLabel(monthKey: string): string {
   return formatUtcMonthLabel(year, month)
 }
 
-interface SubscriptionCardProps {
-  description: string
-  currency: string
-  amountMinor: number
-  dayOfMonth: number
-  occurrenceCount: number
-  firstMonthKey: string
-  lastMonthKey: string
+function cardDisplay(cardLastFourById: Map<string, string>, cardId: string): string {
+  const lastFour = cardLastFourById.get(cardId)
+  return lastFour ? `•••• ${lastFour}` : 'Unknown card'
 }
 
-function SubscriptionCard({
-  description,
-  currency,
-  amountMinor,
-  dayOfMonth,
-  occurrenceCount,
-  firstMonthKey,
-  lastMonthKey,
-}: SubscriptionCardProps) {
+interface SubscriptionCardProps {
+  group: SubscriptionGroup
+  cardLastFourById: Map<string, string>
+}
+
+/** A `<details>` disclosure, same pattern as a transaction row's own
+ * "Original amount" expand: collapsed by default so the list stays
+ * scannable, but the exact charges behind a guess are one click away
+ * rather than needing a trip to the Transactions tab and a manual search. */
+function SubscriptionCard({ group, cardLastFourById }: SubscriptionCardProps) {
+  const { description, currency, amountMinor, dayOfMonth, occurrences } = group
+  const firstMonthKey = occurrences[0].monthKey
+  const lastMonthKey = occurrences[occurrences.length - 1].monthKey
+
   return (
-    <li className="flex items-center gap-3.5 rounded-2xl border border-border bg-card p-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-        <Repeat className="size-5" />
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <p className="truncate text-sm font-semibold">{description}</p>
-        <p className="text-xs text-text-faint">
-          Day {dayOfMonth} of the month · {occurrenceCount} charge
-          {occurrenceCount === 1 ? '' : 's'} ·{' '}
-          {firstMonthKey === lastMonthKey
-            ? monthLabel(firstMonthKey)
-            : `${monthLabel(firstMonthKey)} – ${monthLabel(lastMonthKey)}`}
-        </p>
-      </div>
-      <span className="shrink-0 text-right text-sm font-semibold tabular-nums">
-        {formatMoney(amountMinor, currency)}
-      </span>
+    <li className="overflow-hidden rounded-2xl border border-border bg-card">
+      <details className="group">
+        <summary className="flex list-none cursor-pointer items-center gap-3.5 p-4 [&::-webkit-details-marker]:hidden">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Repeat className="size-5" />
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <p className="truncate text-sm font-semibold">{description}</p>
+            <p className="text-xs text-text-faint">
+              Day {dayOfMonth} of the month · {occurrences.length} charge
+              {occurrences.length === 1 ? '' : 's'} ·{' '}
+              {firstMonthKey === lastMonthKey
+                ? monthLabel(firstMonthKey)
+                : `${monthLabel(firstMonthKey)} – ${monthLabel(lastMonthKey)}`}
+            </p>
+          </div>
+          <span className="shrink-0 text-right text-sm font-semibold tabular-nums">
+            {formatMoney(amountMinor, currency)}
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-text-faint transition-transform group-open:rotate-180" />
+        </summary>
+        <ul className="flex flex-col gap-2 border-t border-border px-4 py-3">
+          {occurrences.map((occurrence) => (
+            <li
+              key={occurrence.transactionId}
+              className="flex items-center justify-between gap-3 text-xs text-text-dim"
+            >
+              <span>{formatUtcDate(occurrence.timestampUtc)}</span>
+              <span className="text-text-faint">
+                {cardDisplay(cardLastFourById, occurrence.cardId)}
+              </span>
+              <span className="tabular-nums">{formatMoney(amountMinor, currency)}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
     </li>
   )
 }
@@ -63,8 +83,16 @@ function SubscriptionCard({
  */
 function SubscriptionsPage() {
   const overallSummary = useDashboardSummary()
-  const { filters } = useDashboardFilters()
+  const { filters, options } = useDashboardFilters()
   const transactions = useCurrencyScopedTransactions(filters)
+
+  const cardLastFourById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const card of options?.cards ?? []) {
+      map.set(card.id, card.last4)
+    }
+    return map
+  }, [options])
 
   if (overallSummary === undefined) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
@@ -108,13 +136,8 @@ function SubscriptionsPage() {
           {groups.map((group) => (
             <SubscriptionCard
               key={`${group.description}-${group.currency}-${group.amountMinor}-${group.dayOfMonth}`}
-              description={group.description}
-              currency={group.currency}
-              amountMinor={group.amountMinor}
-              dayOfMonth={group.dayOfMonth}
-              occurrenceCount={group.occurrences.length}
-              firstMonthKey={group.occurrences[0].monthKey}
-              lastMonthKey={group.occurrences[group.occurrences.length - 1].monthKey}
+              group={group}
+              cardLastFourById={cardLastFourById}
             />
           ))}
         </ul>

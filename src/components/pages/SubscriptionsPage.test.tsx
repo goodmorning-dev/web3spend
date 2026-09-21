@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import type { StandardTransaction } from '@/types/transaction'
+import { formatUtcDate } from '@/utils/dates'
 import SubscriptionsPage from './SubscriptionsPage'
 
 afterEach(resetDatabase)
@@ -63,9 +65,33 @@ describe('SubscriptionsPage', () => {
     renderSubscriptionsPage()
 
     expect(await screen.findByText('Netflix')).toBeInTheDocument()
-    expect(screen.getByText('€13.99')).toBeInTheDocument()
+    // the amount also appears once per occurrence row inside the (collapsed)
+    // expanded list, so there are two matches once cards are seeded above
+    expect(screen.getAllByText('€13.99').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/day 15 of the month/i)).toBeInTheDocument()
     expect(screen.getByText(/2 charges/i)).toBeInTheDocument()
+  })
+
+  it('expands to list each underlying charge, collapsed by default', async () => {
+    const user = userEvent.setup()
+    await db.cards.put({ id: 'card-1', last4: '4242', cardHolderKey: 'jane doe', label: 'Card' })
+    await db.transactions.bulkPut([
+      makeTransaction({ id: '1', cardId: 'card-1', timestampUtc: '2026-01-15T10:00:00.000Z' }),
+      makeTransaction({ id: '2', cardId: 'card-1', timestampUtc: '2026-02-15T10:00:00.000Z' }),
+    ])
+
+    renderSubscriptionsPage()
+    await screen.findByText('Netflix')
+
+    const januaryDate = formatUtcDate('2026-01-15T10:00:00.000Z')
+    const februaryDate = formatUtcDate('2026-02-15T10:00:00.000Z')
+    expect(screen.getByText(januaryDate)).not.toBeVisible()
+
+    await user.click(screen.getByText('Netflix'))
+
+    expect(screen.getByText(januaryDate)).toBeVisible()
+    expect(screen.getByText(februaryDate)).toBeVisible()
+    expect(screen.getAllByText('•••• 4242')).toHaveLength(2)
   })
 
   it('shows an empty state instead of a false positive when nothing repeats', async () => {
