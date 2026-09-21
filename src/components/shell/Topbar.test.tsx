@@ -52,10 +52,13 @@ describe('Topbar', () => {
   it('always shows the privacy chip and the import button', () => {
     renderAt('/app')
     expect(screen.getByText(/processed on your device/i)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /import transactions/i })).toHaveAttribute(
-      'href',
-      '/app/import',
-    )
+    // rendered twice: once in the mobile layout, once in the desktop layout,
+    // only one of which is visible at a given viewport width
+    const importLinks = screen.getAllByRole('link', { name: /import transactions/i })
+    expect(importLinks).toHaveLength(2)
+    for (const link of importLinks) {
+      expect(link).toHaveAttribute('href', '/app/import')
+    }
   })
 
   it('hides the filter dropdowns when there is no data to filter', () => {
@@ -70,11 +73,23 @@ describe('Topbar', () => {
 
     renderAt('/app')
 
-    expect(await screen.findByRole('combobox', { name: 'Currency' })).toHaveTextContent('EUR')
-    expect(screen.getByRole('combobox', { name: 'Card' })).toHaveTextContent('All cards')
-    expect(screen.getByRole('combobox', { name: 'Period' })).toHaveTextContent(
-      formatUtcMonthLabel(2026, 3),
-    )
+    // rendered twice: once in the mobile layout, once in the desktop layout,
+    // only one of which is visible at a given viewport width
+    const currencySelects = await screen.findAllByRole('combobox', { name: 'Currency' })
+    expect(currencySelects).toHaveLength(2)
+    for (const select of currencySelects) {
+      expect(select).toHaveTextContent('EUR')
+    }
+    const cardSelects = screen.getAllByRole('combobox', { name: 'Card' })
+    expect(cardSelects).toHaveLength(2)
+    for (const select of cardSelects) {
+      expect(select).toHaveTextContent('All cards')
+    }
+    const periodSelects = screen.getAllByRole('combobox', { name: 'Period' })
+    expect(periodSelects).toHaveLength(2)
+    for (const select of periodSelects) {
+      expect(select).toHaveTextContent(formatUtcMonthLabel(2026, 3))
+    }
   })
 
   it('lets the card filter be changed to a specific card', async () => {
@@ -84,7 +99,9 @@ describe('Topbar', () => {
     const user = userEvent.setup()
     renderAt('/app')
 
-    const cardSelect = await screen.findByRole('combobox', { name: 'Card' })
+    // both layouts render a "Card" combobox; only one is visible/interactive
+    // at the jsdom viewport, so pick the first that userEvent can actually click
+    const [cardSelect] = await screen.findAllByRole('combobox', { name: 'Card' })
     await user.click(cardSelect)
     await user.click(await screen.findByRole('option', { name: 'Card A' }))
 

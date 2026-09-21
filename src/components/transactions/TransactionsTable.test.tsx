@@ -50,9 +50,7 @@ describe('TransactionsTable', () => {
     // table, only one of which is visible at a given viewport width
     expect(screen.getAllByText('Coffee Shop')).toHaveLength(2)
     expect(screen.getAllByText('Settled')).toHaveLength(2)
-    // the mobile receipt list folds date/category/card into one line, so
-    // the card is only its own isolated text node in the desktop table
-    expect(screen.getByText('•••• 1234')).toBeInTheDocument()
+    expect(screen.getAllByText('•••• 1234')).toHaveLength(2)
     expect(document.body.textContent).toContain('•••• 1234')
   })
 
@@ -61,7 +59,7 @@ describe('TransactionsTable', () => {
 
     render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
 
-    expect(screen.getByText('Unknown card')).toBeInTheDocument()
+    expect(screen.getAllByText('Unknown card')).toHaveLength(2)
     expect(document.body.textContent).toContain('Unknown card')
   })
 
