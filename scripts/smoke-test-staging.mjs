@@ -17,7 +17,16 @@ const target = new URL(
   baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`,
 ).toString()
 
+// A direct hit on this path has no matching static file, so GitHub Pages'
+// *first* response is legitimately a 404, with 404.html's redirect script
+// as the body; that script's own client-side navigation is what should
+// land the browser on the real, decoded URL. So the meaningful check isn't
+// the status of that first response (a real 404 there is correct, not a
+// failure) but where the browser actually ends up and what it renders.
 async function expectTransactionsPage(page, label) {
+  await page.waitForURL((url) => url.pathname.endsWith('/app/transactions') && !url.search, {
+    timeout: 15_000,
+  })
   await page.waitForSelector('h2', { timeout: 15_000 })
   const heading = await page.locator('h2').first().innerText()
   if (heading.trim() !== 'Transactions') {
@@ -33,18 +42,12 @@ try {
   const page = await context.newPage()
 
   console.log(`Visiting ${target} directly...`)
-  const response = await page.goto(target, { waitUntil: 'networkidle' })
-  if (!response || !response.ok()) {
-    throw new Error(`Direct visit failed: HTTP ${response?.status() ?? 'no response'}`)
-  }
+  await page.goto(target, { waitUntil: 'networkidle' })
   await expectTransactionsPage(page, 'Direct visit')
   console.log('Direct visit OK.')
 
   console.log('Refreshing the same URL...')
-  const reloadResponse = await page.reload({ waitUntil: 'networkidle' })
-  if (!reloadResponse || !reloadResponse.ok()) {
-    throw new Error(`Refresh failed: HTTP ${reloadResponse?.status() ?? 'no response'}`)
-  }
+  await page.reload({ waitUntil: 'networkidle' })
   await expectTransactionsPage(page, 'Refresh')
   console.log('Refresh OK.')
 
