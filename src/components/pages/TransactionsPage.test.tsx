@@ -42,8 +42,9 @@ function renderTransactionsPage() {
 describe('TransactionsPage', () => {
   it('shows an import prompt instead of a table when there is no local data', async () => {
     renderTransactionsPage()
-    expect(await screen.findByRole('heading', { name: 'Transactions' })).toBeInTheDocument()
-    expect(screen.getByText(/import your etherfi export/i)).toBeInTheDocument()
+    // no page-level heading here: the page title comes from Topbar (AppShell),
+    // so a second one on the page itself would just duplicate it on screen.
+    expect(await screen.findByText(/import your etherfi export/i)).toBeInTheDocument()
   })
 
   it('lists the transactions in the default period and narrows them by search', async () => {

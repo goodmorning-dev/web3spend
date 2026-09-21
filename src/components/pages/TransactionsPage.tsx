@@ -95,12 +95,9 @@ function TransactionsPage() {
 
   if (overallSummary.transactionCount === 0) {
     return (
-      <div className="flex flex-col gap-2">
-        <h1 className="font-heading text-xl font-semibold">Transactions</h1>
-        <p className="text-sm text-muted-foreground">
-          Import your Etherfi export to see transactions here.
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Import your Etherfi export to see transactions here.
+      </p>
     )
   }
 
@@ -110,7 +107,6 @@ function TransactionsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-heading text-xl font-semibold">Transactions</h1>
       {selectedDateKey && (
         <div className="flex items-center gap-1.5 self-start rounded-full border border-border bg-secondary py-1 pr-1.5 pl-3 text-xs font-medium text-secondary-foreground">
           <span>Day: {formatUtcDate(`${selectedDateKey}T00:00:00.000Z`)}</span>

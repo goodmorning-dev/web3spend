@@ -68,7 +68,10 @@ describe('SettingsPage', () => {
   it('explains that data is local to this browser before offering to delete it', () => {
     renderSettingsPage()
 
-    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+    // no page-level "Settings" heading here: the page title comes from
+    // Topbar (AppShell), so a second one on the page itself would just
+    // duplicate it on screen.
+    expect(screen.getByRole('heading', { name: 'Delete all data' })).toBeInTheDocument()
     expect(screen.getByText(/stored only in this browser on this device/i)).toBeInTheDocument()
     expect(screen.getByText(/indexeddb/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /delete all data/i })).toBeInTheDocument()
