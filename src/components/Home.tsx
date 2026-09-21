@@ -75,7 +75,7 @@ function Home() {
     <main className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
       <div
         aria-hidden="true"
-        className="absolute top-1/4 left-0 -z-10 size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:size-[28rem]"
+        className="absolute top-1/4 left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:block sm:size-[28rem]"
       />
       <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-8 sm:gap-20 sm:py-10">
         <header className="flex items-center justify-between">
@@ -192,7 +192,7 @@ function Home() {
                 src={xLeftImage}
                 alt=""
                 aria-hidden="true"
-                className="absolute right-0 w-40 max-w-none translate-x-2 object-contain sm:w-56"
+                className="absolute left-1/2 w-40 max-w-none -translate-x-1/2 object-contain sm:left-auto sm:right-0 sm:translate-x-2 sm:w-56"
               />
             </div>
             <div className="sm:ml-2">
