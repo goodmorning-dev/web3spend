@@ -123,6 +123,14 @@ function ImportFlow({ onImported }: ImportFlowProps = {}) {
         <p className="mt-1 max-w-[40ch] text-[13.5px] font-medium text-text-dim">
           Everything below is parsed and stored on this device. Nothing is uploaded anywhere.
         </p>
+        <a
+          href="https://help.ether.fi/en/articles/685844-how-to-download-your-card-transaction-history"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-1.5 inline-block text-[13px] font-semibold text-primary hover:underline"
+        >
+          Don&apos;t have your export yet? See ether.fi&apos;s guide
+        </a>
       </div>
 
       <div

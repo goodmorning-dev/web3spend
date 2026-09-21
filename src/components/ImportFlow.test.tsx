@@ -85,6 +85,17 @@ function toFile(workbook: WorkBook, name = 'export.xlsx'): File {
 }
 
 describe('ImportFlow', () => {
+  it("links to ether.fi's own guide on downloading a card transaction export", () => {
+    render(<ImportFlow />)
+
+    const link = screen.getByRole('link', { name: /ether\.fi.*guide/i })
+    expect(link).toHaveAttribute(
+      'href',
+      'https://help.ether.fi/en/articles/685844-how-to-download-your-card-transaction-history',
+    )
+    expect(link).toHaveAttribute('target', '_blank')
+  })
+
   it('imports a valid file, committing it and reporting added/updated counts', async () => {
     const user = userEvent.setup()
     render(<ImportFlow />)
