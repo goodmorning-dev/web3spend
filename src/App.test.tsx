@@ -51,6 +51,16 @@ describe('App routing', () => {
     expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument()
   })
 
+  it('renders the Subscriptions page within the shell at /app/subscriptions', async () => {
+    renderAt('/app/subscriptions')
+    expect(
+      await screen.findByRole('heading', { name: 'Subscriptions', level: 2 }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByText(/import your etherfi export to see likely subscriptions/i),
+    ).toBeInTheDocument()
+  })
+
   it('renders the Import page within the shell at /app/import', async () => {
     renderAt('/app/import')
     expect(

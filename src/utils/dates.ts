@@ -32,6 +32,10 @@ export function getUtcMonth(timestampUtc: string): number {
   return new Date(timestampUtc).getUTCMonth() + 1
 }
 
+export function getUtcDay(timestampUtc: string): number {
+  return new Date(timestampUtc).getUTCDate()
+}
+
 export function getUtcDateKey(timestampUtc: string): string {
   const date = new Date(timestampUtc)
   return formatUtcDateKey(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())

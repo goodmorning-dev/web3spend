@@ -1,4 +1,4 @@
-import { LayoutDashboard, Receipt, Settings, Upload } from 'lucide-react'
+import { LayoutDashboard, Receipt, Repeat, Settings, Upload } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import logoImage from '@/assets/logo.webp'
 import { cn } from '@/lib/utils'
@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 const NAV_ITEMS = [
   { to: '/app', end: true, label: 'Dashboard', icon: LayoutDashboard },
   { to: '/app/transactions', end: false, label: 'Transactions', icon: Receipt },
+  { to: '/app/subscriptions', end: false, label: 'Subscriptions', icon: Repeat },
   { to: '/app/import', end: false, label: 'Import', icon: Upload },
 ]
 

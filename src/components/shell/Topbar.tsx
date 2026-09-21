@@ -8,6 +8,7 @@ import FilterSelect from './FilterSelect'
 const PAGE_TITLES: Record<string, string> = {
   '/app': 'Dashboard',
   '/app/transactions': 'Transactions',
+  '/app/subscriptions': 'Subscriptions',
   '/app/import': 'Import',
   '/app/settings': 'Settings',
 }
