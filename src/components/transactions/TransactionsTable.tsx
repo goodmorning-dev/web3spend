@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { transactionCashbackPct } from '@/analyzers'
 import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
 import { categoryColorFor } from '@/utils/avatar'
@@ -96,6 +97,59 @@ function CashbackAmount({ transaction }: { transaction: StandardTransaction }) {
   )
 }
 
+interface HoveredDate {
+  iso: string
+  left: number
+  top: number
+}
+
+/** A custom tooltip matching the design reference's `.chart-tooltip` styling,
+ * the same box the spend chart's and the activity heatmap's tooltips use,
+ * replacing the native browser tooltip a `title` attribute would otherwise
+ * give. Fixed positioning (from the hovered cell's own viewport rect)
+ * rather than a relative-container offset, since dates sit in a scrollable
+ * table with many rows, each of which would otherwise need its own offset
+ * math. */
+function DateTooltip({ hovered }: { hovered: HoveredDate | null }) {
+  if (!hovered) {
+    return null
+  }
+  return (
+    <div
+      className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-[10px] border border-border bg-secondary px-3 py-2.5 whitespace-nowrap shadow-lg"
+      style={{ left: hovered.left, top: hovered.top - 8 }}
+    >
+      <div className="text-xs font-medium tabular-nums text-foreground">
+        {formatUtcDateTime(hovered.iso)}
+      </div>
+    </div>
+  )
+}
+
+/** Same debounced-clear reasoning as the donut and the heatmap: a mouse
+ * moving from one row's date to the next fires a mouseleave right before
+ * the next mouseenter, and clearing immediately would flash the tooltip
+ * off and back on in between. */
+function useDateHover() {
+  const [hovered, setHovered] = useState<HoveredDate | null>(null)
+  const clearTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => clearTimeout(clearTimeoutRef.current), [])
+
+  function showDate(event: MouseEvent<HTMLElement>, iso: string) {
+    clearTimeout(clearTimeoutRef.current)
+    const rect = event.currentTarget.getBoundingClientRect()
+    setHovered({ iso, left: rect.left + rect.width / 2, top: rect.top })
+  }
+
+  function scheduleHideDate() {
+    clearTimeout(clearTimeoutRef.current)
+    clearTimeoutRef.current = setTimeout(() => setHovered(null), 100)
+  }
+
+  return { hovered, showDate, scheduleHideDate }
+}
+
 function cardDisplay(cardLastFourById: Map<string, string>, cardId: string): string {
   const lastFour = cardLastFourById.get(cardId)
   return lastFour ? `•••• ${lastFour}` : 'Unknown card'
@@ -131,12 +185,15 @@ function OriginalAmountDetails({ transaction }: { transaction: StandardTransacti
 /** A plain table on wider screens, a stacked receipt-style list on phone
  * widths where a 7-column table would no longer be legible. */
 function TransactionsTable({ transactions, cardLastFourById }: TransactionsTableProps) {
+  const { hovered, showDate, scheduleHideDate } = useDateHover()
+
   if (transactions.length === 0) {
     return <p className="text-sm text-text-faint">No transactions match your filters.</p>
   }
 
   return (
     <>
+      <DateTooltip hovered={hovered} />
       <ul className="flex flex-col gap-2 sm:hidden">
         {transactions.map((transaction) => (
           <li
@@ -154,7 +211,8 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
             <div className="flex items-center justify-between gap-1.5">
               <span
                 className="min-w-0 truncate text-xs text-text-faint"
-                title={formatUtcDateTime(transaction.timestampUtc)}
+                onMouseEnter={(event) => showDate(event, transaction.timestampUtc)}
+                onMouseLeave={scheduleHideDate}
               >
                 {formatUtcDate(transaction.timestampUtc)}
               </span>
@@ -211,7 +269,8 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
               <tr key={transaction.id} className="border-b border-border/60 last:border-0">
                 <td
                   className="py-2 pr-3 whitespace-nowrap text-text-faint"
-                  title={formatUtcDateTime(transaction.timestampUtc)}
+                  onMouseEnter={(event) => showDate(event, transaction.timestampUtc)}
+                  onMouseLeave={scheduleHideDate}
                 >
                   {formatUtcDate(transaction.timestampUtc)}
                 </td>

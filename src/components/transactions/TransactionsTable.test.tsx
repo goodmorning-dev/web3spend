@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
-import { formatUtcDateTime } from '@/utils/dates'
+import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
 import TransactionsTable from './TransactionsTable'
 
@@ -116,13 +116,30 @@ describe('TransactionsTable', () => {
     expect(screen.queryByText('CS')).not.toBeInTheDocument()
   })
 
-  it("shows the transaction's date, with the exact time available on hover", () => {
-    const transaction = makeTransaction({ timestampUtc: '2026-03-15T10:30:45.000Z' })
+  it("shows the transaction's exact time in a chart-style tooltip on hover, not a native title", async () => {
+    const iso = '2026-03-15T10:30:45.000Z'
+    const transaction = makeTransaction({ timestampUtc: iso })
 
     render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
 
-    const expectedTitle = formatUtcDateTime('2026-03-15T10:30:45.000Z')
-    expect(screen.getAllByTitle(expectedTitle)).toHaveLength(2)
+    const dateCells = screen.getAllByText(formatUtcDate(iso))
+    expect(dateCells).toHaveLength(2)
+    for (const cell of dateCells) {
+      expect(cell).not.toHaveAttribute('title')
+    }
+
+    const exactTime = formatUtcDateTime(iso)
+    expect(screen.queryByText(exactTime)).not.toBeInTheDocument()
+
+    fireEvent.mouseEnter(dateCells[0])
+    expect(screen.getByText(exactTime)).toBeInTheDocument()
+
+    fireEvent.mouseLeave(dateCells[0])
+    // the clear is deliberately debounced, same reasoning as the donut and
+    // the heatmap tooltips, so it doesn't happen synchronously with mouseleave.
+    await waitFor(() => {
+      expect(screen.queryByText(exactTime)).not.toBeInTheDocument()
+    })
   })
 
   it('shows the effective cashback rate next to the cashback amount', () => {
