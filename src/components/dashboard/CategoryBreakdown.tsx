@@ -188,23 +188,13 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
             </PieChart>
           </ChartContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-            {hoveredBucket === undefined ? (
-              <>
-                <span className="text-xl font-semibold tabular-nums">
-                  {formatMoney(totalSpendMinor, currency)}
-                </span>
-                <span className="text-[11.5px] font-medium text-text-faint">Total spent</span>
-              </>
-            ) : (
-              <>
-                <span className="text-xl font-semibold tabular-nums">
-                  {formatMoney(hoveredBucket.spendMinor, currency)}
-                </span>
-                <span className="w-full truncate text-[11.5px] font-medium text-text-faint">
-                  {hoveredBucket.category} · {formatPercent(hoveredBucket.share * 100, 0)}
-                </span>
-              </>
-            )}
+            <span className="text-xl font-semibold tabular-nums">
+              {formatMoney(
+                hoveredBucket === undefined ? totalSpendMinor : hoveredBucket.spendMinor,
+                currency,
+              )}
+            </span>
+            <span className="text-[11.5px] font-medium text-text-faint">Total spent</span>
           </div>
         </div>
         <ul className="flex w-full min-w-0 flex-col gap-2">
