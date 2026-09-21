@@ -1,4 +1,6 @@
 import ImportFlow from '@/components/ImportFlow'
+import { Button } from '@/components/ui/button'
+import { useDemoData } from '@/hooks/useDemoData'
 
 const NOTES: Array<{ key: string; content: React.ReactNode }> = [
   {
@@ -27,9 +29,27 @@ const NOTES: Array<{ key: string; content: React.ReactNode }> = [
 ]
 
 function ImportPage() {
+  const { loadDemo, isLoading, error } = useDemoData()
+
   return (
     <div className="flex flex-col gap-4">
       <ImportFlow />
+      <div className="flex flex-col items-center gap-1.5">
+        <div className="flex items-center gap-1.5 text-sm text-text-dim">
+          <span>Don&apos;t have a file handy?</span>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            onClick={loadDemo}
+            disabled={isLoading}
+            className="h-auto p-0"
+          >
+            {isLoading ? 'Loading demo…' : 'Try a demo instead'}
+          </Button>
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div>
       <section className="rounded-2xl border border-border bg-card p-5">
         <h4 className="mb-3 text-[13px] font-semibold">Good to know</h4>
         <ul className="flex flex-col gap-2">

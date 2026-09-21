@@ -19,6 +19,7 @@ import xRightImage from '@/assets/x-right.webp'
 import { Button } from '@/components/ui/button'
 import { GithubLogoIcon, XLogoIcon } from '@/components/home/BrandIcons'
 import HeroCard from '@/components/home/HeroCard'
+import { useDemoData } from '@/hooks/useDemoData'
 
 const REPO_URL = 'https://github.com/goodmorning-dev/web3spend'
 
@@ -71,6 +72,8 @@ const STEPS: {
 ]
 
 function Home() {
+  const { loadDemo, isLoading, error } = useDemoData()
+
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
       <div
@@ -109,13 +112,12 @@ function Home() {
                   Import your Etherfi export
                 </Link>
               </Button>
-              <Button asChild size="xl" variant="secondary">
-                <Link to="/app">
-                  Try a demo
-                  <ChevronRight />
-                </Link>
+              <Button size="xl" variant="secondary" onClick={loadDemo} disabled={isLoading}>
+                {isLoading ? 'Loading demo…' : 'Try a demo'}
+                {!isLoading && <ChevronRight />}
               </Button>
             </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <ul className="mt-3 flex flex-wrap items-start gap-6">
               {PROMISES.map(({ icon: Icon, title, description }) => (
                 <li key={title} className="flex items-center gap-2.5">
