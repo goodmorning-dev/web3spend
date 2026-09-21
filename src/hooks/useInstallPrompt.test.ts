@@ -2,7 +2,13 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { isIosSafari, useInstallPrompt } from './useInstallPrompt'
 
-function dispatchBeforeInstallPrompt(overrides: Partial<Event> = {}) {
+interface FakeInstallPromptFields {
+  preventDefault?: () => void
+  prompt?: () => Promise<void>
+  userChoice?: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+function dispatchBeforeInstallPrompt(overrides: FakeInstallPromptFields = {}) {
   const event = new Event('beforeinstallprompt', { cancelable: true })
   Object.assign(event, overrides)
   window.dispatchEvent(event)

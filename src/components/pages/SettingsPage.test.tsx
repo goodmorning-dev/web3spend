@@ -13,7 +13,13 @@ afterEach(() => {
   return resetDatabase()
 })
 
-function dispatchBeforeInstallPrompt(overrides: Partial<Event> = {}) {
+interface FakeInstallPromptFields {
+  preventDefault?: () => void
+  prompt?: () => Promise<void>
+  userChoice?: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+function dispatchBeforeInstallPrompt(overrides: FakeInstallPromptFields = {}) {
   const event = new Event('beforeinstallprompt', { cancelable: true })
   Object.assign(event, { preventDefault: () => {}, ...overrides })
   window.dispatchEvent(event)
