@@ -1,4 +1,4 @@
-import { ShieldCheck, Trash2 } from 'lucide-react'
+import { Download, ShieldCheck, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import {
   AlertDialog,
@@ -13,7 +13,55 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
+import { isIosDevice, useInstallPrompt } from '@/hooks/InstallPromptContext'
 import { deleteAllData } from '@/storage/deleteAllData'
+
+/**
+ * MVP-PLAN §5 Milestone 3: "Add the PWA manifest, icons, and installation
+ * guidance." Chrome/Edge/Android get a real "Install" button; iOS (Safari,
+ * and any other iOS browser, since none of them offer the underlying
+ * install-prompt event at all) gets manual steps instead. Nothing renders
+ * once already installed, or on a browser that offers neither (there's
+ * nothing actionable left to say).
+ */
+function InstallSection() {
+  const { isInstalled, canPromptInstall, promptInstall } = useInstallPrompt()
+
+  if (isInstalled) {
+    return null
+  }
+
+  if (canPromptInstall) {
+    return (
+      <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+        <h2 className="font-heading text-sm font-semibold">Install Web3Spend</h2>
+        <p className="max-w-prose text-sm text-text-faint">
+          Installing adds Web3Spend to your device like a regular app: its own icon, its own
+          window, and it keeps working offline once it's loaded your data.
+        </p>
+        <Button size="sm" className="self-start" onClick={promptInstall}>
+          <Download className="size-3.5" />
+          Install app
+        </Button>
+      </section>
+    )
+  }
+
+  if (isIosDevice()) {
+    return (
+      <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+        <h2 className="font-heading text-sm font-semibold">Install Web3Spend</h2>
+        <p className="max-w-prose text-sm text-text-faint">
+          iOS doesn't offer an install button, but you can still add Web3Spend to your Home
+          Screen: tap the Share icon, then &quot;Add to Home Screen&quot;. It'll open in its own
+          window and keep working offline once it's loaded your data.
+        </p>
+      </section>
+    )
+  }
+
+  return null
+}
 
 /**
  * MVP-PLAN §5: "Delete all local financial data after confirmation. This is
@@ -47,6 +95,7 @@ function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <InstallSection />
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 className="font-heading text-sm font-semibold">Delete all data</h2>
         <p className="max-w-prose text-sm text-text-faint">
