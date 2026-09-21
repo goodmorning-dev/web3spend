@@ -1,7 +1,14 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { db } from '@/storage/db'
+import { resetDatabase } from '@/storage/test-helpers'
 import Home from './Home'
+
+afterEach(async () => {
+  await resetDatabase()
+})
 
 function renderHome() {
   return render(
@@ -26,13 +33,22 @@ describe('Home', () => {
     expect(screen.getByText('See your spending')).toBeInTheDocument()
   })
 
-  it('links both call-to-action buttons to /app', () => {
+  it('links the import call-to-action to /app', () => {
     renderHome()
     expect(screen.getByRole('link', { name: /import your etherfi export/i })).toHaveAttribute(
       'href',
       '/app',
     )
-    expect(screen.getByRole('link', { name: /try a demo/i })).toHaveAttribute('href', '/app')
+  })
+
+  it('loads the synthetic demo dataset when "Try a demo" is clicked', async () => {
+    renderHome()
+    await userEvent.click(screen.getByRole('button', { name: /try a demo/i }))
+    await waitFor(async () => {
+      expect(await db.transactions.count()).toBeGreaterThan(0)
+    })
+    const cards = await db.cards.toArray()
+    expect(cards.length).toBeGreaterThan(0)
   })
 
   it('links the top-right action to /app', () => {
