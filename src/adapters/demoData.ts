@@ -2,14 +2,20 @@ import type { ParsedTransactionRow } from '@/matching/commitImport'
 
 /**
  * MVP-PLAN §5: "Optional demo uses completely synthetic transactions in a
- * separate, disposable dataset." Reusing commitImport's fixed-fileHash
- * short-circuit for that: loading the demo twice is a no-op the second
- * time, same as re-uploading an unchanged export, and deleting all local
- * data (Settings) clears the demo's import record along with everything
- * else, so a later "Try a demo" click is a normal fresh import again.
+ * separate, disposable dataset." The fixed fileHash and card holder key
+ * below are what make the demo separate and disposable in practice:
+ * `useDemoData` refuses to load this dataset once any real import exists,
+ * and `ImportFlow` clears it automatically the moment a real import
+ * commits, via `src/storage/demoData.ts`'s `hasRealData`/`clearDemoData`.
+ * Reusing commitImport's fixed-fileHash short-circuit: loading the demo
+ * twice is a no-op the second time, same as re-uploading an unchanged
+ * export, and deleting all local data (Settings) clears the demo's import
+ * record along with everything else, so a later "Try a demo" click is a
+ * normal fresh import again.
  */
 export const DEMO_FILE_HASH = 'demo-dataset-v1'
 export const DEMO_PARSER_VERSION = 'demo-1'
+export const DEMO_CARD_HOLDER_KEY = 'demo'
 
 interface DemoSeedRow {
   daysAgo: number
@@ -32,7 +38,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 1,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Amazon',
     categoryRaw: 'Miscellaneous and Specialty Retail Stores',
     amountMinor: 8999,
@@ -42,7 +48,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 2,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Uber',
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 2450,
@@ -52,7 +58,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 3,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Starbucks',
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 1240,
@@ -62,7 +68,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 4,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Spotify',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 1099,
@@ -72,7 +78,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 5,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Carrefour',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 6420,
@@ -82,7 +88,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 6,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Netflix',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 1399,
@@ -92,7 +98,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 8,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Shell',
     categoryRaw: 'Service Stations',
     amountMinor: 5210,
@@ -102,7 +108,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 9,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Zara',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 5600,
@@ -112,7 +118,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 10,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Bolt',
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 980,
@@ -122,7 +128,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 12,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Lidl',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 4115,
@@ -132,7 +138,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 13,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Steam',
     categoryRaw: 'Digital Goods: Games',
     amountMinor: 1999,
@@ -142,7 +148,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 14,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: "McDonald's",
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 870,
@@ -152,7 +158,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 15,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Adobe',
     categoryRaw: 'Digital Goods: Software',
     amountMinor: 2299,
@@ -162,7 +168,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 17,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'H&M',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 3240,
@@ -172,7 +178,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 18,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Uber Eats',
     categoryRaw: '5812 - Eating Places and Restaurants',
     amountMinor: 2870,
@@ -182,7 +188,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 20,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Carrefour',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 7230,
@@ -192,7 +198,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 21,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Booking.com',
     categoryRaw: '4722 - Travel Agencies',
     amountMinor: 18500,
@@ -202,7 +208,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 23,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Amazon',
     categoryRaw: 'Miscellaneous and Specialty Retail Stores',
     amountMinor: -8999,
@@ -212,7 +218,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 24,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Shell',
     categoryRaw: 'Service Stations',
     amountMinor: 4890,
@@ -222,7 +228,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 26,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Starbucks',
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 1350,
@@ -232,7 +238,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 27,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Zara',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 4780,
@@ -242,7 +248,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 29,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Spotify',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 1099,
@@ -252,7 +258,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 31,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Lidl',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 3860,
@@ -262,7 +268,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 33,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Bolt',
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 1620,
@@ -272,7 +278,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 35,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Netflix',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 1399,
@@ -282,7 +288,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 37,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Uber Eats',
     categoryRaw: '5812 - Eating Places and Restaurants',
     amountMinor: 3320,
@@ -292,7 +298,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 39,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Carrefour',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 5940,
@@ -302,7 +308,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 41,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'H&M',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 2860,
@@ -312,7 +318,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 43,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Adobe',
     categoryRaw: 'Digital Goods: Software',
     amountMinor: 2299,
@@ -322,7 +328,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 45,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Shell',
     categoryRaw: 'Service Stations',
     amountMinor: 4460,
@@ -332,7 +338,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 47,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Steam',
     categoryRaw: 'Digital Goods: Games',
     amountMinor: 2999,
@@ -342,7 +348,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 49,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: "McDonald's",
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 960,
@@ -352,7 +358,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 51,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Booking.com',
     categoryRaw: '4722 - Travel Agencies',
     amountMinor: 24300,
@@ -362,7 +368,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 53,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Zara',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 3990,
@@ -372,7 +378,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 55,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Lidl',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 4520,
@@ -382,7 +388,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 57,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Bolt',
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 1180,
@@ -392,7 +398,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 59,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Spotify',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 1099,
@@ -402,7 +408,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 61,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Carrefour',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 6780,
@@ -412,7 +418,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 63,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Uber Eats',
     categoryRaw: '5812 - Eating Places and Restaurants',
     amountMinor: 2450,
@@ -422,7 +428,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 65,
     last4: '4821',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'Starbucks',
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 1180,
@@ -432,7 +438,7 @@ const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 67,
     last4: '1090',
-    cardHolderKey: 'demo',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
     description: 'H&M',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 3410,

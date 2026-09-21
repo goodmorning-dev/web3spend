@@ -86,3 +86,13 @@ export function useDashboardFilters(): DashboardFiltersContextValue {
   }
   return context
 }
+
+/**
+ * Same as `useDashboardFilters`, but returns null instead of throwing when
+ * there is no provider. For callers reachable both inside and outside
+ * `/app` (e.g. "Try a demo" on Home, which has no filters to reset, and on
+ * the Import screen, which does).
+ */
+export function useDashboardFiltersOptional(): DashboardFiltersContextValue | null {
+  return useContext(DashboardFiltersContext)
+}

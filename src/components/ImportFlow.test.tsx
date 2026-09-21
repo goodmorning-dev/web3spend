@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { utils, write, type WorkBook } from 'xlsx'
+import { buildDemoRows, DEMO_FILE_HASH, DEMO_PARSER_VERSION } from '@/adapters/demoData'
+import { commitImport } from '@/matching/commitImport'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import ImportFlow from './ImportFlow'
@@ -145,5 +147,25 @@ describe('ImportFlow', () => {
     await user.upload(input, file)
     expect(await screen.findByText(/already been imported/i)).toBeInTheDocument()
     expect(await db.transactions.count()).toBe(1)
+  })
+
+  it('clears any loaded demo data before committing a real import', async () => {
+    await commitImport(buildDemoRows(), {
+      fileHash: DEMO_FILE_HASH,
+      parserVersion: DEMO_PARSER_VERSION,
+      unsupportedCount: 0,
+    })
+    expect(await db.transactions.count()).toBeGreaterThan(0)
+
+    const user = userEvent.setup()
+    render(<ImportFlow />)
+
+    const input = screen.getByLabelText(/choose an xlsx file/i)
+    await user.upload(input, toFile(buildValidWorkbook()))
+
+    expect(await screen.findByText('1 added, 0 updated.')).toBeInTheDocument()
+    expect(await db.transactions.count()).toBe(1)
+    expect(await db.imports.where('fileHash').equals(DEMO_FILE_HASH).count()).toBe(0)
+    expect(await db.cards.where('cardHolderKey').equals('demo').count()).toBe(0)
   })
 })

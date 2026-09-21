@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
+import { commitImport } from '@/matching/commitImport'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import Home from './Home'
@@ -49,6 +50,36 @@ describe('Home', () => {
     })
     const cards = await db.cards.toArray()
     expect(cards.length).toBeGreaterThan(0)
+  })
+
+  it('refuses to load the demo on top of real transactions', async () => {
+    await commitImport(
+      [
+        {
+          last4: '1234',
+          cardHolderKey: 'jane doe',
+          timestampUtc: '2026-01-15T10:00:00.000Z',
+          type: 'card_spend',
+          description: 'Merchant A',
+          status: 'CLEARED',
+          amountMinor: 450,
+          currency: 'EUR',
+          originalAmountMinor: 450,
+          originalCurrency: 'EUR',
+          cashbackMinor: 14,
+          cashbackCurrency: 'EUR',
+          categoryRaw: '5411 - Grocery Stores and Supermarkets',
+          spendingMode: 'Direct Pay',
+        },
+      ],
+      { fileHash: 'real-hash-1', parserVersion: 'test-1', unsupportedCount: 0 },
+    )
+
+    renderHome()
+    await userEvent.click(screen.getByRole('button', { name: /try a demo/i }))
+
+    expect(await screen.findByText(/already have real transactions imported/i)).toBeInTheDocument()
+    expect(await db.transactions.count()).toBe(1)
   })
 
   it('links the top-right action to /app', () => {

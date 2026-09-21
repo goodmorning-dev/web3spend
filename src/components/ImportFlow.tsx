@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { ETHERFI_PARSER_VERSION, etherfiAdapter, type UnsupportedRow } from '@/adapters'
 import { cn } from '@/lib/utils'
 import { commitImport } from '@/matching/commitImport'
+import { clearDemoData } from '@/storage/demoData'
 import { sha256Hex } from '@/utils/hash'
 
 interface ImportResult {
@@ -48,6 +49,9 @@ function ImportFlow({ onImported }: ImportFlowProps = {}) {
       const buffer = await file.arrayBuffer()
       const fileHash = await sha256Hex(buffer)
       const { rows, unsupported } = etherfiAdapter.parse(buffer)
+      // The demo dataset is meant to be disposable (MVP-PLAN §5): a real
+      // import replaces it outright rather than merging alongside it.
+      await clearDemoData()
       const { rowCounts, alreadyImported } = await commitImport(rows, {
         fileHash,
         parserVersion: ETHERFI_PARSER_VERSION,
