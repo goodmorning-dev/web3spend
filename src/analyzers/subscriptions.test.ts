@@ -97,15 +97,55 @@ describe('detectSubscriptions', () => {
     expect(result).toEqual([])
   })
 
-  it('counts only one occurrence per month even with two matching charges in the same month', () => {
+  it('drops a month where the same merchant/amount charged more than once, rather than picking one and counting it normally', () => {
+    // A real monthly subscription bills once a month; two charges in the
+    // same month means this specific merchant/amount isn't behaving like
+    // one, so that month shouldn't count as evidence either way.
     const result = detectSubscriptions([
       makeTransaction({ id: '1', timestampUtc: '2026-01-15T10:00:00.000Z' }),
       makeTransaction({ id: '2', timestampUtc: '2026-01-15T18:00:00.000Z' }),
       makeTransaction({ id: '3', timestampUtc: '2026-02-15T10:00:00.000Z' }),
     ])
 
+    // only February is a single-charge month; one month alone is never enough
+    expect(result).toEqual([])
+  })
+
+  it('does not let a frequently-repeating small charge manufacture a day match out of sheer volume', () => {
+    // Regression test: a merchant charging the same round amount many times
+    // a month, on different days each time, used to fragment into several
+    // bogus "subscriptions" - one per day that happened to repeat across
+    // two otherwise-unrelated months. Every month below has more than one
+    // matching charge, so none of them ever qualifies as a single-charge
+    // month to compare days against, and nothing should be reported.
+    const result = detectSubscriptions([
+      makeTransaction({ id: '1', amountMinor: 26, timestampUtc: '2026-06-03T10:00:00.000Z' }),
+      makeTransaction({ id: '2', amountMinor: 26, timestampUtc: '2026-06-04T10:00:00.000Z' }),
+      makeTransaction({ id: '3', amountMinor: 26, timestampUtc: '2026-06-17T10:00:00.000Z' }),
+      makeTransaction({ id: '4', amountMinor: 26, timestampUtc: '2026-07-05T10:00:00.000Z' }),
+      makeTransaction({ id: '5', amountMinor: 26, timestampUtc: '2026-07-17T10:00:00.000Z' }),
+    ])
+
+    expect(result).toEqual([])
+  })
+
+  it('still detects a real monthly charge even when a different, unrelated month for the same merchant/amount is noisy', () => {
+    const result = detectSubscriptions([
+      // January and February: a clean, single monthly charge on day 15
+      makeTransaction({ id: '1', timestampUtc: '2026-01-15T10:00:00.000Z' }),
+      makeTransaction({ id: '2', timestampUtc: '2026-02-15T10:00:00.000Z' }),
+      // March: an extra same-amount charge landed on a different day too,
+      // making that one month noisy on its own, but it shouldn't erase the
+      // clean evidence already established in January and February
+      makeTransaction({ id: '3', timestampUtc: '2026-03-15T10:00:00.000Z' }),
+      makeTransaction({ id: '4', timestampUtc: '2026-03-22T10:00:00.000Z' }),
+    ])
+
     expect(result).toHaveLength(1)
-    expect(result[0].occurrences).toHaveLength(2)
+    expect(result[0].occurrences.map((occurrence) => occurrence.monthKey)).toEqual([
+      '2026-01',
+      '2026-02',
+    ])
   })
 
   it('sorts detected subscriptions by most recently charged first', () => {
