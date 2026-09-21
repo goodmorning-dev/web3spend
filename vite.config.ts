@@ -19,8 +19,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         // default globPatterns omit font files; bundled fonts must be precached
-        // too so offline typography doesn't fall back to a system font.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // too so offline typography doesn't fall back to a system font. webp
+        // is added for the home page's hero artwork, also bundled rather than
+        // fetched remotely.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
       },
       manifest: {
         name: 'Web3Spend',
