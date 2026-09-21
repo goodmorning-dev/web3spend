@@ -53,10 +53,10 @@ function SettingsPage() {
         <h2 className="font-heading text-sm font-semibold">Delete all data</h2>
         <p className="max-w-prose text-sm text-text-faint">
           Everything Web3Spend knows, every card, transaction, and import record, is stored only in
-          this browser on this device. Deleting it removes that data permanently; there's no server
-          copy to restore it from, and it has no effect on any other browser or device you've used
-          this app on, including a separate install on your phone. Re-importing your Etherfi export
-          afterward rebuilds your data from scratch.
+          this browser on this device, in its IndexedDB database. Deleting it removes that data
+          permanently; there's no server copy to restore it from, and it has no effect on any other
+          browser or device you've used this app on, including a separate install on your phone.
+          Re-importing your Etherfi export afterward rebuilds your data from scratch.
         </p>
 
         {deleted ? (

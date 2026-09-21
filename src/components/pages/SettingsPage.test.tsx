@@ -70,6 +70,7 @@ describe('SettingsPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
     expect(screen.getByText(/stored only in this browser on this device/i)).toBeInTheDocument()
+    expect(screen.getByText(/indexeddb/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /delete all data/i })).toBeInTheDocument()
   })
 

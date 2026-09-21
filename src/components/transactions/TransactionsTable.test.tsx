@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
+import { formatUtcDateTime } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
 import TransactionsTable from './TransactionsTable'
 
@@ -106,12 +107,44 @@ describe('TransactionsTable', () => {
     expect(screen.getAllByText(expected)).toHaveLength(2)
   })
 
-  it('shows a merchant avatar with initials derived from its name', () => {
+  it('shows only the merchant name, with no avatar or initials badge', () => {
     const transaction = makeTransaction({ description: 'Coffee Shop' })
 
     render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
 
-    expect(screen.getAllByText('CS')).toHaveLength(2)
+    expect(screen.getAllByText('Coffee Shop')).toHaveLength(2)
+    expect(screen.queryByText('CS')).not.toBeInTheDocument()
+  })
+
+  it("shows the transaction's date, with the exact time available on hover", () => {
+    const transaction = makeTransaction({ timestampUtc: '2026-03-15T10:30:45.000Z' })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    const expectedTitle = formatUtcDateTime('2026-03-15T10:30:45.000Z')
+    expect(screen.getAllByTitle(expectedTitle)).toHaveLength(2)
+  })
+
+  it('shows the effective cashback rate next to the cashback amount', () => {
+    // 9 minor units of cashback on 450 minor units of spend is exactly 2%.
+    const transaction = makeTransaction({ amountMinor: 450, cashbackMinor: 9, currency: 'EUR' })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    expect(screen.getAllByText('(2.0%)')).toHaveLength(2)
+  })
+
+  it('shows no cashback rate when the cashback currency does not match the spend currency', () => {
+    const transaction = makeTransaction({
+      amountMinor: 450,
+      currency: 'EUR',
+      cashbackMinor: 9,
+      cashbackCurrency: 'USD',
+    })
+
+    render(<TransactionsTable transactions={[transaction]} cardLastFourById={new Map()} />)
+
+    expect(screen.queryByText(/\(\d/)).not.toBeInTheDocument()
   })
 
   it("makes a transaction's original amount inspectable when it differs from the settled amount", () => {

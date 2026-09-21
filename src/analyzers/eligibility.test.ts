@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
-import { hasCompatibleCashbackCurrency, isEligiblePurchase } from './eligibility'
+import {
+  hasCompatibleCashbackCurrency,
+  isEligiblePurchase,
+  transactionCashbackPct,
+} from './eligibility'
 
 function makeTransaction(overrides: Partial<StandardTransaction> = {}): StandardTransaction {
   return {
@@ -53,5 +57,24 @@ describe('hasCompatibleCashbackCurrency', () => {
     expect(
       hasCompatibleCashbackCurrency(makeTransaction({ currency: 'EUR', cashbackCurrency: 'USD' })),
     ).toBe(false)
+  })
+})
+
+describe('transactionCashbackPct', () => {
+  it('computes cashback as a percentage of the spend on the same row', () => {
+    expect(transactionCashbackPct(makeTransaction({ amountMinor: 450, cashbackMinor: 9 }))).toBe(2)
+  })
+
+  it('is null when the cashback currency differs from the spend currency', () => {
+    expect(
+      transactionCashbackPct(
+        makeTransaction({ currency: 'EUR', cashbackCurrency: 'USD', amountMinor: 450 }),
+      ),
+    ).toBeNull()
+  })
+
+  it('is null when there is no positive spend to divide by', () => {
+    expect(transactionCashbackPct(makeTransaction({ amountMinor: 0 }))).toBeNull()
+    expect(transactionCashbackPct(makeTransaction({ amountMinor: -400 }))).toBeNull()
   })
 })

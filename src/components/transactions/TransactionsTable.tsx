@@ -1,7 +1,8 @@
+import { transactionCashbackPct } from '@/analyzers'
 import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
-import { avatarColorFor, categoryColorFor, initialsFor } from '@/utils/avatar'
-import { formatUtcDate } from '@/utils/dates'
-import { formatMoney, formatSignedCashback, formatSignedSpend } from '@/utils/format'
+import { categoryColorFor } from '@/utils/avatar'
+import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
+import { formatMoney, formatPercent, formatSignedCashback, formatSignedSpend } from '@/utils/format'
 
 interface TransactionsTableProps {
   transactions: StandardTransaction[]
@@ -71,18 +72,6 @@ function StatusPill({
   )
 }
 
-function MerchantAvatar({ merchant }: { merchant: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[10px] font-semibold text-white"
-      style={{ backgroundColor: avatarColorFor(merchant) }}
-    >
-      {initialsFor(merchant)}
-    </span>
-  )
-}
-
 function CategoryDot({ category }: { category: string }) {
   return (
     <span
@@ -90,6 +79,20 @@ function CategoryDot({ category }: { category: string }) {
       className="inline-block size-[7px] shrink-0 rounded-[2px]"
       style={{ backgroundColor: categoryColorFor(category) }}
     />
+  )
+}
+
+/** The cashback amount, plus its effective rate against the spend on the
+ * same row when it can be safely computed (see transactionCashbackPct). */
+function CashbackAmount({ transaction }: { transaction: StandardTransaction }) {
+  const pct = transactionCashbackPct(transaction)
+  return (
+    <>
+      {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
+      {pct !== null && (
+        <span className="ml-1 font-normal text-text-faint">({formatPercent(pct, 1)})</span>
+      )}
+    </>
   )
 }
 
@@ -141,7 +144,6 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
             className="flex flex-col gap-1.5 rounded-xl border border-border bg-card p-3"
           >
             <div className="flex items-center gap-2.5">
-              <MerchantAvatar merchant={transaction.description} />
               <p className="min-w-0 flex-1 truncate text-sm font-medium">
                 {transaction.description}
               </p>
@@ -150,12 +152,15 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
               </span>
             </div>
             <div className="flex items-center justify-between gap-1.5">
-              <span className="min-w-0 truncate text-xs text-text-faint">
+              <span
+                className="min-w-0 truncate text-xs text-text-faint"
+                title={formatUtcDateTime(transaction.timestampUtc)}
+              >
                 {formatUtcDate(transaction.timestampUtc)}
               </span>
               <div className="flex shrink-0 items-center gap-1.5">
                 <span className="text-xs tabular-nums text-positive">
-                  {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
+                  <CashbackAmount transaction={transaction} />
                 </span>
                 <StatusPill transaction={transaction} compact />
               </div>
@@ -204,15 +209,13 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
           <tbody>
             {transactions.map((transaction) => (
               <tr key={transaction.id} className="border-b border-border/60 last:border-0">
-                <td className="py-2 pr-3 whitespace-nowrap text-text-faint">
+                <td
+                  className="py-2 pr-3 whitespace-nowrap text-text-faint"
+                  title={formatUtcDateTime(transaction.timestampUtc)}
+                >
                   {formatUtcDate(transaction.timestampUtc)}
                 </td>
-                <td className="py-2 pr-3">
-                  <div className="flex items-center gap-2.5">
-                    <MerchantAvatar merchant={transaction.description} />
-                    {transaction.description}
-                  </div>
-                </td>
+                <td className="py-2 pr-3">{transaction.description}</td>
                 <td className="py-2 pr-3 text-text-dim">
                   <span className="inline-flex items-center gap-1.5">
                     <CategoryDot category={transaction.categoryRaw} />
@@ -227,7 +230,7 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
                   <OriginalAmountDetails transaction={transaction} />
                 </td>
                 <td className="py-2 pr-3 text-right tabular-nums text-positive">
-                  {formatSignedCashback(transaction.cashbackMinor, transaction.cashbackCurrency)}
+                  <CashbackAmount transaction={transaction} />
                 </td>
                 <td className="py-2 text-right">
                   <StatusPill transaction={transaction} />
