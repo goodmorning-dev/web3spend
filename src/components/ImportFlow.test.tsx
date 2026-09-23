@@ -6,9 +6,7 @@ describe('ImportFlow', () => {
   it('shows the import heading and the file picker', () => {
     render(<ImportFlow />)
 
-    expect(
-      screen.getByRole('heading', { name: /import your ether\.fi export/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /import your ether\.fi data/i })).toBeInTheDocument()
     expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
   })
 

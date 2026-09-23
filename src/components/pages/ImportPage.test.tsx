@@ -49,10 +49,32 @@ function renderImportPageWithFilters() {
 describe('ImportPage', () => {
   it('shows the import heading and the file picker', () => {
     renderImportPage()
-    expect(
-      screen.getByRole('heading', { name: /import your ether\.fi export/i }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /import your ether\.fi data/i })).toBeInTheDocument()
     expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
+  })
+
+  it('puts the import area before the illustration', () => {
+    const { container } = renderImportPage()
+
+    const heading = screen.getByRole('heading', { name: /import your ether\.fi data/i })
+    const illustration = container.querySelector('img')!
+    expect(heading.compareDocumentPosition(illustration) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+  })
+
+  it('explains the notes plainly, with links to the source and to Settings', () => {
+    renderImportPage()
+
+    expect(screen.getByText('Nothing counted twice')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'See the code' })).toHaveAttribute(
+      'href',
+      'https://github.com/goodmorning-dev/web3spend/blob/main/src/adapters/etherfi.ts',
+    )
+    expect(screen.getByText('Straight to your dashboard')).toBeInTheDocument()
+    expect(screen.queryByText(/no preview step/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/app/settings')
+    expect(screen.queryByText(/nothing already saved is ever deleted/i)).not.toBeInTheDocument()
   })
 
   it('loads the synthetic demo dataset when "Try a demo instead" is clicked', async () => {

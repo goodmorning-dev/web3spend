@@ -1,5 +1,12 @@
 import { CircleAlert, Upload } from 'lucide-react'
-import { useRef, useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from 'react'
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 import { Button } from '@/components/ui/button'
 import { ETHERFI_PARSER_VERSION, etherfiAdapter, type UnsupportedRow } from '@/adapters'
 import { cn } from '@/lib/utils'
@@ -19,6 +26,10 @@ interface ImportDropzoneProps {
    * so a parent can react to "an import just happened" without needing to
    * duplicate this component's own result state. */
   onImported?: (result: ImportResult) => void
+  /** Shown under a finished import's result, such as a link on to the
+   * dashboard. Left out where there's nowhere better to go, like the
+   * Dashboard's own first-import prompt. */
+  resultAction?: ReactNode
 }
 
 /**
@@ -30,7 +41,7 @@ interface ImportDropzoneProps {
  * directly; unsupported rows are reported plainly afterward, not hidden or
  * silently dropped.
  */
-function ImportDropzone({ onImported }: ImportDropzoneProps = {}) {
+function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) {
   const [status, setStatus] = useState<'idle' | 'processing'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
@@ -225,6 +236,7 @@ function ImportDropzone({ onImported }: ImportDropzoneProps = {}) {
               </ul>
             </details>
           )}
+          {resultAction && <div className="pt-1">{resultAction}</div>}
         </div>
       )}
     </div>

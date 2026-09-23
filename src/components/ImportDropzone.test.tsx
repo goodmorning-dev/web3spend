@@ -168,4 +168,19 @@ describe('ImportDropzone', () => {
     expect(await db.imports.where('fileHash').equals(DEMO_FILE_HASH).count()).toBe(0)
     expect(await db.cards.where('cardHolderKey').equals('demo').count()).toBe(0)
   })
+
+  it('shows the optional result action once an import finishes, and not before', async () => {
+    const user = userEvent.setup()
+    render(<ImportDropzone resultAction={<a href="/app">View your dashboard</a>} />)
+
+    expect(screen.queryByRole('link', { name: 'View your dashboard' })).not.toBeInTheDocument()
+
+    await user.upload(screen.getByLabelText(/choose an xlsx file/i), toFile(buildValidWorkbook()))
+
+    expect(await screen.findByText('1 added, 0 updated.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'View your dashboard' })).toHaveAttribute(
+      'href',
+      '/app',
+    )
+  })
 })

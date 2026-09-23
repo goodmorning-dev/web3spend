@@ -19,7 +19,7 @@ function ImportFlow({ onImported }: ImportFlowProps = {}) {
     <div className="flex flex-col items-center gap-4.5 rounded-2xl border border-border bg-card px-6 py-6 text-center">
       <div>
         <h3 className="font-heading text-xl font-semibold tracking-tight">
-          Import your ether.fi export
+          Import your ether.fi data
         </h3>
         <p className="mt-1 max-w-[40ch] text-[13.5px] font-medium text-text-dim">
           Everything below is parsed and stored on this device. Nothing is uploaded anywhere.
