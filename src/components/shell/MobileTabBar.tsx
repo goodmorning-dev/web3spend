@@ -1,14 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useCollapseOnScroll } from '@/hooks/useCollapseOnScroll'
 import { cn } from '@/lib/utils'
-import { NAV_ITEMS, SETTINGS_ITEM } from './navItems'
-
-const TABS = [...NAV_ITEMS, SETTINGS_ITEM]
+import { NAV_ITEMS } from './navItems'
 
 // iOS-style ease-out: quick to respond, gentle to settle.
 const EASE = 'duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none'
 
-function isTabActive(tab: (typeof TABS)[number], pathname: string): boolean {
+function isTabActive(tab: (typeof NAV_ITEMS)[number], pathname: string): boolean {
   return tab.end ? pathname === tab.to : pathname === tab.to || pathname.startsWith(`${tab.to}/`)
 }
 
@@ -23,7 +21,7 @@ function isTabActive(tab: (typeof TABS)[number], pathname: string): boolean {
 function MobileTabBar() {
   const { pathname } = useLocation()
   const collapsed = useCollapseOnScroll(pathname)
-  const activeIndex = TABS.findIndex((tab) => isTabActive(tab, pathname))
+  const activeIndex = NAV_ITEMS.findIndex((tab) => isTabActive(tab, pathname))
 
   return (
     <div className="sm:hidden">
@@ -54,7 +52,7 @@ function MobileTabBar() {
               style={{ transform: `translateX(${activeIndex * 100}%)` }}
             />
           )}
-          {TABS.map(({ to, end, label, icon: Icon }) => (
+          {NAV_ITEMS.map(({ to, end, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
