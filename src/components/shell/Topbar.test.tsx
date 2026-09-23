@@ -49,6 +49,11 @@ describe('Topbar', () => {
     expect(screen.getByRole('heading', { name: 'Transactions' })).toBeInTheDocument()
   })
 
+  it('names the browser tab after the page, so tabs and history can tell pages apart', () => {
+    renderAt('/app/subscriptions')
+    expect(document.title).toBe('Subscriptions · Web3Spend')
+  })
+
   it('always shows the privacy chip and the import button', () => {
     renderAt('/app')
     expect(screen.getByText(/processed on your device/i)).toBeInTheDocument()

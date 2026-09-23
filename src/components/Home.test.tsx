@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
+import { HOME_TITLE } from '@/hooks/usePageTitle'
 import { commitImport } from '@/matching/commitImport'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
@@ -20,6 +21,12 @@ function renderHome() {
 }
 
 describe('Home', () => {
+  it('gives the browser tab the full site title', () => {
+    document.title = 'Transactions · Web3Spend'
+    renderHome()
+    expect(document.title).toBe(HOME_TITLE)
+  })
+
   it('states the privacy promise up front', () => {
     renderHome()
     expect(

@@ -5,11 +5,55 @@
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web3Spend: private spending insights for your ether.fi card</title>
     <meta
       name="description"
-      content="Local-first spending and cashback dashboard for ether.fi cardholders."
+      content="See where your ether.fi card money goes: spending by category, cashback and subscriptions, worked out in your browser from your own export. Nothing is uploaded."
     />
-    <title>Web3Spend</title>
+    <link rel="canonical" href="__SITE_URL__" />
+
+    <!-- Link previews. Open Graph and Twitter both need absolute URLs; see
+         siteUrlPlugin in vite.config.ts. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Web3Spend" />
+    <meta
+      property="og:title"
+      content="Web3Spend: private spending insights for your ether.fi card"
+    />
+    <meta
+      property="og:description"
+      content="Spending, categories, cashback and subscriptions from your ether.fi export, worked out entirely on your device."
+    />
+    <meta property="og:url" content="__SITE_URL__" />
+    <meta property="og:image" content="__SITE_URL__og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Web3Spend: Your spending. Your data. Your control." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Web3Spend: private spending insights for your ether.fi card"
+    />
+    <meta
+      name="twitter:description"
+      content="Spending, categories, cashback and subscriptions from your ether.fi export, worked out entirely on your device."
+    />
+    <meta name="twitter:image" content="__SITE_URL__og-image.jpg" />
+
+    <!-- Tells search engines what this is. Plain data, never executed. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Web3Spend",
+        "url": "__SITE_URL__",
+        "description": "A private spending and cashback dashboard for ether.fi card holders. Import your transaction export and see spending by category, cashback and likely subscriptions, all worked out in your browser. Nothing is uploaded.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any, in a web browser",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+      }
+    </script>
   </head>
   <body>
     <script>

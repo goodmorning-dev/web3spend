@@ -2,6 +2,7 @@ import { Calendar, Coins, CreditCard, ShieldCheck, Upload } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import FilterSelect from './FilterSelect'
 import { parsePeriodValue, periodOptions, periodValue } from './periodOptions'
 
@@ -27,6 +28,7 @@ function Topbar() {
   const location = useLocation()
   const { filters, options, setCurrency, setCardId, setPeriod } = useDashboardFilters()
   const title = PAGE_TITLES[location.pathname] ?? 'Dashboard'
+  usePageTitle(title)
   const showPeriod = !PERIODLESS_PATHS.has(location.pathname)
 
   return (

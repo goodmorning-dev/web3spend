@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { GithubLogoIcon, XLogoIcon } from '@/components/home/BrandIcons'
 import HeroCard from '@/components/home/HeroCard'
 import { useDemoData } from '@/hooks/useDemoData'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 const REPO_URL = 'https://github.com/goodmorning-dev/web3spend'
 
@@ -73,6 +74,7 @@ const STEPS: {
 
 function Home() {
   const { loadDemo, isLoading, error } = useDemoData()
+  usePageTitle()
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
