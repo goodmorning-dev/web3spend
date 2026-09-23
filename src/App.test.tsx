@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -38,7 +38,9 @@ describe('App routing', () => {
     ).toBeInTheDocument()
     // the shell (sidebar nav) renders alongside the page content; "Transactions"
     // (exact) is the sidebar link, distinct from the topbar's "Import transactions"
-    expect(screen.getByRole('link', { name: 'Transactions' })).toBeInTheDocument()
+    const sidebar = screen.getByRole('navigation', { name: 'Sidebar' })
+    expect(within(sidebar).getByRole('link', { name: 'Transactions' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Tab bar' })).toBeInTheDocument()
   })
 
   it('renders the Transactions page within the shell at /app/transactions', async () => {
@@ -48,7 +50,8 @@ describe('App routing', () => {
     expect(
       await screen.findByRole('heading', { name: 'Transactions', level: 2 }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument()
+    const sidebar = screen.getByRole('navigation', { name: 'Sidebar' })
+    expect(within(sidebar).getByRole('link', { name: /dashboard/i })).toBeInTheDocument()
   })
 
   it('renders the Subscriptions page within the shell at /app/subscriptions', async () => {
