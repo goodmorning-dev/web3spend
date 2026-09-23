@@ -1,4 +1,4 @@
-import { ChevronDown, Repeat } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import {
   daysUntil,
   latestCharge,
@@ -101,10 +101,6 @@ function SubscriptionRow({
             !isActive && 'opacity-60 hover:opacity-100',
           )}
         >
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-gradient-to-b from-primary/20 to-primary/5 text-primary">
-            <Repeat className="size-[18px]" />
-          </div>
-
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <p className="truncate text-sm font-semibold">{description}</p>
             <p className="flex min-w-0 gap-1 text-xs text-text-faint">
@@ -137,7 +133,7 @@ function SubscriptionRow({
           <ChevronDown className="size-4 shrink-0 text-text-faint transition-transform duration-200 group-open/row:rotate-180" />
         </summary>
 
-        <div className="px-4 pb-4 sm:pr-5 sm:pl-[76px]">
+        <div className="px-4 pb-4 sm:px-5">
           <div className="rounded-xl border border-border bg-background/40">
             <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2 text-[10px] font-semibold tracking-[0.06em] text-text-faint uppercase">
               <span>
