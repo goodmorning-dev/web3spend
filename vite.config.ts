@@ -15,11 +15,19 @@ const base = process.env.GITHUB_PAGES ? '/web3spend/' : '/'
 // index.html's __SITE_URL__ placeholders get this at build time. Staging on
 // GitHub Pages fills it in automatically; a production host must set
 // SITE_URL. A plain local build points at `vite preview`'s own address.
-const siteUrl =
+// Always ends in a slash, since index.html appends file names straight
+// onto it ("__SITE_URL__og-image.jpg"), and SITE_URL=https://example.com
+// would otherwise produce https://example.comog-image.jpg.
+const siteUrl = withTrailingSlash(
   process.env.SITE_URL ??
-  (process.env.GITHUB_PAGES
-    ? 'https://goodmorning-dev.github.io/web3spend/'
-    : 'http://localhost:4173/')
+    (process.env.GITHUB_PAGES
+      ? 'https://goodmorning-dev.github.io/web3spend/'
+      : 'http://localhost:4173/'),
+)
+
+function withTrailingSlash(url: string): string {
+  return url.endsWith('/') ? url : `${url}/`
+}
 
 function siteUrlPlugin(url: string): Plugin {
   return {
