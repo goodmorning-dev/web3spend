@@ -33,7 +33,10 @@ interface DemoSeedRow {
 // comparison, and the activity heatmap all have something to show
 // regardless of which real-world date this runs on. Cashback is roughly
 // 2.5% of spend, matching the effective-cashback figures used elsewhere in
-// this app's own design reference.
+// this app's own design reference. Recurring merchants live in
+// SUBSCRIPTION_SEEDS instead: a stray one-off charge from the same merchant
+// and amount would make its month look like a double charge, which
+// detectSubscriptions deliberately ignores.
 const SEEDS: DemoSeedRow[] = [
   {
     daysAgo: 1,
@@ -53,7 +56,7 @@ const SEEDS: DemoSeedRow[] = [
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 2450,
     cashbackMinor: 62,
-    status: 'CLEARED',
+    status: 'PENDING',
   },
   {
     daysAgo: 3,
@@ -66,16 +69,6 @@ const SEEDS: DemoSeedRow[] = [
     status: 'CLEARED',
   },
   {
-    daysAgo: 4,
-    last4: '4821',
-    cardHolderKey: DEMO_CARD_HOLDER_KEY,
-    description: 'Spotify',
-    categoryRaw: 'Digital Goods: Media, Books, Music',
-    amountMinor: 1099,
-    cashbackMinor: 27,
-    status: 'CLEARED',
-  },
-  {
     daysAgo: 5,
     last4: '1090',
     cardHolderKey: DEMO_CARD_HOLDER_KEY,
@@ -84,16 +77,6 @@ const SEEDS: DemoSeedRow[] = [
     amountMinor: 6420,
     cashbackMinor: 161,
     status: 'CLEARED',
-  },
-  {
-    daysAgo: 6,
-    last4: '4821',
-    cardHolderKey: DEMO_CARD_HOLDER_KEY,
-    description: 'Netflix',
-    categoryRaw: 'Digital Goods: Media, Books, Music',
-    amountMinor: 1399,
-    cashbackMinor: 35,
-    status: 'PENDING',
   },
   {
     daysAgo: 8,
@@ -153,16 +136,6 @@ const SEEDS: DemoSeedRow[] = [
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 870,
     cashbackMinor: 22,
-    status: 'CLEARED',
-  },
-  {
-    daysAgo: 15,
-    last4: '1090',
-    cardHolderKey: DEMO_CARD_HOLDER_KEY,
-    description: 'Adobe',
-    categoryRaw: 'Digital Goods: Software',
-    amountMinor: 2299,
-    cashbackMinor: 57,
     status: 'CLEARED',
   },
   {
@@ -246,16 +219,6 @@ const SEEDS: DemoSeedRow[] = [
     status: 'CLEARED',
   },
   {
-    daysAgo: 29,
-    last4: '4821',
-    cardHolderKey: DEMO_CARD_HOLDER_KEY,
-    description: 'Spotify',
-    categoryRaw: 'Digital Goods: Media, Books, Music',
-    amountMinor: 1099,
-    cashbackMinor: 27,
-    status: 'CLEARED',
-  },
-  {
     daysAgo: 31,
     last4: '1090',
     cardHolderKey: DEMO_CARD_HOLDER_KEY,
@@ -273,16 +236,6 @@ const SEEDS: DemoSeedRow[] = [
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 1620,
     cashbackMinor: 41,
-    status: 'CLEARED',
-  },
-  {
-    daysAgo: 35,
-    last4: '1090',
-    cardHolderKey: DEMO_CARD_HOLDER_KEY,
-    description: 'Netflix',
-    categoryRaw: 'Digital Goods: Media, Books, Music',
-    amountMinor: 1399,
-    cashbackMinor: 35,
     status: 'CLEARED',
   },
   {
@@ -313,16 +266,6 @@ const SEEDS: DemoSeedRow[] = [
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 2860,
     cashbackMinor: 72,
-    status: 'CLEARED',
-  },
-  {
-    daysAgo: 43,
-    last4: '1090',
-    cardHolderKey: DEMO_CARD_HOLDER_KEY,
-    description: 'Adobe',
-    categoryRaw: 'Digital Goods: Software',
-    amountMinor: 2299,
-    cashbackMinor: 57,
     status: 'CLEARED',
   },
   {
@@ -396,16 +339,6 @@ const SEEDS: DemoSeedRow[] = [
     status: 'CLEARED',
   },
   {
-    daysAgo: 59,
-    last4: '1090',
-    cardHolderKey: DEMO_CARD_HOLDER_KEY,
-    description: 'Spotify',
-    categoryRaw: 'Digital Goods: Media, Books, Music',
-    amountMinor: 1099,
-    cashbackMinor: 27,
-    status: 'CLEARED',
-  },
-  {
     daysAgo: 61,
     last4: '4821',
     cardHolderKey: DEMO_CARD_HOLDER_KEY,
@@ -447,6 +380,129 @@ const SEEDS: DemoSeedRow[] = [
   },
 ]
 
+interface DemoSubscriptionSeed {
+  last4: string
+  description: string
+  categoryRaw: string
+  amountMinor: number
+  cashbackMinor: number
+  /** Kept at 28 or below so every month, February included, has this day. */
+  dayOfMonth: number
+  /** How many months before the current one the first charge landed in. */
+  firstMonthsAgo: number
+  /** 0 while it's still charging; anything higher reads as cancelled that
+   * many months ago. */
+  lastMonthsAgo: number
+}
+
+// Monthly charges pinned to a calendar day rather than "N days ago", since a
+// fixed day of the month is exactly the pattern detectSubscriptions looks
+// for. A mix of long-running, newly started and cancelled ones so the
+// Subscriptions page has each of those states to show. This month's charge
+// is skipped while its day hasn't come yet.
+const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
+  {
+    last4: '4821',
+    description: 'Spotify',
+    categoryRaw: 'Digital Goods: Media, Books, Music',
+    amountMinor: 1099,
+    cashbackMinor: 27,
+    dayOfMonth: 19,
+    firstMonthsAgo: 11,
+    lastMonthsAgo: 0,
+  },
+  {
+    last4: '4821',
+    description: 'Netflix',
+    categoryRaw: 'Digital Goods: Media, Books, Music',
+    amountMinor: 1399,
+    cashbackMinor: 35,
+    dayOfMonth: 17,
+    firstMonthsAgo: 7,
+    lastMonthsAgo: 0,
+  },
+  {
+    last4: '1090',
+    description: 'Adobe',
+    categoryRaw: 'Digital Goods: Software',
+    amountMinor: 2299,
+    cashbackMinor: 57,
+    dayOfMonth: 8,
+    firstMonthsAgo: 5,
+    lastMonthsAgo: 0,
+  },
+  {
+    last4: '4821',
+    description: 'iCloud+',
+    categoryRaw: 'Digital Goods: Applications (Excludes Games)',
+    amountMinor: 299,
+    cashbackMinor: 7,
+    dayOfMonth: 3,
+    firstMonthsAgo: 9,
+    lastMonthsAgo: 0,
+  },
+  {
+    last4: '1090',
+    description: 'YouTube Premium',
+    categoryRaw: 'Digital Goods: Media, Books, Music',
+    amountMinor: 1299,
+    cashbackMinor: 32,
+    dayOfMonth: 11,
+    firstMonthsAgo: 4,
+    lastMonthsAgo: 0,
+  },
+  {
+    last4: '1090',
+    description: 'PureGym',
+    categoryRaw: '7997 - Membership Clubs (Sports, Recreation, Athletic)',
+    amountMinor: 3900,
+    cashbackMinor: 98,
+    dayOfMonth: 1,
+    firstMonthsAgo: 6,
+    lastMonthsAgo: 0,
+  },
+  {
+    last4: '4821',
+    description: 'Duolingo',
+    categoryRaw: 'Digital Goods: Applications (Excludes Games)',
+    amountMinor: 699,
+    cashbackMinor: 17,
+    dayOfMonth: 24,
+    firstMonthsAgo: 2,
+    lastMonthsAgo: 0,
+  },
+  {
+    last4: '1090',
+    description: 'Disney+',
+    categoryRaw: 'Digital Goods: Media, Books, Music',
+    amountMinor: 899,
+    cashbackMinor: 22,
+    dayOfMonth: 14,
+    firstMonthsAgo: 8,
+    lastMonthsAgo: 3,
+  },
+]
+
+function toRow(seed: Omit<DemoSeedRow, 'daysAgo'>, timestamp: Date): ParsedTransactionRow {
+  const currency = 'EUR'
+  return {
+    last4: seed.last4,
+    cardHolderKey: seed.cardHolderKey,
+    timestampUtc: timestamp.toISOString(),
+    type: 'card_spend',
+    description: seed.description,
+    status: seed.status,
+    amountMinor: seed.amountMinor,
+    currency,
+    originalAmountMinor: seed.amountMinor,
+    originalCurrency: currency,
+    cashbackMinor: seed.cashbackMinor,
+    cashbackCurrency: currency,
+    categoryRaw: seed.categoryRaw,
+    spendingMode: 'Direct Pay',
+  }
+}
+
 /** Builds fresh rows each call so every one's `timestampUtc` stays relative
  * to "now" rather than baked in at module-load time. A second "Try a demo"
  * click never reaches these rows at all, though: commitImport's fileHash
@@ -455,26 +511,28 @@ const SEEDS: DemoSeedRow[] = [
  * "now" could otherwise turn into duplicate rows. */
 export function buildDemoRows(): ParsedTransactionRow[] {
   const now = new Date()
-  return SEEDS.map((seed) => {
+
+  const oneOffRows = SEEDS.map((seed) => {
     const timestamp = new Date(now)
     timestamp.setUTCDate(timestamp.getUTCDate() - seed.daysAgo)
     timestamp.setUTCHours(12, 0, 0, 0)
-    const currency = 'EUR'
-    return {
-      last4: seed.last4,
-      cardHolderKey: seed.cardHolderKey,
-      timestampUtc: timestamp.toISOString(),
-      type: 'card_spend',
-      description: seed.description,
-      status: seed.status,
-      amountMinor: seed.amountMinor,
-      currency,
-      originalAmountMinor: seed.amountMinor,
-      originalCurrency: currency,
-      cashbackMinor: seed.cashbackMinor,
-      cashbackCurrency: currency,
-      categoryRaw: seed.categoryRaw,
-      spendingMode: 'Direct Pay',
-    }
+    return toRow(seed, timestamp)
   })
+
+  const subscriptionRows = SUBSCRIPTION_SEEDS.flatMap((seed) => {
+    const rows: ParsedTransactionRow[] = []
+    for (let monthsAgo = seed.firstMonthsAgo; monthsAgo >= seed.lastMonthsAgo; monthsAgo--) {
+      const timestamp = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - monthsAgo, seed.dayOfMonth, 12),
+      )
+      if (timestamp <= now) {
+        rows.push(
+          toRow({ ...seed, cardHolderKey: DEMO_CARD_HOLDER_KEY, status: 'CLEARED' }, timestamp),
+        )
+      }
+    }
+    return rows
+  })
+
+  return [...oneOffRows, ...subscriptionRows]
 }
