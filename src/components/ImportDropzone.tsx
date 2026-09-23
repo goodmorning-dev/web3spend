@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { Button } from '@/components/ui/button'
 import { ETHERFI_PARSER_VERSION, etherfiAdapter, type UnsupportedRow } from '@/adapters'
+import { trackImport } from '@/hooks/importActivity'
 import { cn } from '@/lib/utils'
 import { commitImport } from '@/matching/commitImport'
 import { clearDemoData } from '@/storage/demoData'
@@ -60,35 +61,39 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
     }
 
     setStatus('processing')
-    try {
-      const buffer = await file.arrayBuffer()
-      const fileHash = await sha256Hex(buffer)
-      const { rows, unsupported } = etherfiAdapter.parse(buffer)
-      // The demo dataset is meant to be disposable (MVP-PLAN §5): a real
-      // import replaces it outright rather than merging alongside it.
-      await clearDemoData()
-      const { rowCounts, alreadyImported } = await commitImport(rows, {
-        fileHash,
-        parserVersion: ETHERFI_PARSER_VERSION,
-        unsupportedCount: unsupported.length,
-      })
-      const importResult: ImportResult = {
-        added: rowCounts.added,
-        updated: rowCounts.updated,
-        unsupported,
-        alreadyImported,
+    // Counted as an import in progress for the whole read-parse-commit, so
+    // the app update prompt can't reload the page partway through.
+    await trackImport(async () => {
+      try {
+        const buffer = await file.arrayBuffer()
+        const fileHash = await sha256Hex(buffer)
+        const { rows, unsupported } = etherfiAdapter.parse(buffer)
+        // The demo dataset is meant to be disposable (MVP-PLAN §5): a real
+        // import replaces it outright rather than merging alongside it.
+        await clearDemoData()
+        const { rowCounts, alreadyImported } = await commitImport(rows, {
+          fileHash,
+          parserVersion: ETHERFI_PARSER_VERSION,
+          unsupportedCount: unsupported.length,
+        })
+        const importResult: ImportResult = {
+          added: rowCounts.added,
+          updated: rowCounts.updated,
+          unsupported,
+          alreadyImported,
+        }
+        setResult(importResult)
+        onImported?.(importResult)
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? `We couldn't import that file: ${err.message}`
+            : 'Something went wrong reading that file.',
+        )
+      } finally {
+        setStatus('idle')
       }
-      setResult(importResult)
-      onImported?.(importResult)
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? `We couldn't import that file: ${err.message}`
-          : 'Something went wrong reading that file.',
-      )
-    } finally {
-      setStatus('idle')
-    }
+    })
   }
 
   function openFilePicker() {

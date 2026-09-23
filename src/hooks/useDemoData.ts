@@ -4,6 +4,7 @@ import { buildDemoRows, DEMO_FILE_HASH, DEMO_PARSER_VERSION } from '@/adapters/d
 import { useDashboardFiltersOptional } from './DashboardFiltersContext'
 import { commitImport } from '@/matching/commitImport'
 import { hasRealData } from '@/storage/demoData'
+import { trackImport } from './importActivity'
 
 /**
  * Loads the synthetic demo dataset through the exact same commitImport
@@ -37,11 +38,13 @@ export function useDemoData() {
         setIsLoading(false)
         return
       }
-      await commitImport(buildDemoRows(), {
-        fileHash: DEMO_FILE_HASH,
-        parserVersion: DEMO_PARSER_VERSION,
-        unsupportedCount: 0,
-      })
+      await trackImport(() =>
+        commitImport(buildDemoRows(), {
+          fileHash: DEMO_FILE_HASH,
+          parserVersion: DEMO_PARSER_VERSION,
+          unsupportedCount: 0,
+        }),
+      )
       // Any currency/card override left over from a previous session would
       // otherwise silently hide the demo's data (it's all EUR, on cards
       // that didn't exist before), same reasoning as resetFilters' other

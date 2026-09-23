@@ -52,7 +52,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Wait for the user rather than taking over and reloading the page
+      // the moment a new version lands, which could cut an import off
+      // halfway (MVP-PLAN §9). UpdatePrompt offers the reload instead.
+      registerType: 'prompt',
       workbox: {
         // default globPatterns omit font files; bundled fonts must be precached
         // too so offline typography doesn't fall back to a system font. webp
@@ -81,6 +84,13 @@ export default defineConfig({
     }),
   ],
   test: {
+    alias: {
+      // the real module only exists inside a Vite build or dev server
+      'virtual:pwa-register/react': path.resolve(
+        import.meta.dirname,
+        './src/test/pwaRegisterStub.ts',
+      ),
+    },
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],

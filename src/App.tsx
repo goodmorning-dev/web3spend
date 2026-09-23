@@ -6,6 +6,7 @@ import SubscriptionsPage from '@/components/pages/SubscriptionsPage'
 import TransactionsPage from '@/components/pages/TransactionsPage'
 import AppShell from '@/components/shell/AppShell'
 import Home from '@/components/Home'
+import UpdatePrompt from '@/components/UpdatePrompt'
 import { InstallPromptProvider } from '@/hooks/InstallPromptContext'
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
         </Route>
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
+      <UpdatePrompt />
     </InstallPromptProvider>
   )
 }
