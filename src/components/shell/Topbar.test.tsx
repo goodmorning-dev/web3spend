@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
-import { formatUtcMonthLabel } from '@/utils/dates'
+import { formatUtcMonthLabel, formatUtcShortMonthLabel } from '@/utils/dates'
 import type { StandardTransaction } from '@/types/transaction'
 import Topbar from './Topbar'
 
@@ -85,11 +85,11 @@ describe('Topbar', () => {
     for (const select of cardSelects) {
       expect(select).toHaveTextContent('All cards')
     }
-    const periodSelects = screen.getAllByRole('combobox', { name: 'Period' })
-    expect(periodSelects).toHaveLength(2)
-    for (const select of periodSelects) {
-      expect(select).toHaveTextContent(formatUtcMonthLabel(2026, 3))
-    }
+    // the phone layout comes first and uses the short month name to fit
+    // every filter on one row; the wider layout spells it out
+    const [phonePeriod, widePeriod] = screen.getAllByRole('combobox', { name: 'Period' })
+    expect(phonePeriod).toHaveTextContent(formatUtcShortMonthLabel(2026, 3))
+    expect(widePeriod).toHaveTextContent(formatUtcMonthLabel(2026, 3))
   })
 
   it('leaves out the period filter on Subscriptions, which always uses the full history', async () => {

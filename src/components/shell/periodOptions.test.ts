@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatUtcMonthLabel } from '@/utils/dates'
+import { formatUtcMonthLabel, formatUtcShortMonthLabel } from '@/utils/dates'
 import { parsePeriodValue, periodOptions, periodValue } from './periodOptions'
 
 describe('periodOptions', () => {
@@ -13,6 +13,13 @@ describe('periodOptions', () => {
       { value: 'all', label: 'All time' },
       { value: 'month:2026-1', label: formatUtcMonthLabel(2026, 1) },
       { value: 'month:2025-12', label: formatUtcMonthLabel(2025, 12) },
+    ])
+  })
+
+  it('uses short month names when asked, for the phone layout', () => {
+    expect(periodOptions([{ year: 2026, month: 9 }], { short: true })).toEqual([
+      { value: 'all', label: 'All time' },
+      { value: 'month:2026-9', label: formatUtcShortMonthLabel(2026, 9) },
     ])
   })
 })
