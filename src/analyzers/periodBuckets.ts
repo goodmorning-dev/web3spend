@@ -108,8 +108,8 @@ export function bucketByMonth(transactions: StandardTransaction[], year: number)
 }
 
 /**
- * Monthly spend/cashback totals for views wider than one month (a whole
- * year, or all time): one bucket per calendar month from the earliest to
+ * Monthly spend/cashback totals for views wider than one month, such as
+ * "All time": one bucket per calendar month from the earliest to
  * the latest month `transactions` touch, quiet months in between included
  * so the x-axis stays continuous. Deliberately clipped to the data's own
  * range rather than padded out to whole calendar years, so a first import

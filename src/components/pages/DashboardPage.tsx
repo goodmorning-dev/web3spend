@@ -82,11 +82,11 @@ function DashboardPage() {
     return <p className="text-sm text-muted-foreground">Loading...</p>
   }
 
-  // The heatmap always shows one calendar year: the selected one, or on
-  // "All time" the latest year with data for this currency/card.
+  // The heatmap always shows one calendar year: the selected month's, or
+  // on "All time" the latest year with data for this currency/card.
   const period = filters?.period
   const heatmapYear =
-    period && period.kind !== 'all' ? period.year : latestYear(currencyScopedTransactions ?? [])
+    period?.kind === 'month' ? period.year : latestYear(currencyScopedTransactions ?? [])
   const heatmapTransactions = (currencyScopedTransactions ?? []).filter(
     (transaction) => getUtcYear(transaction.timestampUtc) === heatmapYear,
   )
@@ -109,8 +109,8 @@ function DashboardPage() {
             />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
               {/* The cumulative this-month-against-last-month comparison only
-                  makes sense for one month; wider periods get a bar per
-                  month instead. */}
+                  makes sense for one month; "All time" gets a bar per month
+                  instead. */}
               {filters.period.kind === 'month' ? (
                 <SpendChart
                   trend={computeSpendTrend(
@@ -124,9 +124,7 @@ function DashboardPage() {
                 <MonthlySpendChart
                   buckets={bucketByMonthRange(filteredTransactions)}
                   currency={filters.currency}
-                  periodLabel={
-                    filters.period.kind === 'year' ? String(filters.period.year) : 'All time'
-                  }
+                  periodLabel="All time"
                 />
               )}
               <CategoryBreakdown

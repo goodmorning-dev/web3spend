@@ -89,8 +89,8 @@ function MonthlyTooltip({
  * The spend chart for anything wider than one month: a bar per month, with
  * a dashed line at the average month so an unusually heavy or light one
  * stands out. The single-month view keeps SpendChart's cumulative
- * this-month-against-last-month comparison, which doesn't translate to a
- * year or to all time.
+ * this-month-against-last-month comparison, which doesn't translate to
+ * all time.
  */
 function MonthlySpendChart({ buckets, currency, periodLabel }: MonthlySpendChartProps) {
   const spansYears =

@@ -1,11 +1,10 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { useDashboardFilterOptions, type DashboardFilterOptions } from './useDashboardFilterOptions'
 
-/** The period every view under /app is scoped to: one month, one whole
- * year, or everything on record. */
+/** The period every view under /app is scoped to: one month, or
+ * everything on record. */
 export type SelectedPeriod =
   | { kind: 'all' }
-  | { kind: 'year'; year: number }
   | {
       kind: 'month'
       year: number

@@ -13,7 +13,7 @@ export function toDashboardFilters({
   return {
     currency,
     cardId,
-    year: period.kind === 'all' ? undefined : period.year,
+    year: period.kind === 'month' ? period.year : undefined,
     month: period.kind === 'month' ? period.month : undefined,
   }
 }

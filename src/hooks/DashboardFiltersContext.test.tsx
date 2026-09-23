@@ -126,16 +126,13 @@ describe('useDashboardFilters', () => {
     expect(result.current.filters?.period).toEqual({ kind: 'month', year: 2026, month: 4 })
   })
 
-  it('switches to a whole year or to all time, and clearDay leaves those alone', async () => {
+  it('switches to all time, and clearDay leaves it alone', async () => {
     await db.transactions.put(
       makeTransaction({ currency: 'EUR', timestampUtc: '2026-03-01T00:00:00.000Z' }),
     )
 
     const { result } = renderWithProvider()
     await waitFor(() => expect(result.current.filters).not.toBeNull())
-
-    act(() => result.current.setPeriod({ kind: 'year', year: 2026 }))
-    expect(result.current.filters?.period).toEqual({ kind: 'year', year: 2026 })
 
     act(() => result.current.setPeriod({ kind: 'all' }))
     act(() => result.current.clearDay())
