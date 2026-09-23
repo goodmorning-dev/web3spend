@@ -45,8 +45,11 @@ function TransactionsPage() {
   // Set by picking a day on the Dashboard's activity heatmap (MVP-PLAN §5);
   // narrows the already currency/card/period-scoped set further, the same
   // way search and the dropdowns below do.
+  const period = filters?.period
   const selectedDateKey =
-    filters?.day !== undefined ? formatUtcDateKey(filters.year, filters.month, filters.day) : null
+    period?.kind === 'month' && period.day !== undefined
+      ? formatUtcDateKey(period.year, period.month, period.day)
+      : null
 
   const cardLastFourById = useMemo(() => {
     const map = new Map<string, string>()

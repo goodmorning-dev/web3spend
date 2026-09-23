@@ -60,8 +60,7 @@ describe('useDashboardFilters', () => {
     expect(result.current.filters).toEqual({
       currency: 'EUR',
       cardId: undefined,
-      year: 2026,
-      month: 3,
+      period: { kind: 'month', year: 2026, month: 3 },
     })
   })
 
@@ -80,8 +79,8 @@ describe('useDashboardFilters', () => {
     act(() => result.current.setCardId('card-1'))
     expect(result.current.filters?.cardId).toBe('card-1')
 
-    act(() => result.current.setPeriod(2025, 6))
-    expect(result.current.filters).toMatchObject({ year: 2025, month: 6 })
+    act(() => result.current.setPeriod({ kind: 'month', year: 2025, month: 6 }))
+    expect(result.current.filters?.period).toEqual({ kind: 'month', year: 2025, month: 6 })
   })
 
   it('sets year, month, and day together via setDay, even for a month other than the current period', async () => {
@@ -91,11 +90,11 @@ describe('useDashboardFilters', () => {
 
     const { result } = renderWithProvider()
     await waitFor(() => expect(result.current.filters).not.toBeNull())
-    expect(result.current.filters).toMatchObject({ year: 2026, month: 3 })
+    expect(result.current.filters?.period).toEqual({ kind: 'month', year: 2026, month: 3 })
 
     act(() => result.current.setDay(2026, 7, 15))
 
-    expect(result.current.filters).toMatchObject({ year: 2026, month: 7, day: 15 })
+    expect(result.current.filters?.period).toEqual({ kind: 'month', year: 2026, month: 7, day: 15 })
   })
 
   it('clears the day filter without disturbing the period it moved to', async () => {
@@ -109,8 +108,7 @@ describe('useDashboardFilters', () => {
     act(() => result.current.setDay(2026, 7, 15))
     act(() => result.current.clearDay())
 
-    expect(result.current.filters).toMatchObject({ year: 2026, month: 7 })
-    expect(result.current.filters?.day).toBeUndefined()
+    expect(result.current.filters?.period).toEqual({ kind: 'month', year: 2026, month: 7 })
   })
 
   it('clears an existing day filter when the period is changed directly', async () => {
@@ -122,10 +120,23 @@ describe('useDashboardFilters', () => {
     await waitFor(() => expect(result.current.filters).not.toBeNull())
 
     act(() => result.current.setDay(2026, 3, 15))
-    expect(result.current.filters?.day).toBe(15)
+    expect(result.current.filters?.period).toMatchObject({ day: 15 })
 
-    act(() => result.current.setPeriod(2026, 4))
-    expect(result.current.filters?.day).toBeUndefined()
+    act(() => result.current.setPeriod({ kind: 'month', year: 2026, month: 4 }))
+    expect(result.current.filters?.period).toEqual({ kind: 'month', year: 2026, month: 4 })
+  })
+
+  it('switches to all time, and clearDay leaves it alone', async () => {
+    await db.transactions.put(
+      makeTransaction({ currency: 'EUR', timestampUtc: '2026-03-01T00:00:00.000Z' }),
+    )
+
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.filters).not.toBeNull())
+
+    act(() => result.current.setPeriod({ kind: 'all' }))
+    act(() => result.current.clearDay())
+    expect(result.current.filters?.period).toEqual({ kind: 'all' })
   })
 
   it('resetFilters clears a stale card override so data re-imported with new IDs is not silently hidden', async () => {
@@ -180,7 +191,10 @@ describe('useDashboardFilters', () => {
     // longer than 1s under a loaded test run.
     await waitFor(
       () => {
-        expect(result.current.filters).toMatchObject({ currency: 'EUR', year: 2026, month: 4 })
+        expect(result.current.filters).toMatchObject({
+          currency: 'EUR',
+          period: { kind: 'month', year: 2026, month: 4 },
+        })
         expect(result.current.filters?.cardId).toBeUndefined()
       },
       { timeout: 3000 },

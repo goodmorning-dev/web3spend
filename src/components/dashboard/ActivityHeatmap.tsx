@@ -184,7 +184,9 @@ function ActivityHeatmap({
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-heading text-sm font-semibold">Activity</h3>
+          <h3 className="font-heading text-sm font-semibold">
+            Activity <span className="font-medium text-text-faint">{year}</span>
+          </h3>
           <p className="text-[11.5px] font-medium text-text-faint">
             {metric === 'spend'
               ? `Daily spend, ${currency} · darker means more spent that day`

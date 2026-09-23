@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   aggregateByCategory,
+  bucketByMonthRange,
   computeSpendTrend,
   computeYearActivity,
   summarizeTransactions,
@@ -11,16 +12,26 @@ import ImportFlow from '@/components/ImportFlow'
 import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap'
 import CategoryBreakdown from '@/components/dashboard/CategoryBreakdown'
 import KpiRow from '@/components/dashboard/KpiRow'
+import MonthlySpendChart from '@/components/dashboard/MonthlySpendChart'
 import SpendChart from '@/components/dashboard/SpendChart'
 import TransactionsTable from '@/components/transactions/TransactionsTable'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useCurrencyScopedTransactions } from '@/hooks/useCurrencyScopedTransactions'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
-import { useYearFilteredTransactions } from '@/hooks/useYearFilteredTransactions'
-import { formatUtcDate, formatUtcDateKey } from '@/utils/dates'
+import type { StandardTransaction } from '@/types/transaction'
+import { formatUtcDate, formatUtcDateKey, getUtcYear } from '@/utils/dates'
 
 const RECENT_TRANSACTIONS_LIMIT = 6
+
+/** The latest year anything in `transactions` falls in, for the heatmap on
+ * "All time"; the current year when there's nothing to go by. */
+function latestYear(transactions: StandardTransaction[]): number {
+  return transactions.reduce(
+    (latest, transaction) => Math.max(latest, getUtcYear(transaction.timestampUtc)),
+    transactions.length > 0 ? 0 : new Date().getUTCFullYear(),
+  )
+}
 
 /**
  * The Milestone 2 dashboard: KPIs, the spend trend and category charts, the
@@ -33,7 +44,6 @@ function DashboardPage() {
   const overallSummary = useDashboardSummary()
   const { filters, options, setDay } = useDashboardFilters()
   const filteredTransactions = useFilteredTransactions(filters)
-  const yearFilteredTransactions = useYearFilteredTransactions(filters)
   const currencyScopedTransactions = useCurrencyScopedTransactions(filters)
   // Set once a file finishes processing in this component's lifetime, so a
   // first import's result (including any unsupported-row warnings) stays on
@@ -66,12 +76,24 @@ function DashboardPage() {
   const periodDataReady =
     filters !== null &&
     filteredTransactions !== undefined &&
-    yearFilteredTransactions !== undefined &&
     currencyScopedTransactions !== undefined
 
   if (hasData && !justImported && !periodDataReady) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
   }
+
+  // The heatmap always shows one calendar year: the selected month's, or
+  // on "All time" the latest year with data for this currency/card.
+  const period = filters?.period
+  const heatmapYear =
+    period?.kind === 'month' ? period.year : latestYear(currencyScopedTransactions ?? [])
+  const heatmapTransactions = (currencyScopedTransactions ?? []).filter(
+    (transaction) => getUtcYear(transaction.timestampUtc) === heatmapYear,
+  )
+  const selectedDateKey =
+    period?.kind === 'month' && period.day !== undefined
+      ? formatUtcDateKey(period.year, period.month, period.day)
+      : null
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,7 +101,6 @@ function DashboardPage() {
         periodDataReady &&
         filters &&
         filteredTransactions &&
-        yearFilteredTransactions &&
         currencyScopedTransactions && (
           <div className="flex flex-col gap-4">
             <KpiRow
@@ -87,10 +108,25 @@ function DashboardPage() {
               currency={filters.currency}
             />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
-              <SpendChart
-                trend={computeSpendTrend(currencyScopedTransactions, filters.year, filters.month)}
-                currency={filters.currency}
-              />
+              {/* The cumulative this-month-against-last-month comparison only
+                  makes sense for one month; "All time" gets a bar per month
+                  instead. */}
+              {filters.period.kind === 'month' ? (
+                <SpendChart
+                  trend={computeSpendTrend(
+                    currencyScopedTransactions,
+                    filters.period.year,
+                    filters.period.month,
+                  )}
+                  currency={filters.currency}
+                />
+              ) : (
+                <MonthlySpendChart
+                  buckets={bucketByMonthRange(filteredTransactions)}
+                  currency={filters.currency}
+                  periodLabel="All time"
+                />
+              )}
               <CategoryBreakdown
                 buckets={aggregateByCategory(filteredTransactions)}
                 currency={filters.currency}
@@ -98,12 +134,10 @@ function DashboardPage() {
               />
             </div>
             <ActivityHeatmap
-              activity={computeYearActivity(yearFilteredTransactions, filters.year)}
-              year={filters.year}
+              activity={computeYearActivity(heatmapTransactions, heatmapYear)}
+              year={heatmapYear}
               currency={filters.currency}
-              selectedDateKey={
-                filters.day ? formatUtcDateKey(filters.year, filters.month, filters.day) : null
-              }
+              selectedDateKey={selectedDateKey}
               onSelectDay={(year, month, day) => {
                 setDay(year, month, day)
                 navigate('/app/transactions')

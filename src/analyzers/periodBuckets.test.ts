@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
-import { bucketByDay, bucketByMonth } from './periodBuckets'
+import {
+  averageFullMonthSpend,
+  bucketByDay,
+  bucketByMonth,
+  bucketByMonthRange,
+  type MonthBucket,
+} from './periodBuckets'
 
 function makeTransaction(overrides: Partial<StandardTransaction> = {}): StandardTransaction {
   return {
@@ -210,5 +216,99 @@ describe('bucketByMonth', () => {
     expect(march?.effectiveCashbackPct).toBeNull()
     expect(march?.cashbackMinor).toBe(20)
     expect(april?.effectiveCashbackPct).toBe((25 / 1000) * 100)
+  })
+})
+
+describe('bucketByMonthRange', () => {
+  it('returns nothing for no transactions', () => {
+    expect(bucketByMonthRange([])).toEqual([])
+  })
+
+  it('covers every month from the first to the last one with data, across a year boundary, quiet months included', () => {
+    const result = bucketByMonthRange([
+      makeTransaction({ id: '1', timestampUtc: '2025-11-03T10:00:00.000Z', amountMinor: 1000 }),
+      makeTransaction({ id: '2', timestampUtc: '2026-02-20T10:00:00.000Z', amountMinor: 500 }),
+      makeTransaction({ id: '3', timestampUtc: '2026-02-21T10:00:00.000Z', amountMinor: 250 }),
+    ])
+
+    expect(result.map((bucket) => [bucket.key, bucket.spendMinor])).toEqual([
+      ['2025-11', 1000],
+      ['2025-12', 0],
+      ['2026-01', 0],
+      ['2026-02', 750],
+    ])
+  })
+
+  it('leaves non-cleared and refund-like rows out of the totals but still lets them set the range', () => {
+    const result = bucketByMonthRange([
+      makeTransaction({ id: '1', timestampUtc: '2026-01-10T10:00:00.000Z', amountMinor: 400 }),
+      makeTransaction({ id: '2', timestampUtc: '2026-03-10T10:00:00.000Z', status: 'PENDING' }),
+      makeTransaction({ id: '3', timestampUtc: '2026-01-11T10:00:00.000Z', amountMinor: -100 }),
+    ])
+
+    expect(result.map((bucket) => [bucket.key, bucket.spendMinor])).toEqual([
+      ['2026-01', 400],
+      ['2026-02', 0],
+      ['2026-03', 0],
+    ])
+  })
+
+  it('marks which months had any transaction at all, so a gap can be told apart from a quiet month', () => {
+    const result = bucketByMonthRange([
+      makeTransaction({ id: '1', timestampUtc: '2026-01-10T10:00:00.000Z' }),
+      makeTransaction({ id: '2', timestampUtc: '2026-03-10T10:00:00.000Z', status: 'PENDING' }),
+    ])
+
+    expect(result.map((bucket) => [bucket.key, bucket.hasTransactions])).toEqual([
+      ['2026-01', true],
+      ['2026-02', false],
+      ['2026-03', true],
+    ])
+  })
+})
+
+describe('averageFullMonthSpend', () => {
+  function month(key: string, spendMinor: number, hasTransactions = true): MonthBucket {
+    return { key, spendMinor, cashbackMinor: 0, effectiveCashbackPct: null, hasTransactions }
+  }
+
+  it('leaves out the first and latest month, which the data may only partly cover', () => {
+    expect(
+      averageFullMonthSpend([
+        month('2026-06', 100),
+        month('2026-07', 3000),
+        month('2026-08', 1000),
+        month('2026-09', 50),
+      ]),
+    ).toEqual({ averageMinor: 2000, monthCount: 2 })
+  })
+
+  it('leaves out months with no transactions at all, which may be a gap in the export', () => {
+    expect(
+      averageFullMonthSpend([
+        month('2026-05', 100),
+        month('2026-06', 3000),
+        month('2026-07', 0, false),
+        month('2026-08', 1000),
+        month('2026-09', 50),
+      ]),
+    ).toEqual({ averageMinor: 2000, monthCount: 2 })
+  })
+
+  it('still counts a month that had transactions but no cleared spend as a real zero', () => {
+    expect(
+      averageFullMonthSpend([
+        month('2026-06', 100),
+        month('2026-07', 3000),
+        month('2026-08', 0, true),
+        month('2026-09', 50),
+      ]),
+    ).toEqual({ averageMinor: 1500, monthCount: 2 })
+  })
+
+  it('is null until there is at least one full month', () => {
+    expect(averageFullMonthSpend([])).toBeNull()
+    expect(averageFullMonthSpend([month('2026-09', 100)])).toBeNull()
+    expect(averageFullMonthSpend([month('2026-08', 100), month('2026-09', 100)])).toBeNull()
   })
 })
