@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { DayActivity } from '@/analyzers'
+import { formatUtcMonthDay } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
 import ActivityHeatmap from './ActivityHeatmap'
 
@@ -32,7 +33,7 @@ describe('ActivityHeatmap', () => {
     render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
 
     expect(getGrid()).toBeInTheDocument()
-    expect(document.querySelectorAll('rect')).toHaveLength(activity.length)
+    expect(document.querySelectorAll('rect[role="gridcell"]')).toHaveLength(activity.length)
     // toHaveAttribute checks the raw attribute value, unlike getByText,
     // which normalizes whitespace; some locales format currency with a
     // non-breaking space, so this must match formatMoney's own output
@@ -196,13 +197,73 @@ describe('ActivityHeatmap', () => {
     const cell = document.getElementById('heatmap-day-14')!
 
     await user.hover(cell)
-    expect(screen.getByText(spent)).toHaveClass('text-foreground')
-    expect(screen.getByText('1 transaction')).toHaveClass('text-text-faint')
+    let tooltip = within(screen.getByRole('tooltip'))
+    expect(tooltip.getByText(spent)).toHaveClass('text-foreground')
+    expect(tooltip.getByText('1 transaction')).toHaveClass('text-text-faint')
 
     await user.click(screen.getByRole('button', { name: 'Transactions' }))
     await user.hover(cell)
-    expect(screen.getByText('1 transaction')).toHaveClass('text-foreground')
-    expect(screen.getByText(spent)).toHaveClass('text-text-faint')
+    tooltip = within(screen.getByRole('tooltip'))
+    expect(tooltip.getByText('1 transaction')).toHaveClass('text-foreground')
+    expect(tooltip.getByText(spent)).toHaveClass('text-text-faint')
+  })
+
+  it('sums up the year beside the grid, following the Spending / Transactions switch', async () => {
+    const user = userEvent.setup()
+    const activity = makeYearActivity(2026)
+    activity[14] = {
+      key: '2026-01-15',
+      spendMinor: 4500,
+      purchaseCount: 1,
+      level: 4,
+      countLevel: 1,
+    }
+    activity[15] = {
+      key: '2026-01-16',
+      spendMinor: 1200,
+      purchaseCount: 3,
+      level: 1,
+      countLevel: 4,
+    }
+    const normalized = (text: string) => text.replace(/\s+/g, ' ')
+    const stat = (label: string) => within(screen.getByText(label).parentElement!)
+
+    render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
+
+    expect(stat('Active days').getByText('2 days')).toBeInTheDocument()
+    expect(stat('Longest streak').getByText('2 days')).toBeInTheDocument()
+    expect(
+      stat('Longest streak').getByText(normalized(`${formatUtcMonthDay('2026-01-15')} to 16`)),
+    ).toBeInTheDocument()
+    expect(stat('Biggest day').getByText(normalized(formatMoney(4500, 'EUR')))).toBeInTheDocument()
+    expect(
+      stat('Biggest day').getByText(normalized(formatUtcMonthDay('2026-01-15'))),
+    ).toBeInTheDocument()
+    // Jan 15, 2026 is a Thursday, and the only two days in range are it and Friday
+    expect(stat('Top weekday').getByText('Thursdays')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Transactions' }))
+
+    expect(screen.queryByText('Biggest day')).not.toBeInTheDocument()
+    expect(stat('Busiest day').getByText('3 transactions')).toBeInTheDocument()
+    expect(
+      stat('Busiest day').getByText(normalized(formatUtcMonthDay('2026-01-16'))),
+    ).toBeInTheDocument()
+    expect(stat('Top weekday').getByText('Fridays')).toBeInTheDocument()
+    expect(stat('Top weekday').getByText('3.0 on average')).toBeInTheDocument()
+  })
+
+  it('leaves the summary out for a year without purchases', () => {
+    render(
+      <ActivityHeatmap
+        activity={makeYearActivity(2026)}
+        year={2026}
+        currency="EUR"
+        onSelectDay={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText('Active days')).not.toBeInTheDocument()
   })
 
   it('calls onSelectDay with the year, month, and day for the clicked cell', async () => {

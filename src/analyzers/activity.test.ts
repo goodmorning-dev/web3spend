@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
-import { computeYearActivity } from './activity'
+import { computeYearActivity, summarizeYearActivity } from './activity'
 
 function makeTransaction(overrides: Partial<StandardTransaction> = {}): StandardTransaction {
   return {
@@ -166,5 +166,84 @@ describe('computeYearActivity', () => {
     expect(bigDay.level).toBeGreaterThan(busyDay.level)
     expect(busyDay.countLevel).toBeGreaterThan(bigDay.countLevel)
     expect(result.find((entry) => entry.key === '2026-03-03')?.countLevel).toBe(0)
+  })
+})
+
+// 2026-03-01 is a Sunday, so 2026-03-02 is a Monday and 2026-03-06 a Friday.
+function purchasesOn(days: Record<string, number[]>): StandardTransaction[] {
+  return Object.entries(days).flatMap(([day, amounts]) =>
+    amounts.map((amountMinor, index) =>
+      makeTransaction({
+        id: `${day}-${index}`,
+        timestampUtc: `2026-03-${day}T${String(8 + index).padStart(2, '0')}:00:00.000Z`,
+        amountMinor,
+      }),
+    ),
+  )
+}
+
+describe('summarizeYearActivity', () => {
+  it('reports nothing for a year without purchases', () => {
+    expect(summarizeYearActivity(computeYearActivity([], 2026))).toEqual({
+      activeDays: 0,
+      longestStreak: null,
+      biggestSpendDay: null,
+      busiestDay: null,
+      topSpendWeekday: null,
+      topCountWeekday: null,
+    })
+  })
+
+  it('counts active days and finds the longest run of them, the latest one on a tie', () => {
+    const summary = summarizeYearActivity(
+      computeYearActivity(
+        purchasesOn({ '02': [100], '03': [100], '10': [100], '11': [100], '20': [100] }),
+        2026,
+      ),
+    )
+
+    expect(summary.activeDays).toBe(5)
+    expect(summary.longestStreak).toEqual({
+      length: 2,
+      startKey: '2026-03-10',
+      endKey: '2026-03-11',
+    })
+  })
+
+  it('finds the biggest day by spend and the busiest by purchase count, the latest one on a tie', () => {
+    const summary = summarizeYearActivity(
+      computeYearActivity(
+        purchasesOn({ '02': [9000], '05': [100, 100, 100], '06': [50, 50, 50] }),
+        2026,
+      ),
+    )
+
+    expect(summary.biggestSpendDay?.key).toBe('2026-03-02')
+    expect(summary.busiestDay).toMatchObject({ key: '2026-03-06', purchaseCount: 3 })
+  })
+
+  it('averages each weekday over every occurrence in the active range, quiet ones included', () => {
+    const summary = summarizeYearActivity(
+      computeYearActivity(
+        purchasesOn({
+          // Mondays: 1000 every week, from the 2nd to the 23rd
+          '02': [1000],
+          '09': [1000],
+          '16': [1000],
+          '23': [1000],
+          // one big Friday, followed by two quiet ones
+          '06': [2400],
+          // one very busy Wednesday
+          '04': [10, 10, 10, 10, 10],
+        }),
+        2026,
+      ),
+    )
+
+    // the lone Friday alone would beat Mondays, but spread over the three
+    // Fridays in range it averages 800 against Mondays' steady 1000
+    expect(summary.topSpendWeekday).toEqual({ weekday: 1, average: 1000 })
+    // five purchases over the three Wednesdays in range
+    expect(summary.topCountWeekday).toEqual({ weekday: 3, average: 5 / 3 })
   })
 })
