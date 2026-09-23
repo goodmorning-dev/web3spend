@@ -43,7 +43,7 @@ function ImportDropzone({ onImported }: ImportDropzoneProps = {}) {
 
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
       setError(
-        'Only XLSX files are supported. Export your Etherfi transaction history as XLSX, not CSV or another format.',
+        'Only XLSX files are supported. Export your ether.fi transaction history as XLSX, not CSV or another format.',
       )
       return
     }

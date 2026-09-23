@@ -10,7 +10,7 @@ describe('normalizeText', () => {
   })
 
   it('treats a trailing non-breaking space the same as a trailing regular space', () => {
-    // this is the real "mojibake artifact" observed in Etherfi's export: a
+    // this is the real "mojibake artifact" observed in ether.fi's export: a
     // trailing U+00A0 rather than a garbled multi-byte sequence
     const withNbsp = `5300 - Wholesale Club with or without membership fee${NBSP}`
     expect(normalizeText(withNbsp)).toBe('5300 - Wholesale Club with or without membership fee')

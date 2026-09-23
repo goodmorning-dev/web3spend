@@ -80,7 +80,7 @@ describe('aggregateByCategory', () => {
   })
 
   it('merges an MCC-coded and a bare variant of the same category into one bucket', () => {
-    // Etherfi's export mixes both forms for what is otherwise the same
+    // ether.fi's export mixes both forms for what is otherwise the same
     // category (observed on PENDING rows in practice).
     const result = aggregateByCategory([
       makeTransaction({

@@ -74,7 +74,7 @@ function SubscriptionsPage() {
   if (overallSummary.transactionCount === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Import your Etherfi export to see likely subscriptions here.
+        Import your ether.fi export to see likely subscriptions here.
       </p>
     )
   }

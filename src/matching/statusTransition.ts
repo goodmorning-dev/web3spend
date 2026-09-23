@@ -2,7 +2,7 @@ import type { TransactionStatus } from '@/types/transaction'
 
 /**
  * CLEARED and CANCELLED are terminal: once a transaction reaches either, later
- * imports never move it back to PENDING/UNKNOWN. Etherfi's export is supposed to
+ * imports never move it back to PENDING/UNKNOWN. ether.fi's export is supposed to
  * be authoritative each time, but nothing stops a narrower or stale re-export
  * from reporting an older status for the same transaction, and TECHNICAL-PLAN §6
  * requires that a stale report can't downgrade what we already trust. A report

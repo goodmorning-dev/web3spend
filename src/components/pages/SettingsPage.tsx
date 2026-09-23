@@ -103,7 +103,7 @@ function SettingsPage() {
           this browser on this device, in its IndexedDB database. Deleting it removes that data
           permanently; there's no server copy to restore it from, and it has no effect on any other
           browser or device you've used this app on, including a separate install on your phone.
-          Re-importing your Etherfi export afterward rebuilds your data from scratch.
+          Re-importing your ether.fi export afterward rebuilds your data from scratch.
         </p>
 
         {deleted ? (
@@ -125,7 +125,7 @@ function SettingsPage() {
                 <AlertDialogDescription>
                   This permanently removes every card, transaction, and import record stored in this
                   browser. It cannot be undone from within the app; you'd need to re-import your
-                  Etherfi export to see your data again.
+                  ether.fi export to see your data again.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

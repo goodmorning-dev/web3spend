@@ -33,7 +33,7 @@ export default defineConfig({
       manifest: {
         name: 'Web3Spend',
         short_name: 'Web3Spend',
-        description: 'Local-first spending and cashback dashboard for Etherfi cardholders.',
+        description: 'Local-first spending and cashback dashboard for ether.fi cardholders.',
         display: 'standalone',
         theme_color: '#0a0d13',
         background_color: '#0a0d13',

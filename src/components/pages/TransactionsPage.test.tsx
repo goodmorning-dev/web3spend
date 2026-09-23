@@ -44,7 +44,7 @@ describe('TransactionsPage', () => {
     renderTransactionsPage()
     // no page-level heading here: the page title comes from Topbar (AppShell),
     // so a second one on the page itself would just duplicate it on screen.
-    expect(await screen.findByText(/import your etherfi export/i)).toBeInTheDocument()
+    expect(await screen.findByText(/import your ether\.fi export/i)).toBeInTheDocument()
   })
 
   it('lists the transactions in the default period and narrows them by search', async () => {

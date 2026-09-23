@@ -101,7 +101,7 @@ describe('DashboardPage', () => {
   it('shows the import prompt when there is no local data', async () => {
     renderDashboardPage()
     expect(
-      await screen.findByRole('heading', { name: /import your etherfi export/i }),
+      await screen.findByRole('heading', { name: /import your ether\.fi export/i }),
     ).toBeInTheDocument()
   })
 
@@ -236,7 +236,7 @@ describe('DashboardPage', () => {
     const user = userEvent.setup()
     renderDashboardPage()
 
-    await screen.findByRole('heading', { name: /import your etherfi export/i })
+    await screen.findByRole('heading', { name: /import your ether\.fi export/i })
 
     const input = screen.getByLabelText(/choose an xlsx file/i)
     await user.upload(input, toFile(buildWorkbookWithOneUnsupportedRow()))

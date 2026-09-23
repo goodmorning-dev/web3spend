@@ -16,7 +16,7 @@ how we build it. Status: Draft for discussion.
   whether Borrow rows fit the same normalized transaction shape as Direct Pay. If they do,
   basic Borrow transaction import may land in the MVP; full Borrow analytics (balances,
   interest, collateral, liquidation) stays v2 regardless (MVP-PLAN §2).
-- Category taxonomy: RESOLVED. The MVP does not map categories at all — Etherfi's own
+- Category taxonomy: RESOLVED. The MVP does not map categories at all: ether.fi's own
   category text is normalized for whitespace/mojibake only and used as-is everywhere (display,
   grouping, filtering). A curated app-level taxonomy and per-transaction overrides are both
   deferred to v2 (section 7, MVP-PLAN §13).
@@ -32,7 +32,7 @@ Borrow:
   step; filtering and chart aggregation must re-run cheaply off already-stored data without
   re-parsing.
 - Static, documented category taxonomy — as a v2 idea to borrow, not MVP scope. The MVP shows
-  Etherfi's raw category text as-is; building a curated taxonomy and making it user-overridable
+  ether.fi's raw category text as-is; building a curated taxonomy and making it user-overridable
   (surfaced separately from provider-supplied categories so re-imports never clobber a
   correction) are both deferred to v2, per MVP-PLAN §5/§13.
 - Visible in-UI privacy messaging (not just a docs claim): a persistent banner stating data
@@ -184,7 +184,7 @@ db.version(1).stores({
 
 ## 6. Import identity (simplified for MVP)
 
-No transaction ID exists in the source, but Etherfi's export covers the full transaction
+No transaction ID exists in the source, but ether.fi's export covers the full transaction
 history each time (not incremental deltas), and category overrides (the main reason a merge
 needed to avoid clobbering local edits) are deferred to v2 (MVP-PLAN §5/§7). That removes most
 of the reason for a full matching engine, so the MVP uses one composite key instead of a
@@ -215,7 +215,7 @@ two-hash system:
   A row whose `(last4, holder)` doesn't match any existing `Card` creates a new one
   automatically; no ambiguous-match prompt in the MVP for the rare last-four-collision case.
   Card assignments and labels persist across future imports.
-- **Known limitation** (documented, not solved): if a user manually restricts the Etherfi
+- **Known limitation** (documented, not solved): if a user manually restricts the ether.fi
   export's date range instead of exporting full history, the upsert still behaves correctly
   for the rows present, but nothing detects or warns about a narrower-than-expected export.
 - **Deferred to v2 if this proves insufficient**: a second full-row fingerprint for
@@ -225,13 +225,13 @@ two-hash system:
 
 ## 7. Categories: raw in the MVP, taxonomy in v2
 
-Etherfi already supplies a `category` string per row (often `"<MCC> - <description>"`, e.g.
+ether.fi already supplies a `category` string per row (often `"<MCC> - <description>"`, e.g.
 `"5411 - Grocery Stores and Supermarkets"`, sometimes without the MCC prefix, e.g. `"Parking
 Lots and Garages"`). The MVP does not map this to an app-defined taxonomy: `categoryRaw`
 (whitespace/mojibake normalized only, MCC prefix retained) is used directly, as-is, for
 display, grouping, and filtering everywhere in the app. There is no `Uncategorized` bucket in
 the MVP either, since nothing is being classified — every row already carries whatever
-category string Etherfi assigned it.
+category string ether.fi assigned it.
 
 Rationale: the sample export (a single cardholder) isn't enough to seed a curated taxonomy
 with confidence, and per-transaction override UI — the main reason to have a small, stable
@@ -267,7 +267,7 @@ horizontal bars... pie/donut optional" already reflects this):
 - Column chart: total spend per day (month view) / per month (year view).
 - Sorted horizontal bar list: spend by category with amount + share, clickable to filter the
   transaction table (same click-to-filter pattern as the reference implementation's category
-  chart). Categories are Etherfi's own raw text (section 7), so the list can be longer and
+  chart). Categories are ether.fi's own raw text (section 7), so the list can be longer and
   less tidy than a curated taxonomy; sorting by amount keeps the top spend visible regardless.
 - Column/line: accumulated cashback and effective cashback % (`cashback / cleared spend`) per
   period; "unavailable" (not 0%) when the denominator is zero or data is incomplete.
@@ -342,4 +342,4 @@ Ties MVP-PLAN.md's Milestones 0–4 to concrete deliverables from this document:
   with filters.
 - **M3** (section 11): PWA manifest/service worker, delete-all control, storage-quota handling,
   mobile layouts, offline verification. Backup/restore is v2.
-- **M4**: license file + README (section 1, 11), deploy, pilot with Etherfi-using coworkers.
+- **M4**: license file + README (section 1, 11), deploy, pilot with ether.fi-using coworkers.

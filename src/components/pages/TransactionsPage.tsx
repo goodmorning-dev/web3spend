@@ -65,7 +65,7 @@ function TransactionsPage() {
   }, [transactions])
 
   const categoryOptions = useMemo<FilterSelectOption[]>(() => {
-    // Etherfi's export mixes MCC-coded and bare variants of what's
+    // ether.fi's export mixes MCC-coded and bare variants of what's
     // otherwise the same category (e.g. "5411 - Grocery Stores and
     // Supermarkets" alongside plain "Grocery Stores and Supermarkets");
     // grouped here by merge key so they show up as one option, not two,
@@ -107,7 +107,7 @@ function TransactionsPage() {
   if (overallSummary.transactionCount === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Import your Etherfi export to see transactions here.
+        Import your ether.fi export to see transactions here.
       </p>
     )
   }

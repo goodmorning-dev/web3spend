@@ -14,7 +14,7 @@ interface TransactionsToolbarProps {
 }
 
 /** Narrows the currently filtered (currency/card/period) transaction set
- * further, by merchant text, status, and Etherfi's raw category. */
+ * further, by merchant text, status, and ether.fi's raw category. */
 function TransactionsToolbar({
   search,
   onSearchChange,
