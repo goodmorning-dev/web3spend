@@ -55,7 +55,7 @@ function NativeFilterSelect({
       )}
     >
       {icon}
-      <span aria-hidden="true" className="line-clamp-1">
+      <span aria-hidden="true" className="min-w-0 truncate">
         {selected?.label}
       </span>
       <ChevronDownIcon
@@ -89,7 +89,10 @@ function FilterSelect(props: FilterSelectProps) {
   const { ariaLabel, icon, value, options, onChange, triggerClassName } = props
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label={ariaLabel} className={cn(TRIGGER_TONE, triggerClassName)}>
+      <SelectTrigger
+        aria-label={ariaLabel}
+        className={cn(TRIGGER_TONE, '*:data-[slot=select-value]:min-w-0', triggerClassName)}
+      >
         {icon}
         <SelectValue />
       </SelectTrigger>

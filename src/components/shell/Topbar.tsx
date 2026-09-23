@@ -39,48 +39,44 @@ function Topbar() {
         </span>
       </div>
 
-      {/* Phone widths: a deliberate 2-row grid (card+currency, then period)
-          instead of letting flex-wrap break these wherever they happen to
-          fit, plus a full-width import action below rather than wrapping
-          into whatever space is left on the filters' row. */}
+      {/* Phone widths: all the filters on one row, with the full-width
+          import action below it. To fit in about 340px, the filters drop
+          their leading icons and the period uses short month names; card
+          and period share whatever's left after currency and truncate
+          rather than wrap. */}
       <div className="flex w-full flex-col gap-2 sm:hidden">
         {filters && options && (
-          <>
-            <div className="grid grid-cols-[1fr_auto] gap-2">
-              <FilterSelect
-                ariaLabel="Card"
-                icon={<CreditCard className="size-3.5 text-text-faint" />}
-                value={filters.cardId ?? 'all'}
-                onChange={(value) => setCardId(value === 'all' ? undefined : value)}
-                options={[
-                  { value: 'all', label: 'All cards' },
-                  ...options.cards.map((card) => ({ value: card.id, label: card.label })),
-                ]}
-                triggerClassName="w-full"
-              />
-              <FilterSelect
-                ariaLabel="Currency"
-                icon={<Coins className="size-3.5 text-text-faint" />}
-                value={filters.currency}
-                onChange={setCurrency}
-                options={options.currencies.map((currency) => ({
-                  value: currency,
-                  label: currency,
-                }))}
-                triggerClassName="w-auto"
-              />
-            </div>
+          <div className="flex gap-2">
+            <FilterSelect
+              ariaLabel="Card"
+              value={filters.cardId ?? 'all'}
+              onChange={(value) => setCardId(value === 'all' ? undefined : value)}
+              options={[
+                { value: 'all', label: 'All cards' },
+                ...options.cards.map((card) => ({ value: card.id, label: card.label })),
+              ]}
+              triggerClassName="min-w-0 flex-1"
+            />
+            <FilterSelect
+              ariaLabel="Currency"
+              value={filters.currency}
+              onChange={setCurrency}
+              options={options.currencies.map((currency) => ({
+                value: currency,
+                label: currency,
+              }))}
+              triggerClassName="shrink-0"
+            />
             {showPeriod && (
               <FilterSelect
                 ariaLabel="Period"
-                icon={<Calendar className="size-3.5 text-text-faint" />}
                 value={periodValue(filters.period)}
                 onChange={(value) => setPeriod(parsePeriodValue(value))}
-                options={periodOptions(options.periods)}
-                triggerClassName="w-full"
+                options={periodOptions(options.periods, { short: true })}
+                triggerClassName="min-w-0 flex-1"
               />
             )}
-          </>
+          </div>
         )}
 
         <Button asChild size="sm" className="w-full">
