@@ -1,12 +1,12 @@
-import { Bar, BarChart, CartesianGrid, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
-import type { PeriodBucket } from '@/analyzers'
+import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
+import { averageFullMonthSpend, type MonthBucket } from '@/analyzers'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import { formatUtcMonthLabel } from '@/utils/dates'
 import { formatCompactMoney, formatMoney } from '@/utils/format'
 
 interface MonthlySpendChartProps {
   /** One per month, oldest first (see bucketByMonthRange). */
-  buckets: PeriodBucket[]
+  buckets: MonthBucket[]
   currency: string
   /** What the period is called in the header, e.g. "2026" or "All time". */
   periodLabel: string
@@ -23,7 +23,9 @@ interface ChartDatum {
   key: string
   axisLabel: string
   spend: number
-  bucket: PeriodBucket
+  bucket: MonthBucket
+  /** The first or latest month, which the data may only partly cover. */
+  isEdge: boolean
 }
 
 function parseMonthKey(key: string): [number, number] {
@@ -55,7 +57,12 @@ function MonthlyTooltip({
     return null
   }
   const [year, month] = parseMonthKey(datum.key)
-  const { spendMinor, cashbackMinor, effectiveCashbackPct } = datum.bucket
+  const { spendMinor, cashbackMinor, effectiveCashbackPct, hasTransactions } = datum.bucket
+  const note = !hasTransactions
+    ? 'No transactions imported for this month'
+    : datum.isEdge
+      ? 'May only be partly covered by your import'
+      : null
 
   return (
     <div className="rounded-[10px] border border-border bg-secondary px-3 py-2.5 whitespace-nowrap shadow-lg">
@@ -81,6 +88,7 @@ function MonthlyTooltip({
           </span>
         </div>
       </div>
+      {note && <div className="mt-1.5 text-[11px] text-text-faint">{note}</div>}
     </div>
   )
 }
@@ -88,23 +96,23 @@ function MonthlyTooltip({
 /**
  * The spend chart for anything wider than one month: a bar per month, with
  * a dashed line at the average month so an unusually heavy or light one
- * stands out. The single-month view keeps SpendChart's cumulative
+ * stands out. The first and latest months are faded and left out of that
+ * average, since the imported data may start or stop partway through them,
+ * and a note under the legend says so (see averageFullMonthSpend). The single-month view keeps SpendChart's cumulative
  * this-month-against-last-month comparison, which doesn't translate to
  * all time.
  */
 function MonthlySpendChart({ buckets, currency, periodLabel }: MonthlySpendChartProps) {
   const spansYears =
     buckets.length > 0 && buckets[0].key.slice(0, 4) !== buckets[buckets.length - 1].key.slice(0, 4)
-  const data: ChartDatum[] = buckets.map((bucket) => ({
+  const data: ChartDatum[] = buckets.map((bucket, index) => ({
     key: bucket.key,
     axisLabel: axisLabel(bucket.key, spansYears),
     spend: bucket.spendMinor / 100,
     bucket,
+    isEdge: index === 0 || index === buckets.length - 1,
   }))
-  const averageMinor =
-    buckets.length > 0
-      ? Math.round(buckets.reduce((sum, bucket) => sum + bucket.spendMinor, 0) / buckets.length)
-      : 0
+  const average = averageFullMonthSpend(buckets)
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
@@ -120,13 +128,20 @@ function MonthlySpendChart({ buckets, currency, periodLabel }: MonthlySpendChart
             <span className="size-2 rounded-[2px] bg-current" />
             Monthly spend
           </span>
-          {buckets.length > 1 && (
+          {average && (
             <span className="inline-flex items-center gap-1.5" style={{ color: AVERAGE_COLOR }}>
               <span className="size-2 rounded-[2px] border-[1.6px] border-dashed border-current" />
-              Average month · {formatMoney(averageMinor, currency)}
+              Average full month · {formatMoney(average.averageMinor, currency)}
             </span>
           )}
         </div>
+        {buckets.length > 0 && (
+          <p className="text-[11.5px] leading-snug text-text-faint">
+            {average
+              ? 'Based on your imported transactions. Faded months may only be partly covered, so the average leaves them out, along with any month with no transactions.'
+              : 'Based on your imported transactions. Faded months may only be partly covered, so there are no full months to average yet.'}
+          </p>
+        )}
       </div>
       {buckets.length === 0 ? (
         <p className="flex h-56 items-center justify-center text-sm text-text-faint">
@@ -156,10 +171,14 @@ function MonthlySpendChart({ buckets, currency, periodLabel }: MonthlySpendChart
                 <MonthlyTooltip active={active} payload={payload} currency={currency} />
               )}
             />
-            <Bar dataKey="spend" fill={SPEND_COLOR} radius={[4, 4, 0, 0]} maxBarSize={36} />
-            {buckets.length > 1 && (
+            <Bar dataKey="spend" fill={SPEND_COLOR} radius={[4, 4, 0, 0]} maxBarSize={36}>
+              {data.map((datum) => (
+                <Cell key={datum.key} fillOpacity={datum.isEdge ? 0.4 : 1} />
+              ))}
+            </Bar>
+            {average && (
               <ReferenceLine
-                y={averageMinor / 100}
+                y={average.averageMinor / 100}
                 stroke={AVERAGE_COLOR}
                 strokeWidth={2}
                 strokeDasharray="5 5"
