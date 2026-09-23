@@ -6,6 +6,9 @@ interface KpiCardProps {
   label: string
   value: string
   hint: string
+  /** An optional always-visible line under the value, for context that's
+   * too important to leave to the hover hint. */
+  detail?: string
   tone?: 'default' | 'positive'
 }
 
@@ -15,7 +18,7 @@ interface KpiCardProps {
  * calls for; shown on hover/focus rather than always visible, to keep the card
  * itself uncluttered.
  */
-function KpiCard({ icon, label, value, hint, tone = 'default' }: KpiCardProps) {
+function KpiCard({ icon, label, value, hint, detail, tone = 'default' }: KpiCardProps) {
   return (
     <div
       tabIndex={0}
@@ -31,9 +34,12 @@ function KpiCard({ icon, label, value, hint, tone = 'default' }: KpiCardProps) {
       </div>
       <div className="flex min-w-0 flex-col gap-1">
         <span className="text-xs font-medium text-text-dim">{label}</span>
-        <div className="text-xl font-semibold tabular-nums">{value}</div>
+        <div className="truncate text-xl font-semibold tabular-nums">{value}</div>
+        {detail && <span className="truncate text-xs text-text-faint">{detail}</span>}
       </div>
-      <div className="pointer-events-none absolute top-full left-4 z-10 mt-2 rounded-lg border border-border bg-popover px-2.5 py-1.5 text-[11.5px] font-medium whitespace-nowrap text-text-dim opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+      {/* max-w wraps a long hint within the card instead of letting an
+          unbroken line run past the viewport edge on the rightmost card. */}
+      <div className="pointer-events-none absolute top-full left-4 z-10 mt-2 max-w-[calc(100%-2rem)] rounded-lg border border-border bg-popover px-2.5 py-1.5 text-[11.5px] font-medium text-text-dim opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
         {hint}
       </div>
     </div>

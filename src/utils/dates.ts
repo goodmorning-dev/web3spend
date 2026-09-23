@@ -32,6 +32,10 @@ export function getUtcMonth(timestampUtc: string): number {
   return new Date(timestampUtc).getUTCMonth() + 1
 }
 
+export function getUtcDay(timestampUtc: string): number {
+  return new Date(timestampUtc).getUTCDate()
+}
+
 export function getUtcDateKey(timestampUtc: string): string {
   const date = new Date(timestampUtc)
   return formatUtcDateKey(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())
@@ -43,6 +47,15 @@ export function formatUtcMonthLabel(year: number, month: number): string {
   return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
+    timeZone: 'UTC',
+  })
+}
+
+/** e.g. "Sep 2026", for tighter spots than formatUtcMonthLabel fits. */
+export function formatUtcShortMonthLabel(year: number, month: number): string {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
     timeZone: 'UTC',
   })
 }

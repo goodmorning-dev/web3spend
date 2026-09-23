@@ -12,4 +12,18 @@ describe('KpiCard', () => {
     // so it isn't lost to anyone not using a mouse
     expect(screen.getByText('across 2 purchases')).toBeInTheDocument()
   })
+
+  it('shows an optional detail line under the value', () => {
+    render(
+      <KpiCard
+        icon={<svg />}
+        label="Monthly cost"
+        value="€24.98"
+        detail="2 active subscriptions"
+        hint="latest charge of each active one, added up"
+      />,
+    )
+
+    expect(screen.getByText('2 active subscriptions')).toBeVisible()
+  })
 })

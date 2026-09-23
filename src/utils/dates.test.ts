@@ -8,6 +8,7 @@ import {
   formatUtcMonthKey,
   formatUtcMonthLabel,
   getUtcDateKey,
+  getUtcDay,
   getUtcMonth,
   getUtcYear,
   isLeapYear,
@@ -63,12 +64,13 @@ describe('formatUtcDateKey / formatUtcMonthKey', () => {
   })
 })
 
-describe('getUtcYear / getUtcMonth / getUtcDateKey', () => {
+describe('getUtcYear / getUtcMonth / getUtcDay / getUtcDateKey', () => {
   it('reads the UTC calendar date, not the local one', () => {
     // 23:30 UTC on Jan 31: a viewer ahead of UTC must not see this as February
     const timestampUtc = '2026-01-31T23:30:00.000Z'
     expect(getUtcYear(timestampUtc)).toBe(2026)
     expect(getUtcMonth(timestampUtc)).toBe(1)
+    expect(getUtcDay(timestampUtc)).toBe(31)
     expect(getUtcDateKey(timestampUtc)).toBe('2026-01-31')
   })
 })

@@ -8,20 +8,26 @@ import FilterSelect from './FilterSelect'
 const PAGE_TITLES: Record<string, string> = {
   '/app': 'Dashboard',
   '/app/transactions': 'Transactions',
+  '/app/subscriptions': 'Subscriptions',
   '/app/import': 'Import',
   '/app/settings': 'Settings',
 }
+
+const PERIODLESS_PATHS = new Set(['/app/subscriptions'])
 
 /**
  * MVP-PLAN §5: the card/currency/period controls here apply consistently to
  * every summary, chart, and transaction list under /app. They're hidden
  * (rather than shown disabled) until there's data to filter, since an empty
- * set of options isn't a meaningful choice.
+ * set of options isn't a meaningful choice. The period picker is also left
+ * out on pages that always look at the full history (PERIODLESS_PATHS),
+ * where it would suggest a filter that isn't actually applied.
  */
 function Topbar() {
   const location = useLocation()
   const { filters, options, setCurrency, setCardId, setPeriod } = useDashboardFilters()
   const title = PAGE_TITLES[location.pathname] ?? 'Dashboard'
+  const showPeriod = !PERIODLESS_PATHS.has(location.pathname)
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-3.5">
@@ -64,20 +70,22 @@ function Topbar() {
                 triggerClassName="w-auto"
               />
             </div>
-            <FilterSelect
-              ariaLabel="Period"
-              icon={<Calendar className="size-3.5 text-text-faint" />}
-              value={`${filters.year}-${filters.month}`}
-              onChange={(value) => {
-                const [year, month] = value.split('-').map(Number)
-                setPeriod(year, month)
-              }}
-              options={options.periods.map((period) => ({
-                value: `${period.year}-${period.month}`,
-                label: formatUtcMonthLabel(period.year, period.month),
-              }))}
-              triggerClassName="w-full"
-            />
+            {showPeriod && (
+              <FilterSelect
+                ariaLabel="Period"
+                icon={<Calendar className="size-3.5 text-text-faint" />}
+                value={`${filters.year}-${filters.month}`}
+                onChange={(value) => {
+                  const [year, month] = value.split('-').map(Number)
+                  setPeriod(year, month)
+                }}
+                options={options.periods.map((period) => ({
+                  value: `${period.year}-${period.month}`,
+                  label: formatUtcMonthLabel(period.year, period.month),
+                }))}
+                triggerClassName="w-full"
+              />
+            )}
           </>
         )}
 
@@ -115,20 +123,22 @@ function Topbar() {
               }))}
               triggerClassName="min-w-[92px]"
             />
-            <FilterSelect
-              ariaLabel="Period"
-              icon={<Calendar className="size-3.5 text-text-faint" />}
-              value={`${filters.year}-${filters.month}`}
-              onChange={(value) => {
-                const [year, month] = value.split('-').map(Number)
-                setPeriod(year, month)
-              }}
-              options={options.periods.map((period) => ({
-                value: `${period.year}-${period.month}`,
-                label: formatUtcMonthLabel(period.year, period.month),
-              }))}
-              triggerClassName="min-w-[168px]"
-            />
+            {showPeriod && (
+              <FilterSelect
+                ariaLabel="Period"
+                icon={<Calendar className="size-3.5 text-text-faint" />}
+                value={`${filters.year}-${filters.month}`}
+                onChange={(value) => {
+                  const [year, month] = value.split('-').map(Number)
+                  setPeriod(year, month)
+                }}
+                options={options.periods.map((period) => ({
+                  value: `${period.year}-${period.month}`,
+                  label: formatUtcMonthLabel(period.year, period.month),
+                }))}
+                triggerClassName="min-w-[168px]"
+              />
+            )}
           </>
         )}
 
