@@ -66,10 +66,9 @@ function SubscriptionRow({
   isActive,
   cardLastFourById,
 }: SubscriptionRowProps) {
-  const { description, currency, amountMinor, dayOfMonth, categoryRaw, occurrences } = group
+  const { description, currency, amountMinor, cardId, dayOfMonth, categoryRaw, occurrences } = group
   const amountLabel = formatMoney(amountMinor, currency)
   const latest = latestCharge(group)
-  const latestCardId = occurrences[occurrences.length - 1].cardId
   const newestFirst = [...occurrences].reverse()
   const months = recentMonths(group, asOfUtc)
   const newestMonth = months[months.length - 1]
@@ -110,7 +109,7 @@ function SubscriptionRow({
             <p className="truncate text-sm font-semibold">{description}</p>
             <p className="flex min-w-0 gap-1 text-xs text-text-faint">
               <span className="truncate">{displayCategoryLabel(categoryRaw)}</span>
-              <span className="shrink-0">· {cardDisplay(cardLastFourById, latestCardId)}</span>
+              <span className="shrink-0">· {cardDisplay(cardLastFourById, cardId)}</span>
             </p>
             <div className="mt-1 sm:hidden">{status}</div>
           </div>

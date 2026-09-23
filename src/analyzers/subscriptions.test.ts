@@ -207,4 +207,23 @@ describe('detectSubscriptions', () => {
     expect(result).toHaveLength(2)
     expect(result.map((group) => group.description).sort()).toEqual(['Netflix', 'Spotify'])
   })
+
+  it('finds the same subscription paid monthly from two different cards, once per card', () => {
+    // Regression test: charges used to be grouped across cards before the
+    // one-charge-per-month guard ran, so two cards on the same plan looked
+    // like two charges a month and both vanished under "All cards", even
+    // though filtering to either card on its own found them.
+    const result = detectSubscriptions([
+      makeTransaction({ id: '1', cardId: 'card-a', timestampUtc: '2026-01-15T10:00:00.000Z' }),
+      makeTransaction({ id: '2', cardId: 'card-a', timestampUtc: '2026-02-15T10:00:00.000Z' }),
+      makeTransaction({ id: '3', cardId: 'card-b', timestampUtc: '2026-01-15T11:00:00.000Z' }),
+      makeTransaction({ id: '4', cardId: 'card-b', timestampUtc: '2026-02-15T11:00:00.000Z' }),
+    ])
+
+    expect(result).toHaveLength(2)
+    expect(result.map((group) => group.cardId).sort()).toEqual(['card-a', 'card-b'])
+    for (const group of result) {
+      expect(group.occurrences.every((occurrence) => occurrence.cardId === group.cardId)).toBe(true)
+    }
+  })
 })

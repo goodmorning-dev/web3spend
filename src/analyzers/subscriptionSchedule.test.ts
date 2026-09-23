@@ -14,6 +14,7 @@ function makeGroup(timestamps: string[], dayOfMonth = 15): SubscriptionGroup {
     description: 'Netflix',
     currency: 'EUR',
     amountMinor: 1399,
+    cardId: 'card-1',
     dayOfMonth,
     categoryRaw: 'Digital Goods: Media, Books, Music',
     occurrences: timestamps.map((timestampUtc, index) => ({

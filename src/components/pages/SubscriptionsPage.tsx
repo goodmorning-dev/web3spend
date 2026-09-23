@@ -135,7 +135,7 @@ function SubscriptionsPage() {
                 <ul>
                   {active.map((group) => (
                     <SubscriptionRow
-                      key={`${group.description}-${group.currency}-${group.amountMinor}-${group.dayOfMonth}`}
+                      key={`${group.cardId}-${group.description}-${group.currency}-${group.amountMinor}-${group.dayOfMonth}`}
                       group={group}
                       asOfUtc={asOfUtc}
                       now={now}
@@ -170,7 +170,7 @@ function SubscriptionsPage() {
               <ul>
                 {inactive.map((group) => (
                   <SubscriptionRow
-                    key={`${group.description}-${group.currency}-${group.amountMinor}-${group.dayOfMonth}`}
+                    key={`${group.cardId}-${group.description}-${group.currency}-${group.amountMinor}-${group.dayOfMonth}`}
                     group={group}
                     asOfUtc={asOfUtc}
                     now={now}
