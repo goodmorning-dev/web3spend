@@ -127,4 +127,44 @@ describe('computeYearActivity', () => {
     const day = result.find((entry) => entry.key === '2026-06-01')
     expect(day?.spendMinor).toBe(1000)
   })
+
+  it('counts the same cleared purchases per day that it adds up for spend', () => {
+    const result = computeYearActivity(
+      [
+        makeTransaction({ id: '1', timestampUtc: '2026-06-01T08:00:00.000Z', amountMinor: 1000 }),
+        makeTransaction({ id: '2', timestampUtc: '2026-06-01T12:00:00.000Z', amountMinor: 250 }),
+        makeTransaction({ id: '3', timestampUtc: '2026-06-01T14:00:00.000Z', status: 'PENDING' }),
+        makeTransaction({ id: '4', timestampUtc: '2026-06-01T16:00:00.000Z', status: 'CANCELLED' }),
+        makeTransaction({ id: '5', timestampUtc: '2026-06-01T20:00:00.000Z', amountMinor: -400 }),
+      ],
+      2026,
+    )
+
+    const day = result.find((entry) => entry.key === '2026-06-01')
+    expect(day).toMatchObject({ spendMinor: 1250, purchaseCount: 2 })
+    expect(result.filter((entry) => entry.purchaseCount > 0)).toHaveLength(1)
+  })
+
+  it('shades the transaction view by how many purchases a day had, regardless of their size', () => {
+    // one big purchase on the 1st, four small ones on the 2nd
+    const result = computeYearActivity(
+      [
+        makeTransaction({ id: '1', timestampUtc: '2026-03-01T10:00:00.000Z', amountMinor: 90000 }),
+        ...[1, 2, 3, 4].map((n) =>
+          makeTransaction({
+            id: `small-${n}`,
+            timestampUtc: `2026-03-02T1${n}:00:00.000Z`,
+            amountMinor: 100,
+          }),
+        ),
+      ],
+      2026,
+    )
+
+    const bigDay = result.find((entry) => entry.key === '2026-03-01')!
+    const busyDay = result.find((entry) => entry.key === '2026-03-02')!
+    expect(bigDay.level).toBeGreaterThan(busyDay.level)
+    expect(busyDay.countLevel).toBeGreaterThan(bigDay.countLevel)
+    expect(result.find((entry) => entry.key === '2026-03-03')?.countLevel).toBe(0)
+  })
 })

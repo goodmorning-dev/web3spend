@@ -8,17 +8,24 @@ const INTENSITY_LEVELS = 4
 export interface DayActivity {
   key: string
   spendMinor: number
+  /** Cleared purchases that day: the same rows spendMinor adds up. */
+  purchaseCount: number
   /** 0 = no spend; 1-4 = quantile bucket among this year's spending days. */
   level: number
+  /** The same scale as `level`, bucketed by purchaseCount instead. */
+  countLevel: number
 }
 
 /**
  * TECHNICAL-PLAN §9: a GitHub-contribution-style year grid, one cell per
  * calendar day, shaded by that day's cleared spend (a refund-like negative
- * row is excluded, per MVP-PLAN §6). Levels are quantile buckets over the
- * observed spending days (not a fixed threshold), so the scale stays
- * meaningful regardless of a user's typical spend level. `transactions`
- * must already be filtered to this currency/card/year.
+ * row is excluded, per MVP-PLAN §6), or by how many cleared purchases it
+ * had. Both come from the same rows, so the two views light up the same
+ * days (a zero-amount purchase aside), just at different intensities.
+ * Levels are quantile buckets over the observed spending days (not a fixed
+ * threshold), so the scale stays meaningful regardless of a user's typical
+ * spend level or purchase frequency. `transactions` must already be
+ * filtered to this currency/card/year.
  */
 export function computeYearActivity(
   transactions: StandardTransaction[],
@@ -27,18 +34,18 @@ export function computeYearActivity(
   assertSingleCurrency(transactions)
 
   const spendByDay = new Map<string, number>()
+  const countByDay = new Map<string, number>()
   for (const transaction of transactions) {
     if (!isEligiblePurchase(transaction)) {
       continue
     }
     const key = getUtcDateKey(transaction.timestampUtc)
     spendByDay.set(key, (spendByDay.get(key) ?? 0) + transaction.amountMinor)
+    countByDay.set(key, (countByDay.get(key) ?? 0) + 1)
   }
 
-  const spendingDayValues = [...spendByDay.values()]
-    .filter((value) => value > 0)
-    .sort((a, b) => a - b)
-  const thresholds = computeQuantileThresholds(spendingDayValues, INTENSITY_LEVELS)
+  const thresholds = computeQuantileThresholds(sortedPositive(spendByDay), INTENSITY_LEVELS)
+  const countThresholds = computeQuantileThresholds(sortedPositive(countByDay), INTENSITY_LEVELS)
 
   const totalDays = daysInUtcYear(year)
   const startOfYear = Date.UTC(year, 0, 1)
@@ -47,12 +54,19 @@ export function computeYearActivity(
     const date = new Date(startOfYear + index * 86_400_000)
     const key = formatUtcDateKey(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())
     const spendMinor = spendByDay.get(key) ?? 0
+    const purchaseCount = countByDay.get(key) ?? 0
     return {
       key,
       spendMinor,
+      purchaseCount,
       level: spendMinor > 0 ? quantileLevel(spendMinor, thresholds) : 0,
+      countLevel: purchaseCount > 0 ? quantileLevel(purchaseCount, countThresholds) : 0,
     }
   })
+}
+
+function sortedPositive(valuesByDay: Map<string, number>): number[] {
+  return [...valuesByDay.values()].filter((value) => value > 0).sort((a, b) => a - b)
 }
 
 /** `levels - 1` thresholds splitting `sortedValues` into `levels` equal-count buckets. */
