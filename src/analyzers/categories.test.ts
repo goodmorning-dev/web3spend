@@ -33,8 +33,8 @@ describe('aggregateByCategory', () => {
     ])
 
     expect(result).toEqual([
-      { category: 'Groceries', spendMinor: 4000, share: 0.8 },
-      { category: 'Transport', spendMinor: 1000, share: 0.2 },
+      { category: 'Groceries', key: 'groceries', spendMinor: 4000, share: 0.8 },
+      { category: 'Transport', key: 'transport', spendMinor: 1000, share: 0.2 },
     ])
   })
 
@@ -53,7 +53,9 @@ describe('aggregateByCategory', () => {
       makeTransaction({ id: '2', categoryRaw: 'Travel', amountMinor: 5000, status: 'PENDING' }),
     ])
 
-    expect(result).toEqual([{ category: 'Groceries', spendMinor: 1000, share: 1 }])
+    expect(result).toEqual([
+      { category: 'Groceries', key: 'groceries', spendMinor: 1000, share: 1 },
+    ])
   })
 
   it('returns an empty list, not a division-by-zero share, when nothing is cleared', () => {
@@ -76,7 +78,9 @@ describe('aggregateByCategory', () => {
       makeTransaction({ id: '2', categoryRaw: 'Groceries', amountMinor: -400 }),
     ])
 
-    expect(result).toEqual([{ category: 'Groceries', spendMinor: 1000, share: 1 }])
+    expect(result).toEqual([
+      { category: 'Groceries', key: 'groceries', spendMinor: 1000, share: 1 },
+    ])
   })
 
   it('merges an MCC-coded and a bare variant of the same category into one bucket', () => {
@@ -97,7 +101,12 @@ describe('aggregateByCategory', () => {
 
     // shown without the code either way
     expect(result).toEqual([
-      { category: 'Grocery Stores and Supermarkets', spendMinor: 4000, share: 1 },
+      {
+        category: 'Grocery Stores and Supermarkets',
+        key: 'grocery stores and supermarkets',
+        spendMinor: 4000,
+        share: 1,
+      },
     ])
   })
 })

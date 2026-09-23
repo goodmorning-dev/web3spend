@@ -10,6 +10,10 @@ interface CategoryBreakdownProps {
   buckets: CategoryBucket[]
   currency: string
   onViewAll: () => void
+  /** Called with a category's key (CategoryBucket.key) when its row or
+   * slice is clicked, to open its transactions. "Other" isn't clickable,
+   * since it stands for several categories at once. */
+  onSelectCategory?: (key: string) => void
 }
 
 // Reserved for a real category so it's never reused for "Other" too: with
@@ -72,8 +76,14 @@ function ViewAllButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-/** MVP-PLAN §5: sorted spend by category, from cleared purchases only. */
-function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownProps) {
+/** MVP-PLAN §5: sorted spend by category, from cleared purchases only.
+ * Each real category's row and donut slice open its transactions. */
+function CategoryBreakdown({
+  buckets,
+  currency,
+  onViewAll,
+  onSelectCategory,
+}: CategoryBreakdownProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const clearHoverTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -151,6 +161,17 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
 
   const hoveredBucket = hoveredIndex !== null ? visibleBuckets[hoveredIndex] : undefined
 
+  function selectableKey(index: number): string | undefined {
+    return onSelectCategory ? visibleBuckets[index]?.key : undefined
+  }
+
+  function selectCategory(index: number) {
+    const key = selectableKey(index)
+    if (key !== undefined) {
+      onSelectCategory?.(key)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-3">
@@ -175,12 +196,16 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
                 isAnimationActive={false}
                 onMouseEnter={(_, index) => hoverCategory(index)}
                 onMouseLeave={scheduleUnhover}
+                onClick={(_, index) => selectCategory(index)}
               >
                 {data.map((entry, index) => (
                   <Cell
                     key={entry.categoryKey}
                     fill={entry.fill}
-                    className="cursor-pointer transition-[fill-opacity] duration-200 ease-out"
+                    className={cn(
+                      'transition-[fill-opacity] duration-200 ease-out',
+                      selectableKey(index) !== undefined && 'cursor-pointer',
+                    )}
                     fillOpacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.32}
                   />
                 ))}
@@ -198,34 +223,56 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
           </div>
         </div>
         <ul className="flex w-full min-w-0 flex-col gap-2">
-          {visibleBuckets.map((bucket, index) => (
-            <li
-              key={bucket.category}
-              className={cn(
-                '-mx-1.5 flex cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1 text-sm transition-colors duration-200',
-                hoveredIndex === index && 'bg-muted',
-              )}
-              onMouseEnter={() => hoverCategory(index)}
-              onMouseLeave={scheduleUnhover}
-            >
-              <span
-                className="size-2.5 shrink-0 rounded-[2px]"
-                style={{
-                  backgroundColor: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
-                }}
-                aria-hidden="true"
-              />
-              <span className="min-w-0 flex-1 truncate text-text-dim" title={bucket.category}>
-                {bucket.category}
-              </span>
-              <span className="shrink-0 font-medium tabular-nums">
-                {formatMoney(bucket.spendMinor, currency)}
-              </span>
-              <span className="w-12 shrink-0 text-right tabular-nums text-text-faint">
-                {formatPercent(bucket.share * 100, 0)}
-              </span>
-            </li>
-          ))}
+          {visibleBuckets.map((bucket, index) => {
+            const rowContent = (
+              <>
+                <span
+                  className="size-2.5 shrink-0 rounded-[2px]"
+                  style={{
+                    backgroundColor: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
+                  }}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1 truncate text-text-dim" title={bucket.category}>
+                  {bucket.category}
+                </span>
+                <span className="shrink-0 font-medium tabular-nums">
+                  {formatMoney(bucket.spendMinor, currency)}
+                </span>
+                <span className="w-12 shrink-0 text-right tabular-nums text-text-faint">
+                  {formatPercent(bucket.share * 100, 0)}
+                </span>
+              </>
+            )
+            const rowClass = cn(
+              '-mx-1.5 flex w-[calc(100%+0.75rem)] items-center gap-2 rounded-lg px-1.5 py-1 text-left text-sm transition-colors duration-200',
+              hoveredIndex === index && 'bg-muted',
+            )
+            return (
+              <li
+                key={bucket.category}
+                onMouseEnter={() => hoverCategory(index)}
+                onMouseLeave={scheduleUnhover}
+              >
+                {selectableKey(index) !== undefined ? (
+                  <button
+                    type="button"
+                    onClick={() => selectCategory(index)}
+                    onFocus={() => hoverCategory(index)}
+                    onBlur={scheduleUnhover}
+                    className={cn(
+                      rowClass,
+                      'cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                    )}
+                  >
+                    {rowContent}
+                  </button>
+                ) : (
+                  <div className={rowClass}>{rowContent}</div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       </div>
     </div>

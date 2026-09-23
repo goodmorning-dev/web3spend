@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import { utils, write, type WorkBook } from 'xlsx'
 import { DashboardFiltersProvider, useDashboardFilters } from '@/hooks/DashboardFiltersContext'
@@ -96,6 +96,13 @@ function renderDashboardPage() {
       </DashboardFiltersProvider>
     </MemoryRouter>,
   )
+}
+
+/** Shows where the page navigated to, since the destination page itself
+ * isn't rendered here. */
+function LocationProbe() {
+  const location = useLocation()
+  return <p data-testid="location">{location.pathname + location.search}</p>
 }
 
 /** Stands in for the topbar's period select, which isn't part of this page. */
@@ -305,5 +312,23 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('heading', { name: 'Activity 2026' })).toBeInTheDocument()
     // both purchases count toward the total, across the two years
     expect(screen.getByText(/across 2 cleared purchases/i)).toBeInTheDocument()
+  })
+
+  it("opens a category's transactions when its row in the breakdown is clicked", async () => {
+    const user = userEvent.setup()
+    await db.transactions.bulkPut([spend('a', '2026-02-10T10:00:00.000Z', 500)])
+
+    render(
+      <MemoryRouter initialEntries={['/app']}>
+        <DashboardFiltersProvider>
+          <DashboardPage />
+          <LocationProbe />
+        </DashboardFiltersProvider>
+      </MemoryRouter>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: /^cat/i }))
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/transactions?category=cat')
   })
 })

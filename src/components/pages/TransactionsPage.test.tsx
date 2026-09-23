@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
 import { db } from '@/storage/db'
@@ -31,11 +32,13 @@ function makeTransaction(overrides: Partial<StandardTransaction> = {}): Standard
   }
 }
 
-function renderTransactionsPage() {
+function renderTransactionsPage(path = '/app/transactions') {
   return render(
-    <DashboardFiltersProvider>
-      <TransactionsPage />
-    </DashboardFiltersProvider>,
+    <MemoryRouter initialEntries={[path]}>
+      <DashboardFiltersProvider>
+        <TransactionsPage />
+      </DashboardFiltersProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -78,5 +81,20 @@ describe('TransactionsPage', () => {
 
     expect(screen.getAllByText('Coffee Shop')).toHaveLength(2)
     expect(screen.queryByText('Grocery Run')).not.toBeInTheDocument()
+  })
+
+  it('opens with the category from the URL already filtered, as the Dashboard links to it', async () => {
+    await db.transactions.bulkPut([
+      makeTransaction({ id: 'txn-1', description: 'Coffee Shop', categoryRaw: 'Groceries' }),
+      makeTransaction({ id: 'txn-2', description: 'Taxi Ride', categoryRaw: '4121 - Taxicabs' }),
+    ])
+
+    renderTransactionsPage('/app/transactions?category=taxicabs')
+
+    expect(await screen.findAllByText('Taxi Ride')).toHaveLength(2)
+    expect(screen.queryByText('Coffee Shop')).not.toBeInTheDocument()
+    for (const select of screen.getAllByRole('combobox', { name: /category/i })) {
+      expect(select).toHaveTextContent('Taxicabs')
+    }
   })
 })
