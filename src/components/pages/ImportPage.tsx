@@ -1,5 +1,6 @@
-import { ArrowRight, BookOpen, Eye, FileText, RefreshCw, TriangleAlert } from 'lucide-react'
+import { ArrowRight, BookOpen, FileText, RefreshCw, TriangleAlert, Zap } from 'lucide-react'
 import type { ComponentType, ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import importHeroImage from '@/assets/import-hero.webp'
 import ImportDropzone from '@/components/ImportDropzone'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,11 @@ import { useDemoData } from '@/hooks/useDemoData'
 
 const GUIDE_URL =
   'https://help.ether.fi/en/articles/685844-how-to-download-your-card-transaction-history'
+// Where the sheet is picked, for anyone who wants to check the claim below.
+const SHEET_SOURCE_URL =
+  'https://github.com/goodmorning-dev/web3spend/blob/main/src/adapters/etherfi.ts'
+
+const NOTE_LINK_CLASS = 'font-medium text-primary hover:underline'
 
 const NOTES: {
   key: string
@@ -17,26 +23,38 @@ const NOTES: {
   {
     key: 'sheet',
     icon: FileText,
-    title: 'All Transactions only',
+    title: 'Nothing counted twice',
     description: (
       <>
-        We read the <strong className="font-semibold text-foreground">All Transactions</strong>{' '}
-        sheet only, not the per-currency sheets.
+        Your export lists every purchase again in its per-currency sheets, so we only read the{' '}
+        <strong className="font-semibold text-foreground">All Transactions</strong> sheet.{' '}
+        <a href={SHEET_SOURCE_URL} target="_blank" rel="noreferrer" className={NOTE_LINK_CLASS}>
+          See the code
+        </a>
       </>
     ),
   },
   {
-    key: 'preview',
-    icon: Eye,
-    title: 'No preview step',
-    description: "Once a file is accepted, it's parsed and committed straight to your dashboard.",
+    key: 'instant',
+    icon: Zap,
+    title: 'Straight to your dashboard',
+    description:
+      "Pick the file and your dashboard updates right away. There's nothing to confirm or map by hand.",
   },
   {
     key: 'merge',
     icon: RefreshCw,
     title: 'Safe re-imports',
-    description:
-      "Re-importing a newer export merges safely with what's already stored. Nothing already saved is ever deleted.",
+    description: (
+      <>
+        Importing a newer export adds what's new and updates what changed, without duplicating
+        anything. You can delete all of your data at any time in{' '}
+        <Link to="/app/settings" className={NOTE_LINK_CLASS}>
+          Settings
+        </Link>
+        .
+      </>
+    ),
   },
   {
     key: 'unsupported',
@@ -52,26 +70,29 @@ function ImportPage() {
   return (
     <div className="flex flex-col gap-6">
       <section className="overflow-hidden rounded-2xl border border-border bg-card p-6 sm:p-8">
-        <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1.3fr_1fr]">
-          <div className="relative isolate order-last flex items-center justify-center lg:order-none">
-            <div
-              aria-hidden="true"
-              className="absolute inset-[10%] -z-10 rounded-full bg-[radial-gradient(circle,var(--color-primary)_0%,transparent_70%)] opacity-35 blur-3xl"
-            />
-            <img src={importHeroImage} alt="" aria-hidden="true" className="w-full max-w-[640px]" />
-          </div>
-
+        {/* The import area comes first: on the left on desktop, where
+            people start reading, and above the illustration on phones. */}
+        <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[1fr_1.3fr]">
           <div className="flex flex-col gap-5">
             <div>
               <h2 className="font-heading text-2xl font-semibold sm:text-3xl">
-                Import your <span className="text-primary">ether.fi export</span>
+                Import your <span className="text-primary">ether.fi data</span>
               </h2>
               <p className="mt-1.5 max-w-[46ch] text-sm text-text-dim">
                 Everything below is parsed and stored on this device. Nothing is uploaded anywhere.
               </p>
             </div>
 
-            <ImportDropzone />
+            <ImportDropzone
+              resultAction={
+                <Button asChild size="sm" className="gap-1.5">
+                  <Link to="/app">
+                    View your dashboard
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                </Button>
+              }
+            />
 
             <div className="flex flex-col items-center gap-2 text-center text-sm">
               <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
@@ -100,6 +121,14 @@ function ImportPage() {
               </a>
             </div>
             {error && <p className="text-center text-sm text-destructive">{error}</p>}
+          </div>
+
+          <div className="relative isolate flex items-center justify-center">
+            <div
+              aria-hidden="true"
+              className="absolute inset-[10%] -z-10 rounded-full bg-[radial-gradient(circle,var(--color-primary)_0%,transparent_70%)] opacity-35 blur-3xl"
+            />
+            <img src={importHeroImage} alt="" aria-hidden="true" className="w-full max-w-[640px]" />
           </div>
         </div>
       </section>
