@@ -64,4 +64,15 @@ describe('filterTransactions', () => {
     expect(filterTransactions([jan, feb], { currency: 'EUR', year: 2026 })).toEqual([jan, feb])
     expect(filterTransactions([jan, feb], { currency: 'EUR', year: 2026, month: 1 })).toEqual([jan])
   })
+
+  it('keeps every year when year is omitted ("All time"), still scoped to the currency', () => {
+    const lastYear = makeTransaction({ id: 'last', timestampUtc: '2025-06-15T00:00:00.000Z' })
+    const thisYear = makeTransaction({ id: 'this', timestampUtc: '2026-02-15T00:00:00.000Z' })
+    const usd = makeTransaction({ id: 'usd', currency: 'USD' })
+
+    expect(filterTransactions([lastYear, thisYear, usd], { currency: 'EUR' })).toEqual([
+      lastYear,
+      thisYear,
+    ])
+  })
 })

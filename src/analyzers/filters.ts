@@ -5,8 +5,10 @@ export interface DashboardFilters {
   currency: string
   /** Omit for "All cards" (MVP-PLAN §5 default). */
   cardId?: string
-  year: number
-  /** Omit for a whole-year view; set for a single month within that year. */
+  /** Omit for every year on record ("All time"). */
+  year?: number
+  /** Omit for a whole-year view; set for a single month within that year.
+   * Ignored without a year. */
   month?: number
 }
 
@@ -26,6 +28,9 @@ export function filterTransactions(
     }
     if (filters.cardId !== undefined && transaction.cardId !== filters.cardId) {
       return false
+    }
+    if (filters.year === undefined) {
+      return true
     }
     if (getUtcYear(transaction.timestampUtc) !== filters.year) {
       return false

@@ -2,8 +2,8 @@ import { Calendar, Coins, CreditCard, ShieldCheck, Upload } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
-import { formatUtcMonthLabel } from '@/utils/dates'
 import FilterSelect from './FilterSelect'
+import { parsePeriodValue, periodOptions, periodValue } from './periodOptions'
 
 const PAGE_TITLES: Record<string, string> = {
   '/app': 'Dashboard',
@@ -74,15 +74,9 @@ function Topbar() {
               <FilterSelect
                 ariaLabel="Period"
                 icon={<Calendar className="size-3.5 text-text-faint" />}
-                value={`${filters.year}-${filters.month}`}
-                onChange={(value) => {
-                  const [year, month] = value.split('-').map(Number)
-                  setPeriod(year, month)
-                }}
-                options={options.periods.map((period) => ({
-                  value: `${period.year}-${period.month}`,
-                  label: formatUtcMonthLabel(period.year, period.month),
-                }))}
+                value={periodValue(filters.period)}
+                onChange={(value) => setPeriod(parsePeriodValue(value))}
+                options={periodOptions(options.periods)}
                 triggerClassName="w-full"
               />
             )}
@@ -127,15 +121,9 @@ function Topbar() {
               <FilterSelect
                 ariaLabel="Period"
                 icon={<Calendar className="size-3.5 text-text-faint" />}
-                value={`${filters.year}-${filters.month}`}
-                onChange={(value) => {
-                  const [year, month] = value.split('-').map(Number)
-                  setPeriod(year, month)
-                }}
-                options={options.periods.map((period) => ({
-                  value: `${period.year}-${period.month}`,
-                  label: formatUtcMonthLabel(period.year, period.month),
-                }))}
+                value={periodValue(filters.period)}
+                onChange={(value) => setPeriod(parsePeriodValue(value))}
+                options={periodOptions(options.periods)}
                 triggerClassName="min-w-[168px]"
               />
             )}

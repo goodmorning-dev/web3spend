@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
-import { bucketByDay, bucketByMonth } from './periodBuckets'
+import { bucketByDay, bucketByMonth, bucketByMonthRange } from './periodBuckets'
 
 function makeTransaction(overrides: Partial<StandardTransaction> = {}): StandardTransaction {
   return {
@@ -210,5 +210,40 @@ describe('bucketByMonth', () => {
     expect(march?.effectiveCashbackPct).toBeNull()
     expect(march?.cashbackMinor).toBe(20)
     expect(april?.effectiveCashbackPct).toBe((25 / 1000) * 100)
+  })
+})
+
+describe('bucketByMonthRange', () => {
+  it('returns nothing for no transactions', () => {
+    expect(bucketByMonthRange([])).toEqual([])
+  })
+
+  it('covers every month from the first to the last one with data, across a year boundary, quiet months included', () => {
+    const result = bucketByMonthRange([
+      makeTransaction({ id: '1', timestampUtc: '2025-11-03T10:00:00.000Z', amountMinor: 1000 }),
+      makeTransaction({ id: '2', timestampUtc: '2026-02-20T10:00:00.000Z', amountMinor: 500 }),
+      makeTransaction({ id: '3', timestampUtc: '2026-02-21T10:00:00.000Z', amountMinor: 250 }),
+    ])
+
+    expect(result.map((bucket) => [bucket.key, bucket.spendMinor])).toEqual([
+      ['2025-11', 1000],
+      ['2025-12', 0],
+      ['2026-01', 0],
+      ['2026-02', 750],
+    ])
+  })
+
+  it('leaves non-cleared and refund-like rows out of the totals but still lets them set the range', () => {
+    const result = bucketByMonthRange([
+      makeTransaction({ id: '1', timestampUtc: '2026-01-10T10:00:00.000Z', amountMinor: 400 }),
+      makeTransaction({ id: '2', timestampUtc: '2026-03-10T10:00:00.000Z', status: 'PENDING' }),
+      makeTransaction({ id: '3', timestampUtc: '2026-01-11T10:00:00.000Z', amountMinor: -100 }),
+    ])
+
+    expect(result.map((bucket) => [bucket.key, bucket.spendMinor])).toEqual([
+      ['2026-01', 400],
+      ['2026-02', 0],
+      ['2026-03', 0],
+    ])
   })
 })

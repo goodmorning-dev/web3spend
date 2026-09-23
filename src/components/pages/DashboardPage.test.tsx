@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import { utils, write, type WorkBook } from 'xlsx'
-import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
+import { DashboardFiltersProvider, useDashboardFilters } from '@/hooks/DashboardFiltersContext'
+import type { StandardTransaction } from '@/types/transaction'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import DashboardPage from './DashboardPage'
@@ -95,6 +96,37 @@ function renderDashboardPage() {
       </DashboardFiltersProvider>
     </MemoryRouter>,
   )
+}
+
+/** Stands in for the topbar's period select, which isn't part of this page. */
+function AllTimeButton() {
+  const { setPeriod } = useDashboardFilters()
+  return (
+    <button type="button" onClick={() => setPeriod({ kind: 'all' })}>
+      Show all time
+    </button>
+  )
+}
+
+function spend(id: string, timestampUtc: string, amountMinor: number): StandardTransaction {
+  return {
+    id,
+    cardId: 'card-1',
+    timestampUtc,
+    type: 'card_spend',
+    description: 'Shop',
+    status: 'CLEARED',
+    amountMinor,
+    currency: 'EUR',
+    originalAmountMinor: amountMinor,
+    originalCurrency: 'EUR',
+    cashbackMinor: 0,
+    cashbackCurrency: 'EUR',
+    categoryRaw: 'Cat',
+    spendingMode: 'Direct Pay',
+    identityKey: id,
+    importId: 'import-1',
+  }
 }
 
 describe('DashboardPage', () => {
@@ -244,5 +276,34 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Cashback earned')).toBeInTheDocument()
     expect(screen.getByText('1 added, 0 updated.')).toBeInTheDocument()
     expect(screen.getByText(/1 row could not be imported/i)).toBeInTheDocument()
+  })
+
+  it('switches to a bar per month and the latest year of activity on "All time"', async () => {
+    const user = userEvent.setup()
+    await db.transactions.bulkPut([
+      spend('old', '2025-11-10T10:00:00.000Z', 1000),
+      spend('new', '2026-02-10T10:00:00.000Z', 500),
+    ])
+
+    render(
+      <MemoryRouter>
+        <DashboardFiltersProvider>
+          <DashboardPage />
+          <AllTimeButton />
+        </DashboardFiltersProvider>
+      </MemoryRouter>,
+    )
+
+    // defaults to the latest month
+    expect(await screen.findByText('Spending this month')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Show all time' }))
+
+    expect(await screen.findByText('Spending by month')).toBeInTheDocument()
+    expect(screen.getByText('All time')).toBeInTheDocument()
+    expect(screen.queryByText('Spending this month')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Activity 2026' })).toBeInTheDocument()
+    // both purchases count toward the total, across the two years
+    expect(screen.getByText(/across 2 cleared purchases/i)).toBeInTheDocument()
   })
 })

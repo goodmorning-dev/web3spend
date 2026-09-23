@@ -3,6 +3,7 @@ import { filterTransactions } from '@/analyzers'
 import { db } from '@/storage/db'
 import type { StandardTransaction } from '@/types/transaction'
 import type { SelectedFilters } from './DashboardFiltersContext'
+import { toDashboardFilters } from './toDashboardFilters'
 
 /**
  * The shared data source for every dashboard view (KPIs, charts, heatmap,
@@ -19,6 +20,6 @@ export function useFilteredTransactions(
       return undefined
     }
     const all = await db.transactions.toArray()
-    return filterTransactions(all, filters)
+    return filterTransactions(all, toDashboardFilters(filters))
   }, [filters])
 }

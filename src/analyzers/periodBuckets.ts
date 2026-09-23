@@ -1,4 +1,10 @@
-import { daysInUtcMonth, formatUtcDateKey, formatUtcMonthKey, getUtcMonth } from '@/utils/dates'
+import {
+  daysInUtcMonth,
+  formatUtcDateKey,
+  formatUtcMonthKey,
+  getUtcMonth,
+  getUtcYear,
+} from '@/utils/dates'
 import type { StandardTransaction } from '@/types/transaction'
 import { assertSingleCurrency } from './assertSingleCurrency'
 import { hasCompatibleCashbackCurrency, isEligiblePurchase } from './eligibility'
@@ -99,4 +105,58 @@ export function bucketByMonth(transactions: StandardTransaction[], year: number)
     const month = index + 1
     return toBucket(formatUtcMonthKey(year, month), byMonth.get(month) ?? createAccumulator())
   })
+}
+
+/**
+ * Monthly spend/cashback totals for views wider than one month (a whole
+ * year, or all time): one bucket per calendar month from the earliest to
+ * the latest month `transactions` touch, quiet months in between included
+ * so the x-axis stays continuous. Deliberately clipped to the data's own
+ * range rather than padded out to whole calendar years, so a first import
+ * covering June to September doesn't show five months of zeros that read
+ * as "spent nothing". `transactions` must already be filtered to one
+ * currency/card and the period in view (see filters.ts).
+ */
+export function bucketByMonthRange(transactions: StandardTransaction[]): PeriodBucket[] {
+  assertSingleCurrency(transactions)
+  if (transactions.length === 0) {
+    return []
+  }
+
+  const byMonth = new Map<string, BucketAccumulator>()
+  let firstKey: string | null = null
+  let lastKey: string | null = null
+  for (const transaction of transactions) {
+    const key = formatUtcMonthKey(
+      getUtcYear(transaction.timestampUtc),
+      getUtcMonth(transaction.timestampUtc),
+    )
+    if (firstKey === null || key < firstKey) {
+      firstKey = key
+    }
+    if (lastKey === null || key > lastKey) {
+      lastKey = key
+    }
+    if (!isEligiblePurchase(transaction)) {
+      continue
+    }
+    const accumulator = byMonth.get(key) ?? createAccumulator()
+    addToAccumulator(accumulator, transaction)
+    byMonth.set(key, accumulator)
+  }
+
+  const buckets: PeriodBucket[] = []
+  let [year, month] = firstKey!.split('-').map(Number)
+  for (;;) {
+    const key = formatUtcMonthKey(year, month)
+    buckets.push(toBucket(key, byMonth.get(key) ?? createAccumulator()))
+    if (key === lastKey) {
+      return buckets
+    }
+    month += 1
+    if (month > 12) {
+      month = 1
+      year += 1
+    }
+  }
 }

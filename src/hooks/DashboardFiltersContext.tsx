@@ -1,15 +1,25 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { useDashboardFilterOptions, type DashboardFilterOptions } from './useDashboardFilterOptions'
 
+/** The period every view under /app is scoped to: one month, one whole
+ * year, or everything on record. */
+export type SelectedPeriod =
+  | { kind: 'all' }
+  | { kind: 'year'; year: number }
+  | {
+      kind: 'month'
+      year: number
+      month: number
+      /** Set by picking a day on the activity heatmap (MVP-PLAN §5:
+       * "clicking a cell filters the transaction table to that day");
+       * undefined means no narrowing beyond the month. */
+      day?: number
+    }
+
 export interface SelectedFilters {
   currency: string
   cardId?: string
-  year: number
-  month: number
-  /** Set by picking a day on the activity heatmap (MVP-PLAN §5: "clicking a
-   * cell filters the transaction table to that day"); undefined means no
-   * day-level narrowing beyond the selected period. */
-  day?: number
+  period: SelectedPeriod
 }
 
 export interface DashboardFiltersContextValue {
@@ -18,10 +28,10 @@ export interface DashboardFiltersContextValue {
   options: DashboardFilterOptions | undefined
   setCurrency: (currency: string) => void
   setCardId: (cardId: string | undefined) => void
-  /** Changing the period directly is a broader "look at a different month"
+  /** Changing the period directly is a broader "look at something else"
    * action, distinct from picking a day, so it also clears any day filter
    * rather than leaving a day selected that may no longer be in view. */
-  setPeriod: (year: number, month: number) => void
+  setPeriod: (period: SelectedPeriod) => void
   /** The heatmap spans a full year, so a selected day can fall outside the
    * currently selected month; this moves the period to match it, keeping
    * the period control and the day filter always consistent with each
@@ -56,8 +66,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     return {
       currency: options.currencies[0],
       cardId: undefined,
-      year: options.periods[0].year,
-      month: options.periods[0].month,
+      period: { kind: 'month', year: options.periods[0].year, month: options.periods[0].month },
     }
   }, [options])
 
@@ -68,9 +77,15 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
     options,
     setCurrency: (currency) => setOverrides((prev) => ({ ...prev, currency })),
     setCardId: (cardId) => setOverrides((prev) => ({ ...prev, cardId })),
-    setPeriod: (year, month) => setOverrides((prev) => ({ ...prev, year, month, day: undefined })),
-    setDay: (year, month, day) => setOverrides((prev) => ({ ...prev, year, month, day })),
-    clearDay: () => setOverrides((prev) => ({ ...prev, day: undefined })),
+    setPeriod: (period) => setOverrides((prev) => ({ ...prev, period })),
+    setDay: (year, month, day) =>
+      setOverrides((prev) => ({ ...prev, period: { kind: 'month', year, month, day } })),
+    clearDay: () =>
+      setOverrides((prev) =>
+        prev.period?.kind === 'month'
+          ? { ...prev, period: { ...prev.period, day: undefined } }
+          : prev,
+      ),
     resetFilters: () => setOverrides({}),
   }
 

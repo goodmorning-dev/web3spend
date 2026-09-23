@@ -43,10 +43,28 @@ describe('useFilteredTransactions', () => {
     ])
 
     const { result } = renderHook(() =>
-      useFilteredTransactions({ currency: 'EUR', year: 2026, month: 3 }),
+      useFilteredTransactions({
+        currency: 'EUR',
+        period: { kind: 'month', year: 2026, month: 3 },
+      }),
     )
 
     await waitFor(() => expect(result.current).toHaveLength(1))
     expect(result.current?.[0].id).toBe('1')
+  })
+
+  it('returns everything in the currency for "All time", across years', async () => {
+    await db.transactions.bulkPut([
+      makeTransaction({ id: '1', currency: 'EUR', timestampUtc: '2025-11-01T00:00:00.000Z' }),
+      makeTransaction({ id: '2', currency: 'EUR', timestampUtc: '2026-03-01T00:00:00.000Z' }),
+      makeTransaction({ id: '3', currency: 'USD', timestampUtc: '2026-03-01T00:00:00.000Z' }),
+    ])
+
+    const { result } = renderHook(() =>
+      useFilteredTransactions({ currency: 'EUR', period: { kind: 'all' } }),
+    )
+
+    await waitFor(() => expect(result.current).toHaveLength(2))
+    expect(result.current?.map((transaction) => transaction.id).sort()).toEqual(['1', '2'])
   })
 })
