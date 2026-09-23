@@ -60,6 +60,16 @@ export function formatUtcShortMonthLabel(year: number, month: number): string {
   })
 }
 
+/** e.g. "Sep 1", for places where the year is already clear from context.
+ * Takes a "YYYY-MM-DD" date key. */
+export function formatUtcMonthDay(dateKey: string): string {
+  return new Date(`${dateKey}T00:00:00.000Z`).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
 /**
  * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
  * preserved and labeled, never reinterpreted in the viewer's local zone. A

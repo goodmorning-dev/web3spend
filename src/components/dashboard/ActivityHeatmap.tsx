@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import type { DayActivity } from '@/analyzers'
+import { summarizeYearActivity, type DayActivity } from '@/analyzers'
+import { cn } from '@/lib/utils'
 import { formatUtcDate } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
+import ActivityStats from './ActivityStats'
 
 interface ActivityHeatmapProps {
   activity: DayActivity[]
@@ -35,6 +37,21 @@ const MONTH_LABELS = [
   'Dec',
 ]
 
+type ActivityMetric = 'spend' | 'count'
+
+const METRIC_OPTIONS: { value: ActivityMetric; label: string }[] = [
+  { value: 'spend', label: 'Spending' },
+  { value: 'count', label: 'Transactions' },
+]
+
+function transactionCountLabel(count: number): string {
+  return count === 0 ? 'No transactions' : `${count} transaction${count === 1 ? '' : 's'}`
+}
+
+function spendLabel(day: DayActivity, currency: string): string {
+  return day.spendMinor > 0 ? `${formatMoney(day.spendMinor, currency)} spent` : 'No spend'
+}
+
 function parseDateKey(key: string): [number, number, number] {
   const [year, month, day] = key.split('-').map(Number)
   return [year, month, day]
@@ -45,8 +62,10 @@ function parseDateKey(key: string): [number, number, number] {
  * one cell per calendar day, shaded by `computeYearActivity`'s quantile
  * level for that day. Weeks run left to right as columns, Sunday to
  * Saturday as rows, the same layout convention GitHub itself uses.
- * Selecting a day (click, tap, or keyboard) filters the transaction table
- * to it; the grid itself is a single tab stop, with arrow keys moving a
+ * A switch in the header flips the shading between how much was spent and
+ * how many transactions there were each day; both count the same cleared
+ * purchases. Selecting a day (click, tap, or keyboard) filters the
+ * transaction table to it; the grid itself is a single tab stop, with arrow keys moving a
  * virtual focus between cells (the same roving-focus pattern a native grid
  * widget uses), so the page doesn't need 365 individual tab stops.
  */
@@ -60,6 +79,7 @@ function ActivityHeatmap({
   const selectedIndex = selectedDateKey
     ? activity.findIndex((day) => day.key === selectedDateKey)
     : -1
+  const [metric, setMetric] = useState<ActivityMetric>('spend')
   const [focusedIndex, setFocusedIndex] = useState(() => Math.max(selectedIndex, 0))
   const [hasFocus, setHasFocus] = useState(false)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
@@ -103,6 +123,7 @@ function ActivityHeatmap({
     }
   }
 
+  const summary = summarizeYearActivity(activity)
   const jan1Weekday = new Date(Date.UTC(year, 0, 1)).getUTCDay()
   const weeks = Math.ceil((activity.length + jan1Weekday) / 7)
   const width = PAD_LEFT + weeks * STEP
@@ -161,122 +182,169 @@ function ActivityHeatmap({
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-heading text-sm font-semibold">Activity</h3>
           <p className="text-[11.5px] font-medium text-text-faint">
-            Daily spend, {currency} · darker means more spent that day
+            {metric === 'spend'
+              ? `Daily spend, ${currency} · darker means more spent that day`
+              : `Daily transactions, ${currency} · darker means more transactions that day`}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-text-faint">
-          <span>Less</span>
-          {LEVEL_OPACITY.map((opacity, level) => (
-            <span
-              key={level}
-              className="size-2.5 rounded-[3px]"
-              style={
-                level === 0
-                  ? { backgroundColor: 'var(--color-border)' }
-                  : { backgroundColor: 'var(--color-primary)', opacity }
-              }
-            />
-          ))}
-          <span>More</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div
+            role="group"
+            aria-label="Shade days by"
+            className="inline-flex rounded-lg border border-border bg-background/40 p-0.5"
+          >
+            {METRIC_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={metric === option.value}
+                onClick={() => setMetric(option.value)}
+                className={cn(
+                  'cursor-pointer rounded-md px-2.5 py-1 text-[11.5px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                  metric === option.value
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-text-faint hover:text-foreground',
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-text-faint">
+            <span>Less</span>
+            {LEVEL_OPACITY.map((opacity, level) => (
+              <span
+                key={level}
+                className="size-2.5 rounded-[3px]"
+                style={
+                  level === 0
+                    ? { backgroundColor: 'var(--color-border)' }
+                    : { backgroundColor: 'var(--color-primary)', opacity }
+                }
+              />
+            ))}
+            <span>More</span>
+          </div>
         </div>
       </div>
-      <div className="relative">
-        <div
-          ref={scrollRef}
-          className="overflow-x-auto pb-3"
-          onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}
-        >
-          <svg
-            viewBox={`0 0 ${width} ${height}`}
-            width={width}
-            height={height}
-            role="grid"
-            tabIndex={0}
-            aria-label={`Calendar heatmap of daily spending in ${year}, shaded by amount spent that day. Use the arrow keys to move between days and Enter to filter the transaction list to one.`}
-            aria-activedescendant={`heatmap-day-${focusedIndex}`}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setHasFocus(true)}
-            onBlur={() => setHasFocus(false)}
-            className="outline-none"
-          >
-            {monthStarts.map(({ column, label }) => (
-              <text
-                key={`${label}-${column}`}
-                x={PAD_LEFT + column * STEP}
-                y={PAD_TOP - 5}
-                className="fill-text-faint text-[9px] font-medium"
+      {/* The grid is a fixed 876px wide, so on a wide card the stats sit
+          beside it instead of leaving that space empty; on a narrower one
+          they drop underneath. Measured against the card itself rather
+          than the viewport, so the sidebar and scrollbar don't matter. */}
+      <div className="@container">
+        <div className="flex flex-col gap-4 @min-[1110px]:flex-row @min-[1110px]:items-center">
+          <div className="relative min-w-0 @min-[1110px]:shrink-0">
+            <div
+              ref={scrollRef}
+              className="overflow-x-auto pb-3"
+              onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}
+            >
+              <svg
+                viewBox={`0 0 ${width} ${height}`}
+                width={width}
+                height={height}
+                role="grid"
+                tabIndex={0}
+                aria-label={`Calendar heatmap of daily ${metric === 'spend' ? 'spending' : 'transactions'} in ${year}, shaded by ${metric === 'spend' ? 'amount spent' : 'number of cleared purchases'} that day. Use the arrow keys to move between days and Enter to filter the transaction list to one.`}
+                aria-activedescendant={`heatmap-day-${focusedIndex}`}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setHasFocus(true)}
+                onBlur={() => setHasFocus(false)}
+                className="outline-none"
               >
-                {label}
-              </text>
-            ))}
-            {WEEKDAY_LABELS.map((label, row) =>
-              label ? (
-                <text
-                  key={label}
-                  x={PAD_LEFT - 6}
-                  y={PAD_TOP + row * STEP + CELL - 2}
-                  textAnchor="end"
-                  className="fill-text-faint text-[9px] font-medium"
-                >
-                  {label}
-                </text>
-              ) : null,
+                {monthStarts.map(({ column, label }) => (
+                  <text
+                    key={`${label}-${column}`}
+                    x={PAD_LEFT + column * STEP}
+                    y={PAD_TOP - 5}
+                    className="fill-text-faint text-[9px] font-medium"
+                  >
+                    {label}
+                  </text>
+                ))}
+                {WEEKDAY_LABELS.map((label, row) =>
+                  label ? (
+                    <text
+                      key={label}
+                      x={PAD_LEFT - 6}
+                      y={PAD_TOP + row * STEP + CELL - 2}
+                      textAnchor="end"
+                      className="fill-text-faint text-[9px] font-medium"
+                    >
+                      {label}
+                    </text>
+                  ) : null,
+                )}
+                {activity.map((day, index) => {
+                  const column = Math.floor((index + jan1Weekday) / 7)
+                  const row = (index + jan1Weekday) % 7
+                  const isSelected = index === selectedIndex
+                  const isFocused = hasFocus && index === focusedIndex
+                  const level = metric === 'spend' ? day.level : day.countLevel
+                  const label =
+                    metric === 'spend'
+                      ? `${day.key}: ${day.spendMinor > 0 ? formatMoney(day.spendMinor, currency) : 'No spend'}`
+                      : `${day.key}: ${transactionCountLabel(day.purchaseCount)}`
+                  return (
+                    <rect
+                      key={day.key}
+                      id={`heatmap-day-${index}`}
+                      role="gridcell"
+                      aria-selected={isSelected}
+                      aria-label={label}
+                      x={PAD_LEFT + column * STEP}
+                      y={PAD_TOP + row * STEP}
+                      width={CELL}
+                      height={CELL}
+                      rx={3}
+                      fill={level === 0 ? 'var(--color-border)' : 'var(--color-primary)'}
+                      fillOpacity={LEVEL_OPACITY[level]}
+                      stroke={
+                        isSelected
+                          ? 'var(--color-foreground)'
+                          : isFocused
+                            ? 'var(--color-primary)'
+                            : 'none'
+                      }
+                      strokeWidth={isSelected ? 2 : isFocused ? 1.5 : 0}
+                      strokeDasharray={isFocused && !isSelected ? '1.5,1.5' : undefined}
+                      className="cursor-pointer transition-[fill-opacity] duration-300 motion-reduce:transition-none"
+                      onClick={() => selectIndex(index)}
+                      onMouseEnter={() => hoverDay(index)}
+                      onMouseLeave={scheduleUnhoverDay}
+                    />
+                  )
+                })}
+              </svg>
+            </div>
+            {hoveredIndex !== null && (
+              <HeatmapTooltip
+                day={activity[hoveredIndex]}
+                currency={currency}
+                metric={metric}
+                x={
+                  PAD_LEFT +
+                  Math.floor((hoveredIndex + jan1Weekday) / 7) * STEP +
+                  CELL / 2 -
+                  scrollLeft
+                }
+                y={PAD_TOP + ((hoveredIndex + jan1Weekday) % 7) * STEP}
+              />
             )}
-            {activity.map((day, index) => {
-              const column = Math.floor((index + jan1Weekday) / 7)
-              const row = (index + jan1Weekday) % 7
-              const isSelected = index === selectedIndex
-              const isFocused = hasFocus && index === focusedIndex
-              const label = `${day.key}: ${day.spendMinor > 0 ? formatMoney(day.spendMinor, currency) : 'No spend'}`
-              return (
-                <rect
-                  key={day.key}
-                  id={`heatmap-day-${index}`}
-                  role="gridcell"
-                  aria-selected={isSelected}
-                  aria-label={label}
-                  x={PAD_LEFT + column * STEP}
-                  y={PAD_TOP + row * STEP}
-                  width={CELL}
-                  height={CELL}
-                  rx={3}
-                  fill={day.level === 0 ? 'var(--color-border)' : 'var(--color-primary)'}
-                  fillOpacity={LEVEL_OPACITY[day.level]}
-                  stroke={
-                    isSelected
-                      ? 'var(--color-foreground)'
-                      : isFocused
-                        ? 'var(--color-primary)'
-                        : 'none'
-                  }
-                  strokeWidth={isSelected ? 2 : isFocused ? 1.5 : 0}
-                  strokeDasharray={isFocused && !isSelected ? '1.5,1.5' : undefined}
-                  className="cursor-pointer"
-                  onClick={() => selectIndex(index)}
-                  onMouseEnter={() => hoverDay(index)}
-                  onMouseLeave={scheduleUnhoverDay}
-                />
-              )
-            })}
-          </svg>
+          </div>
+          {summary.activeDays > 0 && (
+            <ActivityStats
+              summary={summary}
+              metric={metric}
+              currency={currency}
+              className="border-t border-border pt-4 @min-[1110px]:flex-1 @min-[1110px]:border-t-0 @min-[1110px]:border-l @min-[1110px]:pt-0 @min-[1110px]:pl-5"
+            />
+          )}
         </div>
-        {hoveredIndex !== null && (
-          <HeatmapTooltip
-            day={activity[hoveredIndex]}
-            currency={currency}
-            x={
-              PAD_LEFT +
-              Math.floor((hoveredIndex + jan1Weekday) / 7) * STEP +
-              CELL / 2 -
-              scrollLeft
-            }
-            y={PAD_TOP + ((hoveredIndex + jan1Weekday) % 7) * STEP}
-          />
-        )}
       </div>
     </div>
   )
@@ -288,25 +356,33 @@ function ActivityHeatmap({
 function HeatmapTooltip({
   day,
   currency,
+  metric,
   x,
   y,
 }: {
   day: DayActivity
   currency: string
+  metric: ActivityMetric
   x: number
   y: number
 }) {
+  const spend = spendLabel(day, currency)
+  const count = transactionCountLabel(day.purchaseCount)
+  const [primary, secondary] = metric === 'spend' ? [spend, count] : [count, spend]
+
   return (
     <div
+      role="tooltip"
       className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full rounded-[10px] border border-border bg-secondary px-3 py-2.5 whitespace-nowrap shadow-lg transition-[left,top] duration-150 ease-out"
       style={{ left: x, top: y - 10 }}
     >
       <div className="text-[10.5px] font-semibold tracking-[0.06em] text-text-faint uppercase">
         {formatUtcDate(`${day.key}T00:00:00.000Z`)}
       </div>
-      <div className="mt-1.5 text-xs font-medium tabular-nums text-foreground">
-        {day.spendMinor > 0 ? `${formatMoney(day.spendMinor, currency)} spent` : 'No spend'}
-      </div>
+      <div className="mt-1.5 text-xs font-medium tabular-nums text-foreground">{primary}</div>
+      {day.purchaseCount > 0 && (
+        <div className="mt-0.5 text-[11px] tabular-nums text-text-faint">{secondary}</div>
+      )}
     </div>
   )
 }

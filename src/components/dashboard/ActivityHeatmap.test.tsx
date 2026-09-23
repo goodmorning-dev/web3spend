@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { DayActivity } from '@/analyzers'
+import { formatUtcMonthDay } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
 import ActivityHeatmap from './ActivityHeatmap'
 
@@ -10,7 +11,7 @@ function makeYearActivity(year: number): DayActivity[] {
   return Array.from({ length: days }, (_, index) => {
     const date = new Date(Date.UTC(year, 0, 1) + index * 86_400_000)
     const key = date.toISOString().slice(0, 10)
-    return { key, spendMinor: 0, level: 0 }
+    return { key, spendMinor: 0, purchaseCount: 0, level: 0, countLevel: 0 }
   })
 }
 
@@ -21,12 +22,18 @@ function getGrid(): HTMLElement {
 describe('ActivityHeatmap', () => {
   it('renders one cell per day of the year, accessibly labeled', () => {
     const activity = makeYearActivity(2026)
-    activity[14] = { key: '2026-01-15', spendMinor: 4500, level: 3 }
+    activity[14] = {
+      key: '2026-01-15',
+      spendMinor: 4500,
+      purchaseCount: 2,
+      level: 3,
+      countLevel: 4,
+    }
 
     render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
 
     expect(getGrid()).toBeInTheDocument()
-    expect(document.querySelectorAll('rect')).toHaveLength(activity.length)
+    expect(document.querySelectorAll('rect[role="gridcell"]')).toHaveLength(activity.length)
     // toHaveAttribute checks the raw attribute value, unlike getByText,
     // which normalizes whitespace; some locales format currency with a
     // non-breaking space, so this must match formatMoney's own output
@@ -38,7 +45,13 @@ describe('ActivityHeatmap', () => {
   it('shows a custom tooltip on hover instead of a native browser tooltip', async () => {
     const user = userEvent.setup()
     const activity = makeYearActivity(2026)
-    activity[14] = { key: '2026-01-15', spendMinor: 4500, level: 3 }
+    activity[14] = {
+      key: '2026-01-15',
+      spendMinor: 4500,
+      purchaseCount: 2,
+      level: 3,
+      countLevel: 4,
+    }
 
     render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
 
@@ -63,8 +76,20 @@ describe('ActivityHeatmap', () => {
 
   it('does not flicker off when moving straight from one cell to an adjacent one', () => {
     const activity = makeYearActivity(2026)
-    activity[14] = { key: '2026-01-15', spendMinor: 4500, level: 3 } // heatmap-day-14
-    activity[15] = { key: '2026-01-16', spendMinor: 1200, level: 1 } // heatmap-day-15
+    activity[14] = {
+      key: '2026-01-15',
+      spendMinor: 4500,
+      purchaseCount: 2,
+      level: 3,
+      countLevel: 4,
+    } // heatmap-day-14
+    activity[15] = {
+      key: '2026-01-16',
+      spendMinor: 1200,
+      purchaseCount: 1,
+      level: 1,
+      countLevel: 1,
+    } // heatmap-day-15
 
     render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
 
@@ -95,7 +120,7 @@ describe('ActivityHeatmap', () => {
     // (anchored above the cell) pokes above the wrapper's own top edge.
     const user = userEvent.setup()
     const activity = makeYearActivity(2026)
-    activity[3] = { key: '2026-01-04', spendMinor: 1200, level: 2 } // day-of-year index 3, row 0
+    activity[3] = { key: '2026-01-04', spendMinor: 1200, purchaseCount: 1, level: 2, countLevel: 1 } // day-of-year index 3, row 0
 
     render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
 
@@ -116,6 +141,129 @@ describe('ActivityHeatmap', () => {
     expect(
       screen.getByText('Daily spend, USD · darker means more spent that day'),
     ).toBeInTheDocument()
+  })
+
+  it('starts on Spending and switches the shading, labels and description to transaction counts', async () => {
+    const user = userEvent.setup()
+    const activity = makeYearActivity(2026)
+    activity[14] = {
+      key: '2026-01-15',
+      spendMinor: 4500,
+      purchaseCount: 2,
+      level: 1,
+      countLevel: 4,
+    }
+
+    render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
+
+    const spending = screen.getByRole('button', { name: 'Spending' })
+    const transactions = screen.getByRole('button', { name: 'Transactions' })
+    expect(spending).toHaveAttribute('aria-pressed', 'true')
+    expect(transactions).toHaveAttribute('aria-pressed', 'false')
+    const cell = document.getElementById('heatmap-day-14')!
+    expect(cell).toHaveAttribute('fill-opacity', '0.28')
+
+    await user.click(transactions)
+
+    expect(transactions).toHaveAttribute('aria-pressed', 'true')
+    expect(spending).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByText('Daily transactions, EUR · darker means more transactions that day'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('grid', { name: /calendar heatmap of daily transactions in 2026/i }),
+    ).toBeInTheDocument()
+    expect(cell).toHaveAttribute('aria-label', '2026-01-15: 2 transactions')
+    expect(cell).toHaveAttribute('fill-opacity', '1')
+    expect(document.getElementById('heatmap-day-13')).toHaveAttribute(
+      'aria-label',
+      '2026-01-14: No transactions',
+    )
+  })
+
+  it('leads the tooltip with whichever measure is selected, and shows the other under it', async () => {
+    const user = userEvent.setup()
+    const activity = makeYearActivity(2026)
+    activity[14] = {
+      key: '2026-01-15',
+      spendMinor: 4500,
+      purchaseCount: 1,
+      level: 3,
+      countLevel: 4,
+    }
+    const spent = `${formatMoney(4500, 'EUR')} spent`.replace(/\s+/g, ' ')
+
+    render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
+    const cell = document.getElementById('heatmap-day-14')!
+
+    await user.hover(cell)
+    let tooltip = within(screen.getByRole('tooltip'))
+    expect(tooltip.getByText(spent)).toHaveClass('text-foreground')
+    expect(tooltip.getByText('1 transaction')).toHaveClass('text-text-faint')
+
+    await user.click(screen.getByRole('button', { name: 'Transactions' }))
+    await user.hover(cell)
+    tooltip = within(screen.getByRole('tooltip'))
+    expect(tooltip.getByText('1 transaction')).toHaveClass('text-foreground')
+    expect(tooltip.getByText(spent)).toHaveClass('text-text-faint')
+  })
+
+  it('sums up the year beside the grid, following the Spending / Transactions switch', async () => {
+    const user = userEvent.setup()
+    const activity = makeYearActivity(2026)
+    activity[14] = {
+      key: '2026-01-15',
+      spendMinor: 4500,
+      purchaseCount: 1,
+      level: 4,
+      countLevel: 1,
+    }
+    activity[15] = {
+      key: '2026-01-16',
+      spendMinor: 1200,
+      purchaseCount: 3,
+      level: 1,
+      countLevel: 4,
+    }
+    const normalized = (text: string) => text.replace(/\s+/g, ' ')
+    const stat = (label: string) => within(screen.getByText(label).parentElement!)
+
+    render(<ActivityHeatmap activity={activity} year={2026} currency="EUR" onSelectDay={vi.fn()} />)
+
+    expect(stat('Active days').getByText('2 days')).toBeInTheDocument()
+    expect(stat('Longest streak').getByText('2 days')).toBeInTheDocument()
+    expect(
+      stat('Longest streak').getByText(normalized(`${formatUtcMonthDay('2026-01-15')} to 16`)),
+    ).toBeInTheDocument()
+    expect(stat('Biggest day').getByText(normalized(formatMoney(4500, 'EUR')))).toBeInTheDocument()
+    expect(
+      stat('Biggest day').getByText(normalized(formatUtcMonthDay('2026-01-15'))),
+    ).toBeInTheDocument()
+    // Jan 15, 2026 is a Thursday, and the only two days in range are it and Friday
+    expect(stat('Top weekday').getByText('Thursdays')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Transactions' }))
+
+    expect(screen.queryByText('Biggest day')).not.toBeInTheDocument()
+    expect(stat('Busiest day').getByText('3 transactions')).toBeInTheDocument()
+    expect(
+      stat('Busiest day').getByText(normalized(formatUtcMonthDay('2026-01-16'))),
+    ).toBeInTheDocument()
+    expect(stat('Top weekday').getByText('Fridays')).toBeInTheDocument()
+    expect(stat('Top weekday').getByText('3.0 on average')).toBeInTheDocument()
+  })
+
+  it('leaves the summary out for a year without purchases', () => {
+    render(
+      <ActivityHeatmap
+        activity={makeYearActivity(2026)}
+        year={2026}
+        currency="EUR"
+        onSelectDay={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText('Active days')).not.toBeInTheDocument()
   })
 
   it('calls onSelectDay with the year, month, and day for the clicked cell', async () => {
