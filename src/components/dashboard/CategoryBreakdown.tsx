@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Cell, Pie, PieChart } from 'recharts'
 import type { CategoryBucket } from '@/analyzers'
@@ -9,10 +9,8 @@ import { formatMoney, formatPercent } from '@/utils/format'
 interface CategoryBreakdownProps {
   buckets: CategoryBucket[]
   currency: string
-  onViewAll: () => void
   /** Called with a category's key (CategoryBucket.key) when its row or
-   * slice is clicked, to open its transactions. "Other" isn't clickable,
-   * since it stands for several categories at once. */
+   * slice is clicked, to open its transactions. */
   onSelectCategory?: (key: string) => void
 }
 
@@ -42,7 +40,7 @@ function colorForVisibleIndex(index: number, total: number, hasOther: boolean): 
   return palette[index % palette.length]
 }
 
-/** The donut and list only ever show a handful of slices legibly; beyond
+/** The donut only ever shows a handful of slices legibly; beyond
  * `MAX_VISIBLE_CATEGORIES`, the remainder rolls up into a synthetic "Other"
  * bucket. This is a presentation-only grouping, not a real category
  * taxonomy (MVP-PLAN §5 still shows ether.fi's raw category text as-is
@@ -63,43 +61,37 @@ function rollupTopCategories(buckets: CategoryBucket[]): CategoryBucket[] {
   ]
 }
 
-function ViewAllButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-xs font-semibold text-primary hover:underline"
-    >
-      View all
-      <ChevronRight className="size-3.5" />
-    </button>
-  )
-}
+/** What the pointer (or keyboard focus) is on: a row in the list, or a
+ * slice of the donut. Kept apart because, with the list expanded, a row and
+ * a slice aren't one-to-one: every category past the top five lives inside
+ * the single "Other" slice. */
+type HoverTarget = { kind: 'row'; index: number } | { kind: 'slice'; index: number }
 
-/** MVP-PLAN §5: sorted spend by category, from cleared purchases only.
- * Each real category's row and donut slice open its transactions. */
-function CategoryBreakdown({
-  buckets,
-  currency,
-  onViewAll,
-  onSelectCategory,
-}: CategoryBreakdownProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+/**
+ * MVP-PLAN §5: sorted spend by category, from cleared purchases only. The
+ * donut and the list show the top five and roll the rest into "Other";
+ * "View all" (or clicking "Other") expands the list to every category, so
+ * what's inside "Other" is one click away. Each real category's row and
+ * slice open its transactions.
+ */
+function CategoryBreakdown({ buckets, currency, onSelectCategory }: CategoryBreakdownProps) {
+  const [hover, setHover] = useState<HoverTarget | null>(null)
+  const [expanded, setExpanded] = useState(false)
   const clearHoverTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => () => clearTimeout(clearHoverTimeout.current), [])
 
   // A filter change (period, card, currency) gives `buckets` a new
-  // reference with a different shape; a hoveredIndex left over from the
-  // previous shape can point past the end of the new visibleBuckets array
-  // (or, even if still in range, highlight a different category than the
-  // one the pointer is actually over). Reset it during render on the same
+  // reference with a different shape; a hover target left over from the
+  // previous shape can point past the end of the new lists (or, even if
+  // still in range, highlight a different category than the one the
+  // pointer is actually over). Reset it during render on the same
   // prop-change-adjusts-state pattern ActivityHeatmap uses for its selected
   // index, rather than an effect that would let one bad render through.
   const [prevBuckets, setPrevBuckets] = useState(buckets)
   if (buckets !== prevBuckets) {
     setPrevBuckets(buckets)
-    setHoveredIndex(null)
+    setHover(null)
   }
 
   // Moving the mouse from one slice/row to the next (across the small gap
@@ -109,23 +101,20 @@ function CategoryBreakdown({
   // in between, reading as a flicker. Deferring the clear briefly, and
   // cancelling it if a new hover arrives in that window, keeps the
   // transition smooth instead.
-  function hoverCategory(index: number) {
+  function hoverTarget(target: HoverTarget) {
     clearTimeout(clearHoverTimeout.current)
-    setHoveredIndex(index)
+    setHover(target)
   }
 
   function scheduleUnhover() {
     clearTimeout(clearHoverTimeout.current)
-    clearHoverTimeout.current = setTimeout(() => setHoveredIndex(null), 100)
+    clearHoverTimeout.current = setTimeout(() => setHover(null), 100)
   }
 
   if (buckets.length === 0) {
     return (
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
-          <ViewAllButton onClick={onViewAll} />
-        </div>
+        <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
         <p className="flex flex-1 items-center text-sm text-text-faint">
           No cleared purchases in this period yet.
         </p>
@@ -134,8 +123,85 @@ function CategoryBreakdown({
   }
 
   const totalSpendMinor = buckets.reduce((sum, bucket) => sum + bucket.spendMinor, 0)
-  const visibleBuckets = rollupTopCategories(buckets)
+  const slices = rollupTopCategories(buckets)
   const hasOther = buckets.length > MAX_VISIBLE_CATEGORIES
+  const otherSliceIndex = slices.length - 1
+  const isExpanded = expanded && hasOther
+  const rows = isExpanded ? buckets : slices
+
+  /** The slice a row belongs to: itself while collapsed; once expanded,
+   * every category past the top five belongs to "Other". */
+  function sliceForRow(rowIndex: number): number {
+    return isExpanded && rowIndex >= MAX_VISIBLE_CATEGORIES ? otherSliceIndex : rowIndex
+  }
+
+  function isRowHighlighted(rowIndex: number): boolean {
+    if (hover === null) {
+      return false
+    }
+    // hovering the "Other" slice with the list expanded lights up every
+    // category inside it
+    return hover.kind === 'row' ? hover.index === rowIndex : sliceForRow(rowIndex) === hover.index
+  }
+
+  function isSliceDimmed(sliceIndex: number): boolean {
+    if (hover === null) {
+      return false
+    }
+    const hoveredSlice = hover.kind === 'slice' ? hover.index : sliceForRow(hover.index)
+    return hoveredSlice !== sliceIndex
+  }
+
+  const centerAmount =
+    hover === null
+      ? totalSpendMinor
+      : hover.kind === 'row'
+        ? (rows[hover.index]?.spendMinor ?? totalSpendMinor)
+        : (slices[hover.index]?.spendMinor ?? totalSpendMinor)
+
+  function rowColor(rowIndex: number): string {
+    return colorForVisibleIndex(sliceForRow(rowIndex), slices.length, hasOther)
+  }
+
+  /** Clicking "Other" expands the list rather than opening transactions,
+   * since there's no single category behind it. */
+  function isOtherSlice(sliceIndex: number): boolean {
+    return hasOther && sliceIndex === otherSliceIndex
+  }
+
+  function openRow(rowIndex: number) {
+    const bucket = rows[rowIndex]
+    if (!isExpanded && isOtherSlice(rowIndex)) {
+      setExpanded(true)
+    } else if (bucket?.key !== undefined) {
+      onSelectCategory?.(bucket.key)
+    }
+  }
+
+  function openSlice(sliceIndex: number) {
+    if (isOtherSlice(sliceIndex)) {
+      setExpanded(true)
+    } else {
+      const key = slices[sliceIndex]?.key
+      if (key !== undefined) {
+        onSelectCategory?.(key)
+      }
+    }
+  }
+
+  function isRowClickable(rowIndex: number): boolean {
+    if (!isExpanded && isOtherSlice(rowIndex)) {
+      return true
+    }
+    return onSelectCategory !== undefined && rows[rowIndex]?.key !== undefined
+  }
+
+  function isSliceClickable(sliceIndex: number): boolean {
+    return (
+      isOtherSlice(sliceIndex) ||
+      (onSelectCategory !== undefined && slices[sliceIndex]?.key !== undefined)
+    )
+  }
 
   // ether.fi's raw category text is untrusted and shown as-is (MVP-PLAN §5);
   // it must never become a ChartConfig key, since shadcn's ChartContainer
@@ -144,42 +210,41 @@ function CategoryBreakdown({
   // `label` still carries the real category text as plain, auto-escaped
   // React content.
   const chartConfig = Object.fromEntries(
-    visibleBuckets.map((bucket, index) => [
+    slices.map((bucket, index) => [
       `category-${index}`,
       {
         label: bucket.category,
-        color: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
+        color: colorForVisibleIndex(index, slices.length, hasOther),
       },
     ]),
   ) satisfies ChartConfig
 
-  const data = visibleBuckets.map((bucket, index) => ({
+  const data = slices.map((bucket, index) => ({
     categoryKey: `category-${index}`,
     spendMinor: bucket.spendMinor / 100,
-    fill: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
+    fill: colorForVisibleIndex(index, slices.length, hasOther),
   }))
-
-  const hoveredBucket = hoveredIndex !== null ? visibleBuckets[hoveredIndex] : undefined
-
-  function selectableKey(index: number): string | undefined {
-    return onSelectCategory ? visibleBuckets[index]?.key : undefined
-  }
-
-  function selectCategory(index: number) {
-    const key = selectableKey(index)
-    if (key !== undefined) {
-      onSelectCategory?.(key)
-    }
-  }
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-heading text-sm font-semibold">Spending by category</h3>
-        <ViewAllButton onClick={onViewAll} />
+        {hasOther && (
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            aria-expanded={isExpanded}
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-xs font-semibold text-primary hover:underline"
+          >
+            {isExpanded ? 'Show less' : 'View all'}
+            <ChevronDown
+              className={cn('size-3.5 transition-transform', isExpanded && 'rotate-180')}
+            />
+          </button>
+        )}
       </div>
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 sm:flex-row">
-        <div className="relative shrink-0">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 sm:flex-row sm:items-start">
+        <div className="relative shrink-0 sm:self-center">
           <ChartContainer
             config={chartConfig}
             className="mx-auto aspect-square h-[190px] w-[190px]"
@@ -194,9 +259,9 @@ function CategoryBreakdown({
                 paddingAngle={2.5}
                 strokeWidth={2}
                 isAnimationActive={false}
-                onMouseEnter={(_, index) => hoverCategory(index)}
+                onMouseEnter={(_, index) => hoverTarget({ kind: 'slice', index })}
                 onMouseLeave={scheduleUnhover}
-                onClick={(_, index) => selectCategory(index)}
+                onClick={(_, index) => openSlice(index)}
               >
                 {data.map((entry, index) => (
                   <Cell
@@ -204,9 +269,9 @@ function CategoryBreakdown({
                     fill={entry.fill}
                     className={cn(
                       'transition-[fill-opacity] duration-200 ease-out',
-                      selectableKey(index) !== undefined && 'cursor-pointer',
+                      isSliceClickable(index) && 'cursor-pointer',
                     )}
-                    fillOpacity={hoveredIndex === null || hoveredIndex === index ? 1 : 0.32}
+                    fillOpacity={isSliceDimmed(index) ? 0.32 : 1}
                   />
                 ))}
               </Pie>
@@ -214,23 +279,25 @@ function CategoryBreakdown({
           </ChartContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
             <span className="text-xl font-semibold tabular-nums">
-              {formatMoney(
-                hoveredBucket === undefined ? totalSpendMinor : hoveredBucket.spendMinor,
-                currency,
-              )}
+              {formatMoney(centerAmount, currency)}
             </span>
             <span className="text-[11.5px] font-medium text-text-faint">Total spent</span>
           </div>
         </div>
-        <ul className="flex w-full min-w-0 flex-col gap-2">
-          {visibleBuckets.map((bucket, index) => {
+        <ul
+          className={cn(
+            'flex w-full min-w-0 flex-col gap-2',
+            // a long expanded list scrolls inside the card on wider screens
+            // instead of stretching it (and the chart beside it) down the page
+            isExpanded && 'sm:max-h-80 sm:overflow-y-auto sm:pr-1',
+          )}
+        >
+          {rows.map((bucket, index) => {
             const rowContent = (
               <>
                 <span
                   className="size-2.5 shrink-0 rounded-[2px]"
-                  style={{
-                    backgroundColor: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
-                  }}
+                  style={{ backgroundColor: rowColor(index) }}
                   aria-hidden="true"
                 />
                 <span className="min-w-0 flex-1 truncate text-text-dim" title={bucket.category}>
@@ -246,19 +313,19 @@ function CategoryBreakdown({
             )
             const rowClass = cn(
               '-mx-1.5 flex w-[calc(100%+0.75rem)] items-center gap-2 rounded-lg px-1.5 py-1 text-left text-sm transition-colors duration-200',
-              hoveredIndex === index && 'bg-muted',
+              isRowHighlighted(index) && 'bg-muted',
             )
             return (
               <li
-                key={bucket.category}
-                onMouseEnter={() => hoverCategory(index)}
+                key={bucket.key ?? bucket.category}
+                onMouseEnter={() => hoverTarget({ kind: 'row', index })}
                 onMouseLeave={scheduleUnhover}
               >
-                {selectableKey(index) !== undefined ? (
+                {isRowClickable(index) ? (
                   <button
                     type="button"
-                    onClick={() => selectCategory(index)}
-                    onFocus={() => hoverCategory(index)}
+                    onClick={() => openRow(index)}
+                    onFocus={() => hoverTarget({ kind: 'row', index })}
                     onBlur={scheduleUnhover}
                     className={cn(
                       rowClass,

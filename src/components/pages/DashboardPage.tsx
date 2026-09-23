@@ -130,7 +130,6 @@ function DashboardPage() {
               <CategoryBreakdown
                 buckets={aggregateByCategory(filteredTransactions)}
                 currency={filters.currency}
-                onViewAll={goToTransactions}
                 onSelectCategory={(key) => {
                   // A day picked on the heatmap would otherwise narrow the
                   // list further than the category the viewer just asked for.
