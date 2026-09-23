@@ -53,9 +53,25 @@ describe('parseRow', () => {
     expect(result).toEqual({ ok: false, reason: 'Unsupported transaction type: atm_withdrawal' })
   })
 
+  it('accepts a Borrow Mode row, which has the same columns as a Direct Pay one', () => {
+    const result = parseRow(makeRawRow({ 'spending mode': 'Borrow Mode' }))
+    expect(result).toMatchObject({ ok: true, row: { spendingMode: 'Borrow Mode' } })
+  })
+
   it('rejects an unrecognized spending mode instead of coercing it', () => {
-    const result = parseRow(makeRawRow({ 'spending mode': 'Borrow' }))
-    expect(result.ok).toBe(false)
+    const result = parseRow(makeRawRow({ 'spending mode': 'Credit Line' }))
+    expect(result).toEqual({ ok: false, reason: 'Unsupported spending mode: Credit Line' })
+  })
+
+  it('says a spending mode is empty rather than leaving the reason blank', () => {
+    expect(parseRow(makeRawRow({ 'spending mode': '' }))).toEqual({
+      ok: false,
+      reason: 'Unsupported spending mode: (empty)',
+    })
+    expect(parseRow(makeRawRow({ 'spending mode': null }))).toEqual({
+      ok: false,
+      reason: 'Unsupported spending mode: (empty)',
+    })
   })
 
   it('rejects an unrecognized status instead of coercing it', () => {

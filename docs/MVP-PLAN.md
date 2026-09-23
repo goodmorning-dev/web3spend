@@ -13,7 +13,7 @@ The MVP succeeds when a small group of cardholders can use it without help, trus
 ## 2. Agreed direction and proposed defaults
 
 Agreed direction:
-- Start with ether.fi and Direct Pay only.
+- Start with ether.fi, importing both Direct Pay and Borrow Mode card purchases.
 - Process and store financial data locally.
 - Show spending, categories, and cashback by currency.
 - Merge later imports with existing history.
@@ -23,11 +23,11 @@ Agreed direction:
 - License: PolyForm Noncommercial 1.0.0 — source-available, non-commercial restrictions rather
   than standard open source (see TECHNICAL-PLAN §1).
 - Aim for a community project under the goodmorning-dev GitHub organization.
-- Validate during Milestone 0 whether ether.fi Borrow-mode transactions fit the same normalized
-  structure as Direct Pay; sample Borrow-mode information is available to check against. If
-  they fit without special-casing, include basic Borrow transaction import in the MVP. Full
-  Borrow analytics (balances, interest, repayments, collateral, liquidation) stays deferred to
-  v2 regardless of that outcome (see §13).
+- Borrow-mode fit: resolved. ether.fi's Borrow Mode rows have exactly the same columns as
+  Direct Pay ones; only the spending mode reads "Borrow Mode". Basic Borrow transaction import
+  is therefore in the MVP, and those purchases count like any other card purchase. Full Borrow
+  analytics (balances, interest, repayments, collateral, liquidation) stays deferred to v2
+  (see §13).
 - Defer currency conversion and additional card providers beyond ether.fi.
 
 Proposed defaults, awaiting discussion:
@@ -279,9 +279,9 @@ Continue when several users independently return and describe concrete value. If
 - Reviewed the reference implementation's author's project and synced with them directly on
   reusable practices and lessons learned; their input is reflected in the sections above.
 - Obtain safe examples for overlapping exports, status changes, identical purchases, multiple cards, refunds, and differing original/settled currencies.
-- Get a redacted/synthetic Borrow-mode export and check whether its rows fit the same
-  normalized transaction shape as Direct Pay. If they do, scope basic Borrow transaction
-  import into the MVP; if not, defer all of Borrow to v2 as originally planned (see §2).
+- Checked Borrow-mode rows against the normalized transaction shape: they fit unchanged (same
+  columns, with "Borrow Mode" as the spending mode), so basic Borrow transaction import is in
+  the MVP (see §2).
 - Scope stays XLSX-only; license (PolyForm Noncommercial 1.0.0) and core accounting
   definitions (dashboard, UTC grouping, cleared-purchase default) are confirmed.
 - Build entirely synthetic repository fixtures reflecting the observed workbook structure.
@@ -345,8 +345,8 @@ Done when: users can complete the flow unaided and the team has a clear feedback
 - User category overrides per transaction, bulk merchant rules, and transaction splitting (see §5).
 - Versioned backup/export and restore, and cross-device backup merging (see §5).
 - Full Borrow-mode analytics: balances, interest, repayments, collateral, and liquidation.
-  Basic Borrow transaction *import* may already land in the MVP if Milestone 0 finds it fits
-  the existing structure (see §2); it's only the deeper analytics that's unconditionally v2.
+  Basic Borrow transaction *import* is already in the MVP (see §2); only the deeper analytics
+  is v2.
 - The original identity/row-fingerprint dual-hash matching design and ambiguous-match
   resolution UI (see §7): only if the simplified MVP approach proves insufficient.
 - Historical FX conversion and token-price valuation.
