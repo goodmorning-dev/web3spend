@@ -49,7 +49,9 @@ function renderImportPageWithFilters() {
 describe('ImportPage', () => {
   it('shows the import heading and the file picker', () => {
     renderImportPage()
-    expect(screen.getByRole('heading', { name: /import your etherfi export/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /import your ether\.fi export/i }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
   })
 

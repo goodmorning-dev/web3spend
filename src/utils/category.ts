@@ -1,4 +1,4 @@
-// Etherfi's own export mixes categories with and without a leading MCC
+// ether.fi's own export mixes categories with and without a leading MCC
 // code (e.g. "5411 - Grocery Stores and Supermarkets" alongside plain
 // "Grocery Stores and Supermarkets" for what is otherwise the same
 // category, seen in practice on PENDING rows). categoryRaw itself keeps

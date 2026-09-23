@@ -34,7 +34,7 @@ describe('App routing', () => {
   it('renders the app shell with the Dashboard at /app', async () => {
     renderAt('/app')
     expect(
-      await screen.findByRole('heading', { name: /import your etherfi export/i }),
+      await screen.findByRole('heading', { name: /import your ether\.fi export/i }),
     ).toBeInTheDocument()
     // the shell (sidebar nav) renders alongside the page content; "Transactions"
     // (exact) is the sidebar link, distinct from the topbar's "Import transactions"
@@ -60,14 +60,14 @@ describe('App routing', () => {
       await screen.findByRole('heading', { name: 'Subscriptions', level: 2 }),
     ).toBeInTheDocument()
     expect(
-      await screen.findByText(/import your etherfi export to see likely subscriptions/i),
+      await screen.findByText(/import your ether\.fi export to see likely subscriptions/i),
     ).toBeInTheDocument()
   })
 
   it('renders the Import page within the shell at /app/import', async () => {
     renderAt('/app/import')
     expect(
-      await screen.findByRole('heading', { name: /import your etherfi export/i }),
+      await screen.findByRole('heading', { name: /import your ether\.fi export/i }),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
   })

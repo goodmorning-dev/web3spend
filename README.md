@@ -1,8 +1,8 @@
 # Web3Spend
 
-A local-first spending and cashback dashboard for Etherfi cardholders.
+A local-first spending and cashback dashboard for ether.fi cardholders.
 
-Import your Etherfi transaction export and see your spending, categories, and recorded
+Import your ether.fi transaction export and see your spending, categories, and recorded
 cashback by currency. Everything is read, parsed, and stored on your own device — nothing is
 uploaded, no account is required, and no server ever sees your transaction data.
 
@@ -24,5 +24,5 @@ only.
 
 ## Want a different card provider supported?
 
-Web3Spend starts with Etherfi. If you'd use this with another provider, tell us which one:
+Web3Spend starts with ether.fi. If you'd use this with another provider, tell us which one:
 [@goodmorningdevs](https://x.com/goodmorningdevs) on X.

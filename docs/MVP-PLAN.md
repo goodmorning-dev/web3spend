@@ -2,18 +2,18 @@
 
 Status: Draft for discussion; implementation has not started.
 Updated: 17 September 2026.
-Purpose: Validate a useful community tool for Etherfi cardholders. The MVP starts with Etherfi only; additional providers are considered later if there is real interest (see the "want a new provider?" prompt in §5).
+Purpose: Validate a useful community tool for ether.fi cardholders. The MVP starts with ether.fi only; additional providers are considered later if there is real interest (see the "want a new provider?" prompt in §5).
 
 ## 1. Product promise
 
-Import an Etherfi transaction export to understand spending and recorded cashback. Financial data stays in the browser. After the application is downloaded and cached, its core features work offline.
+Import an ether.fi transaction export to understand spending and recorded cashback. Financial data stays in the browser. After the application is downloaded and cached, its core features work offline.
 
 The MVP succeeds when a small group of cardholders can use it without help, trust its totals, discover useful information, and voluntarily return with another export. Revenue and large traffic numbers are not initial success criteria.
 
 ## 2. Agreed direction and proposed defaults
 
 Agreed direction:
-- Start with Etherfi and Direct Pay only.
+- Start with ether.fi and Direct Pay only.
 - Process and store financial data locally.
 - Show spending, categories, and cashback by currency.
 - Merge later imports with existing history.
@@ -23,24 +23,24 @@ Agreed direction:
 - License: PolyForm Noncommercial 1.0.0 — source-available, non-commercial restrictions rather
   than standard open source (see TECHNICAL-PLAN §1).
 - Aim for a community project under the goodmorning-dev GitHub organization.
-- Validate during Milestone 0 whether Etherfi Borrow-mode transactions fit the same normalized
+- Validate during Milestone 0 whether ether.fi Borrow-mode transactions fit the same normalized
   structure as Direct Pay; sample Borrow-mode information is available to check against. If
   they fit without special-casing, include basic Borrow transaction import in the MVP. Full
   Borrow analytics (balances, interest, repayments, collateral, liquidation) stays deferred to
   v2 regardless of that outcome (see §13).
-- Defer currency conversion and additional card providers beyond Etherfi.
+- Defer currency conversion and additional card providers beyond ether.fi.
 
 Proposed defaults, awaiting discussion:
 - Use a static TypeScript web application with IndexedDB and offline asset caching.
 - Default analytics to cleared purchases; show pending separately and exclude cancelled payments.
 - Include a transaction table in the MVP. Category correction and backup/restore are deferred
-  to v2 (see §5, §13) now that Etherfi's export already covers the full transaction history
+  to v2 (see §5, §13) now that ether.fi's export already covers the full transaction history
   each time, making a full versioned-backup story much less urgent for a first release.
 - Use web3spend.app as the confirmed domain (naming/trademark research done).
 
 ## 3. What the sample actually tells us
 
-Inspected source: a sample Etherfi transaction history export.
+Inspected source: a sample ether.fi transaction history export.
 
 - Multiple sheets: an "All Transactions" sheet plus per-currency sheets that duplicate the
   corresponding rows from the main table.
@@ -67,7 +67,7 @@ Observed columns:
 1. Open the app at `/home` and see a short privacy explanation, an import action, an optional
    fictional demo, and a light-touch "want a new provider?" prompt (DM us on X), regardless of
    whether local data already exists.
-2. Move into the app at `/app`: select an Etherfi XLSX file. The browser reads it locally.
+2. Move into the app at `/app`: select an ether.fi XLSX file. The browser reads it locally.
 3. Detect the transaction table and validate its fields.
 4. Parse and commit the import directly; no separate preview/confirmation step (see §7).
    Unsupported rows are reported plainly rather than silently dropped.
@@ -97,12 +97,12 @@ No account, wallet connection, remote transaction upload, or financial-data back
 ### Home (`/home`)
 - Always renders the same intro screen, whether or not local data already exists: a
   one-line statement of what the tool does, the local-only privacy promise stated up front,
-  and a short "how it works" in three steps (export from Etherfi, import here, see your
+  and a short "how it works" in three steps (export from ether.fi, import here, see your
   spending) so a coworker arriving from a shared link with no prior context understands the
   flow before doing anything.
 - Does not check for or branch on local data; it is a static landing page. The stored-data
   shortcut (per §4 step 7) lives in `/app`, not here.
-- Two clear actions from Home: go to the app to import an Etherfi export, or open the
+- Two clear actions from Home: go to the app to import an ether.fi export, or open the
   synthetic demo.
 - Alongside those two actions, a separate "Want a new provider?" card with a CTA asking
   visitors to DM [@goodmorningdevs](https://x.com/goodmorningdevs) on X. This adds no
@@ -145,7 +145,7 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Show date, merchant, card label/last four digits, amount/currency, category, status, and recorded cashback.
 - Show original amount/currency in details when different.
 - User category override per transaction is a real feature, deferred to v2, not dropped:
-  the MVP shows Etherfi's raw category text as-is (no mapping to an app-level taxonomy — see
+  the MVP shows ether.fi's raw category text as-is (no mapping to an app-level taxonomy; see
   §6), editable in a later version.
 - Also deferred (v2), and independent of overrides: bulk merchant rules (one action that
   recategorizes every past and future transaction from a given merchant at once, instead of
@@ -159,7 +159,7 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Explain browser/device scope and the effect of clearing browser data. Installing on a phone
   does not automatically synchronize desktop data.
 - Request persistent storage when appropriate; handle refusal and storage errors.
-- Versioned backup/export and restore are deferred to v2 (see §13): Etherfi's export already
+- Versioned backup/export and restore are deferred to v2 (see §13): ether.fi's export already
   covers the full transaction history each time, so re-importing the original file rebuilds
   local data if it's ever cleared. Backup becomes clearly worth building once category
   overrides (also v2) exist and are worth protecting across a cleared browser or a new device.
@@ -187,7 +187,7 @@ No account, wallet connection, remote transaction upload, or financial-data back
 
 ## 7. Import identity and re-import handling (simplified for MVP)
 
-No transaction ID exists in the source, but two things simplify this a lot for v1: Etherfi's
+No transaction ID exists in the source, but two things simplify this a lot for v1: ether.fi's
 export covers the full transaction history each time (not incremental deltas), and category
 overrides (the main reason a merge needed to be careful about not clobbering local edits) are
 deferred to v2. The elaborate dual-fingerprint/ambiguous-match design originally scoped here is
@@ -214,7 +214,7 @@ insufficient.
 - Compute a file-content hash to recognize an exact repeated upload, mainly as a cheap
   short-circuit, not as the thing overlap-safety depends on.
 - Known limitation to document, not solve: if a user manually restricts the export's date range
-  in Etherfi instead of exporting full history, the upsert still behaves correctly for the rows
+  in ether.fi instead of exporting full history, the upsert still behaves correctly for the rows
   present, but the app has no way to detect or warn about a narrower-than-expected export.
 - Keep enough local import provenance (which import last touched a row) to explain changes and
   support debugging, without sending records to the server.
@@ -234,7 +234,7 @@ Proposed, not a locked dependency list:
 - Provide installation guidance for supported Android and iPhone browsers; retain full browser use where installation is unavailable.
 - A locally bundled chart library; accessible labels and a transaction table accompany charts.
 - Separate modules for import parsing, normalization/matching, persistence, calculations, and presentation.
-- A small provider-neutral transaction model, with an Etherfi-specific adapter. No generalized plugin framework yet.
+- A small provider-neutral transaction model, with an ether.fi-specific adapter. No generalized plugin framework yet.
 
 Suggested local stores:
 - cards: local card ID, available provider/cardholder context, displayed last four digits, user label.
@@ -258,9 +258,9 @@ Persist base records; derive chart summaries from them. Validate database migrat
 - No fingerprinting to infer returning users.
 - Do not collect production financial files through public issues. Request synthetic examples or narrowly redacted structures for bug reports.
 
-## 10. Validation with coworkers using Etherfi
+## 10. Validation with coworkers using ether.fi
 
-Share the project with coworkers who already use Etherfi and invite them to try it over one or two monthly spending cycles. Start with the available coworker group rather than recruiting random users or requiring a fixed participant count.
+Share the project with coworkers who already use ether.fi and invite them to try it over one or two monthly spending cycles. Start with the available coworker group rather than recruiting random users or requiring a fixed participant count.
 
 Ask participants voluntarily:
 - Could they complete the import without help?
@@ -314,7 +314,7 @@ Done when: core flows work disconnected after caching and delete-all reliably cl
 ### Milestone 4: Community pilot release
 - Finalize license, contribution instructions, and privacy wording.
 - Deploy to the chosen origin with synthetic demo data.
-- Share the project with coworkers using Etherfi and collect their voluntary feedback.
+- Share the project with coworkers using ether.fi and collect their voluntary feedback.
 Done when: users can complete the flow unaided and the team has a clear feedback channel.
 
 ## 12. Release checks
@@ -339,7 +339,7 @@ Done when: users can complete the flow unaided and the team has a clear feedback
 ## 13. Deferred work
 
 - CSV import support.
-- A small, curated app-level category taxonomy and the mapping table from Etherfi's raw
+- A small, curated app-level category taxonomy and the mapping table from ether.fi's raw
   category text into it (see §6). The MVP shows raw category text as-is; the taxonomy is
   designed once more real exports are seen and ships together with overrides below.
 - User category overrides per transaction, bulk merchant rules, and transaction splitting (see §5).

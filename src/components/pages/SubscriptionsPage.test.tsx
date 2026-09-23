@@ -77,7 +77,7 @@ describe('SubscriptionsPage', () => {
   it('shows an import prompt instead of the list when there is no local data', async () => {
     renderSubscriptionsPage()
     expect(
-      await screen.findByText(/import your etherfi export to see likely subscriptions/i),
+      await screen.findByText(/import your ether\.fi export to see likely subscriptions/i),
     ).toBeInTheDocument()
   })
 

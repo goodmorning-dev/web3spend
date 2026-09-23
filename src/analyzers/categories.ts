@@ -4,7 +4,7 @@ import { assertSingleCurrency } from './assertSingleCurrency'
 import { isEligiblePurchase } from './eligibility'
 
 export interface CategoryBucket {
-  /** Etherfi's own category text, an MCC-coded and bare variant of the
+  /** ether.fi's own category text, an MCC-coded and bare variant of the
    * same category merged together and shown without the code (see
    * categoryMergeKey / displayCategoryLabel). */
   category: string

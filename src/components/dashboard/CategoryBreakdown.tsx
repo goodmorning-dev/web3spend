@@ -41,7 +41,7 @@ function colorForVisibleIndex(index: number, total: number, hasOther: boolean): 
 /** The donut and list only ever show a handful of slices legibly; beyond
  * `MAX_VISIBLE_CATEGORIES`, the remainder rolls up into a synthetic "Other"
  * bucket. This is a presentation-only grouping, not a real category
- * taxonomy (MVP-PLAN §5 still shows Etherfi's raw category text as-is
+ * taxonomy (MVP-PLAN §5 still shows ether.fi's raw category text as-is
  * everywhere else, e.g. the transaction table). */
 function rollupTopCategories(buckets: CategoryBucket[]): CategoryBucket[] {
   if (buckets.length <= MAX_VISIBLE_CATEGORIES) {
@@ -127,7 +127,7 @@ function CategoryBreakdown({ buckets, currency, onViewAll }: CategoryBreakdownPr
   const visibleBuckets = rollupTopCategories(buckets)
   const hasOther = buckets.length > MAX_VISIBLE_CATEGORIES
 
-  // Etherfi's raw category text is untrusted and shown as-is (MVP-PLAN §5);
+  // ether.fi's raw category text is untrusted and shown as-is (MVP-PLAN §5);
   // it must never become a ChartConfig key, since shadcn's ChartContainer
   // interpolates those keys unescaped into a <style> tag (see chart.tsx's
   // ChartStyle). A synthetic, index-based key keeps the config safe while

@@ -29,14 +29,14 @@ describe('Home', () => {
 
   it('explains how it works in three steps', () => {
     renderHome()
-    expect(screen.getByText('Export from Etherfi')).toBeInTheDocument()
+    expect(screen.getByText('Export from ether.fi')).toBeInTheDocument()
     expect(screen.getByText('Import here')).toBeInTheDocument()
     expect(screen.getByText('See your spending')).toBeInTheDocument()
   })
 
   it('links the import call-to-action to /app', () => {
     renderHome()
-    expect(screen.getByRole('link', { name: /import your etherfi export/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /import your ether\.fi export/i })).toHaveAttribute(
       'href',
       '/app',
     )

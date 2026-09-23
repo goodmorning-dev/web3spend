@@ -11,7 +11,7 @@ const DETECTION_POINTS = [
 
 /**
  * detectSubscriptions is a guess built from a pattern in the data, not
- * something Etherfi or any card network actually labels as a subscription.
+ * something ether.fi or any card network actually labels as a subscription.
  * The one-line note keeps that visible on every visit; the popover holds the
  * full explanation for anyone who wants to know how the guess is made.
  */

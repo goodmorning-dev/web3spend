@@ -52,8 +52,8 @@ const STEPS: {
     icon: FileDown,
     image: step1Image,
     tag: 'Step 01',
-    title: 'Export from Etherfi',
-    description: 'Download your transaction history as an XLSX file from the Etherfi app.',
+    title: 'Export from ether.fi',
+    description: 'Download your transaction history as an XLSX file from the ether.fi app.',
   },
   {
     icon: Upload,
@@ -102,14 +102,14 @@ function Home() {
               <span className="text-primary">Your data.</span> Your control.
             </h1>
             <p className="max-w-md text-base text-text-dim">
-              Import your Etherfi transaction export and get clear insights into your spending and
+              Import your ether.fi transaction export and get clear insights into your spending and
               cashback, all in your browser.
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-2.5">
               <Button asChild size="xl">
                 <Link to="/app">
                   <Upload />
-                  Import your Etherfi export
+                  Import your ether.fi export
                 </Link>
               </Button>
               <Button size="xl" variant="secondary" onClick={loadDemo} disabled={isLoading}>
@@ -200,7 +200,7 @@ function Home() {
             <div className="sm:ml-2">
               <h3 className="font-heading text-lg font-semibold">Want a new provider?</h3>
               <p className="mt-1 max-w-sm text-sm text-text-dim">
-                Web3Spend currently only supports Etherfi. If you use a different web3 card and
+                Web3Spend currently only supports ether.fi. If you use a different web3 card and
                 would find this useful, let us know.
               </p>
             </div>

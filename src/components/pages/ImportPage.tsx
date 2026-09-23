@@ -64,7 +64,7 @@ function ImportPage() {
           <div className="flex flex-col gap-5">
             <div>
               <h2 className="font-heading text-2xl font-semibold sm:text-3xl">
-                Import your <span className="text-primary">Etherfi export</span>
+                Import your <span className="text-primary">ether.fi export</span>
               </h2>
               <p className="mt-1.5 max-w-[46ch] text-sm text-text-dim">
                 Everything below is parsed and stored on this device. Nothing is uploaded anywhere.
@@ -95,7 +95,7 @@ function ImportPage() {
                 className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline"
               >
                 <BookOpen className="size-3.5" />
-                How to export from Etherfi
+                How to export from ether.fi
                 <ArrowRight className="size-3.5" />
               </a>
             </div>
@@ -108,7 +108,7 @@ function ImportPage() {
         <div>
           <h2 className="font-heading text-lg font-semibold">Good to know</h2>
           <p className="mt-0.5 text-[13px] text-text-dim">
-            A few things to keep in mind when importing your Etherfi export.
+            A few things to keep in mind when importing your ether.fi export.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -60,7 +60,7 @@ function SelectContent({
         data-slot="select-content"
         data-align-trigger={position === 'item-aligned'}
         className={cn(
-          // max-w keeps a long option (e.g. Etherfi's raw, unmapped
+          // max-w keeps a long option (e.g. ether.fi's raw, unmapped
           // category text, which MVP-PLAN §5 shows as-is rather than
           // remapping) from stretching the popover past the viewport edge
           // on a narrow screen; SelectItem below wraps its text to fit

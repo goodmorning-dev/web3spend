@@ -7,7 +7,7 @@ const TIMESTAMP_PATTERN = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}) UTC$
 const PLAIN_DECIMAL_PATTERN = /^-?\d+(?:\.(\d+))?$/
 
 /**
- * Collapses runs of whitespace, including the non-breaking spaces Etherfi's
+ * Collapses runs of whitespace, including the non-breaking spaces ether.fi's
  * export sometimes trails category text with, into a single space and trims
  * the ends. Leaves other punctuation alone: an em dash inside category text
  * (e.g. "Digital Goods, Software") is genuine content, not an artifact.
@@ -17,7 +17,7 @@ export function normalizeText(raw: string): string {
 }
 
 /**
- * Parses Etherfi's "YYYY-MM-DD HH:mm:ss UTC" timestamp format into ISO 8601.
+ * Parses ether.fi's "YYYY-MM-DD HH:mm:ss UTC" timestamp format into ISO 8601.
  * Returns null (never guesses) for anything that doesn't match the format or
  * names an invalid calendar date/time (e.g. Feb 30).
  */
