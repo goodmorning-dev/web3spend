@@ -1,5 +1,10 @@
 export type TransactionStatus = 'CLEARED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
 
+/** How a card purchase was paid for. Borrow Mode rows have exactly the same
+ * columns as Direct Pay ones, so both import and count the same way; only
+ * this value differs. */
+export type SpendingMode = 'Direct Pay' | 'Borrow Mode'
+
 export interface StandardTransaction {
   id: string
   cardId: string
@@ -14,7 +19,7 @@ export interface StandardTransaction {
   cashbackMinor: number
   cashbackCurrency: string
   categoryRaw: string
-  spendingMode: 'Direct Pay'
+  spendingMode: SpendingMode
   identityKey: string
   importId: string
 }

@@ -224,4 +224,29 @@ describe('TransactionsTable', () => {
 
     expect(screen.queryByText('Original amount')).not.toBeInTheDocument()
   })
+
+  it('shows whether each purchase was paid directly or in Borrow Mode, in both layouts', () => {
+    render(
+      <TransactionsTable
+        transactions={[
+          makeTransaction({ id: 'direct', description: 'Paid directly' }),
+          makeTransaction({
+            id: 'borrow',
+            description: 'Paid by borrowing',
+            spendingMode: 'Borrow Mode',
+          }),
+        ]}
+        cardLastFourById={new Map()}
+      />,
+    )
+
+    expect(screen.getByRole('columnheader', { name: 'Mode' })).toBeInTheDocument()
+    // once in the phone list, once in the desktop table
+    expect(screen.getAllByText('Direct')).toHaveLength(2)
+    const borrowTags = screen.getAllByText('Borrow')
+    expect(borrowTags).toHaveLength(2)
+    for (const tag of borrowTags) {
+      expect(tag).toHaveAttribute('title', 'Borrow Mode')
+    }
+  })
 })

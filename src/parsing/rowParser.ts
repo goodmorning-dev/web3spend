@@ -1,8 +1,12 @@
 import type { ParsedTransactionRow } from '@/matching/commitImport'
-import type { TransactionStatus } from '@/types/transaction'
+import type { SpendingMode, TransactionStatus } from '@/types/transaction'
 import { normalizeText, parseTimestampUtc, toAmountMinorOrNull, toLast4OrNull } from './normalize'
 
 const VALID_STATUSES: ReadonlySet<string> = new Set(['CLEARED', 'PENDING', 'CANCELLED'])
+const VALID_SPENDING_MODES: ReadonlySet<string> = new Set<SpendingMode>([
+  'Direct Pay',
+  'Borrow Mode',
+])
 const CURRENCY_PATTERN = /^[A-Z]{3}$/
 
 export type RowParseResult = { ok: true; row: ParsedTransactionRow } | { ok: false; reason: string }
@@ -18,8 +22,13 @@ export function parseRow(raw: Record<string, unknown>): RowParseResult {
     return { ok: false, reason: `Unsupported transaction type: ${String(raw.type)}` }
   }
 
-  if (raw['spending mode'] !== 'Direct Pay') {
-    return { ok: false, reason: `Unsupported spending mode: ${String(raw['spending mode'])}` }
+  const spendingMode = raw['spending mode']
+  if (typeof spendingMode !== 'string' || !VALID_SPENDING_MODES.has(spendingMode)) {
+    const shown = spendingMode === null || spendingMode === undefined || spendingMode === ''
+    return {
+      ok: false,
+      reason: `Unsupported spending mode: ${shown ? '(empty)' : String(spendingMode)}`,
+    }
   }
 
   const status = raw.status
@@ -103,7 +112,7 @@ export function parseRow(raw: Record<string, unknown>): RowParseResult {
     cashbackMinor,
     cashbackCurrency,
     categoryRaw: normalizeText(categoryRaw),
-    spendingMode: 'Direct Pay',
+    spendingMode: spendingMode as SpendingMode,
   }
 
   return { ok: true, row }

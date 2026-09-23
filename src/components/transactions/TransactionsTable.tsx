@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { transactionCashbackPct } from '@/analyzers'
-import type { StandardTransaction, TransactionStatus } from '@/types/transaction'
+import type { SpendingMode, StandardTransaction, TransactionStatus } from '@/types/transaction'
 import { categoryColorFor } from '@/utils/avatar'
 import { displayCategoryLabel } from '@/utils/category'
 import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
@@ -70,6 +70,21 @@ function StatusPill({
     >
       <span className="size-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
       {label}
+    </span>
+  )
+}
+
+/** Direct Pay or Borrow Mode, shortened to fit. Borrow gets its own color
+ * so it stands out in a list that's mostly Direct Pay; the full name is in
+ * the title. */
+function ModePill({ mode, compact = false }: { mode: SpendingMode; compact?: boolean }) {
+  const isBorrow = mode === 'Borrow Mode'
+  return (
+    <span
+      title={mode}
+      className={`inline-flex items-center rounded-full text-[11px] font-medium whitespace-nowrap ${compact ? 'px-2 py-0.5' : 'px-2.5 py-1'} ${isBorrow ? 'bg-chart-2/15 text-chart-2' : 'bg-foreground/[0.06] text-text-dim'}`}
+    >
+      {isBorrow ? 'Borrow' : 'Direct'}
     </span>
   )
 }
@@ -218,7 +233,7 @@ function OriginalAmountDetails({ transaction }: { transaction: StandardTransacti
 }
 
 /** A plain table on wider screens, a stacked receipt-style list on phone
- * widths where a 7-column table would no longer be legible. */
+ * widths where an 8-column table would no longer be legible. */
 function TransactionsTable({ transactions, cardLastFourById }: TransactionsTableProps) {
   const { hovered, showDate, scheduleHideDate } = useDateHover()
 
@@ -264,7 +279,8 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
                   {displayCategoryLabel(transaction.categoryRaw)}
                 </span>
               </p>
-              <span className="shrink-0 whitespace-nowrap text-xs text-text-faint">
+              <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-text-faint">
+                <ModePill mode={transaction.spendingMode} compact />
                 {cardDisplay(cardLastFourById, transaction.cardId)}
               </span>
             </div>
@@ -288,6 +304,9 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
               </th>
               <th className="py-2 pr-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
                 Card
+              </th>
+              <th className="py-2 pr-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
+                Mode
               </th>
               <th className="py-2 pr-3 text-right text-[10px] font-semibold tracking-[0.06em] uppercase">
                 Amount
@@ -320,6 +339,9 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
                 </td>
                 <td className="py-2 pr-3 text-text-dim">
                   {cardDisplay(cardLastFourById, transaction.cardId)}
+                </td>
+                <td className="py-2 pr-3">
+                  <ModePill mode={transaction.spendingMode} />
                 </td>
                 <td className="py-2 pr-3 text-right font-medium tabular-nums">
                   {formatSignedSpend(transaction.amountMinor, transaction.currency)}

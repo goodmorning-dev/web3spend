@@ -157,7 +157,7 @@ function DashboardPage() {
                 <div>
                   <h3 className="font-heading text-sm font-semibold">Recent transactions</h3>
                   <p className="text-[11.5px] font-medium text-text-faint">
-                    Cleared and pending Direct Pay purchases
+                    Cleared and pending purchases
                   </p>
                 </div>
                 <button

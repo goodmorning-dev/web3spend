@@ -277,4 +277,41 @@ describe('etherfiAdapter', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].description).toBe('Merchant A')
   })
+
+  it('imports Borrow Mode rows next to Direct Pay ones, since the columns are the same', () => {
+    const row = (description: string, spendingMode: string) => [
+      '2026-01-15 10:00:00 UTC',
+      'card_spend',
+      description,
+      'CLEARED',
+      12.5,
+      'EUR',
+      '1234',
+      'Jane Doe',
+      12.5,
+      'EUR',
+      0.31,
+      'EUR',
+      '5411 - Grocery Stores and Supermarkets',
+      spendingMode,
+    ]
+    const workbook = utils.book_new()
+    utils.book_append_sheet(
+      workbook,
+      utils.aoa_to_sheet([
+        HEADER_ROW,
+        row('Paid directly', 'Direct Pay'),
+        row('Paid by borrowing', 'Borrow Mode'),
+      ]),
+      'All Transactions',
+    )
+
+    const { rows, unsupported } = etherfiAdapter.parse(toArrayBuffer(workbook))
+
+    expect(unsupported).toEqual([])
+    expect(rows.map((parsed) => [parsed.description, parsed.spendingMode])).toEqual([
+      ['Paid directly', 'Direct Pay'],
+      ['Paid by borrowing', 'Borrow Mode'],
+    ])
+  })
 })

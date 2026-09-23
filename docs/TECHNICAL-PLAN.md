@@ -12,10 +12,10 @@ how we build it. Status: Draft for discussion.
   (available on `.app`, no conflicting US trademarks).
 - Refund handling: RESOLVED. No refund support in the MVP; refund-like rows are flagged and
   excluded from totals the same way pending/cancelled rows are (MVP-PLAN §6).
-- Borrow mode: OPEN pending Milestone 0. Sample Borrow-mode information is available to check
-  whether Borrow rows fit the same normalized transaction shape as Direct Pay. If they do,
-  basic Borrow transaction import may land in the MVP; full Borrow analytics (balances,
-  interest, collateral, liquidation) stays v2 regardless (MVP-PLAN §2).
+- Borrow mode: RESOLVED. Borrow Mode rows have the same columns as Direct Pay, with "Borrow
+  Mode" as the spending mode, so they go through the same import pipeline and count toward
+  totals like any other card purchase. Full Borrow analytics (balances, interest, collateral,
+  liquidation) stays v2 (MVP-PLAN §2).
 - Category taxonomy: RESOLVED. The MVP does not map categories at all: ether.fi's own
   category text is normalized for whitespace/mojibake only and used as-is everywhere (display,
   grouping, filtering). A curated app-level taxonomy and per-transaction overrides are both
@@ -114,7 +114,7 @@ interface StandardTransaction {
   categoryRaw: string        // as imported, whitespace/mojibake-normalized, MCC prefix
                              // retained; used directly as the category everywhere in the MVP
                              // (no taxonomy mapping — section 7)
-  spendingMode: 'Direct Pay' // widen if Milestone 0 confirms Borrow-mode rows fit this shape
+  spendingMode: 'Direct Pay' | 'Borrow Mode' // same columns either way; only this differs
   identityKey: string        // cardId+timestampUtc+normalizedDescription+amountMinor+currency, used
                              // as the composite identity for upsert on re-import (section 6)
   importId: string           // provenance: which import last touched this row
@@ -321,9 +321,6 @@ the real anonymized xlsx is never committed to the repo (MVP-PLAN §9/§12).
 
 ## 12. Open items (not settled by this document)
 
-- **Borrow-mode fit**: needs a redacted Borrow-mode export checked against the normalized
-  `StandardTransaction` shape during Milestone 0; decides whether basic Borrow import is
-  in-scope for the MVP (MVP-PLAN §2).
 - **Local data-at-rest protection** (MVP-PLAN §13): not scoped for the MVP. If prioritized
   later, needs a real design pass covering threat model (shared-device glance-access vs. raw
   browser-profile/storage access), lock-screen vs. Web Crypto-based encryption of the
@@ -333,7 +330,7 @@ the real anonymized xlsx is never committed to the repo (MVP-PLAN §9/§12).
 ## 13. Milestone-to-engineering-task mapping
 
 Ties MVP-PLAN.md's Milestones 0–4 to concrete deliverables from this document:
-- **M0** (§ MVP-PLAN 11): resolve the Borrow-mode fit question above; build synthetic fixtures
+- **M0** (§ MVP-PLAN 11): the Borrow-mode fit question is resolved (section 1); build synthetic fixtures
   matching the observed workbook shape (section 10) for use in all later tests.
 - **M1** (sections 3–6): repo scaffold, Dexie schema, parsing pipeline, composite-identity
   upsert, atomic commit; no preview UI.

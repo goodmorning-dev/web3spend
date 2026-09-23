@@ -1,4 +1,5 @@
 import type { ParsedTransactionRow } from '@/matching/commitImport'
+import type { SpendingMode } from '@/types/transaction'
 
 /**
  * MVP-PLAN §5: "Optional demo uses completely synthetic transactions in a
@@ -26,6 +27,9 @@ interface DemoSeedRow {
   amountMinor: number
   cashbackMinor: number
   status: ParsedTransactionRow['status']
+  /** Defaults to Direct Pay. A few purchases use Borrow Mode, so the demo
+   * shows both. */
+  spendingMode?: SpendingMode
 }
 
 // Two cards, a handful of merchants per category, spread over the last
@@ -177,6 +181,7 @@ const SEEDS: DemoSeedRow[] = [
     amountMinor: 18500,
     cashbackMinor: 462,
     status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
   },
   {
     daysAgo: 23,
@@ -307,6 +312,7 @@ const SEEDS: DemoSeedRow[] = [
     amountMinor: 24300,
     cashbackMinor: 608,
     status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
   },
   {
     daysAgo: 53,
@@ -499,7 +505,7 @@ function toRow(seed: Omit<DemoSeedRow, 'daysAgo'>, timestamp: Date): ParsedTrans
     cashbackMinor: seed.cashbackMinor,
     cashbackCurrency: currency,
     categoryRaw: seed.categoryRaw,
-    spendingMode: 'Direct Pay',
+    spendingMode: seed.spendingMode ?? 'Direct Pay',
   }
 }
 
