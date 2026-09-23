@@ -17,3 +17,13 @@ export { summarizeTransactions } from './summary'
 export type { PeriodSummary } from './summary'
 export { detectSubscriptions } from './subscriptions'
 export type { SubscriptionGroup, SubscriptionOccurrence } from './subscriptions'
+export {
+  averageMonthlySpend,
+  daysUntil,
+  isRecentlyCharged,
+  latestCharge,
+  nextChargeDate,
+  RECENT_CHARGE_WINDOW_DAYS,
+  recentMonths,
+} from './subscriptionSchedule'
+export type { MonthlySpendAverage, SubscriptionMonth } from './subscriptionSchedule'

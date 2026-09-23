@@ -37,6 +37,7 @@ describe('detectSubscriptions', () => {
       currency: 'EUR',
       amountMinor: 1399,
       dayOfMonth: 15,
+      categoryRaw: 'Digital Goods: Media, Books, Music',
     })
     expect(result[0].occurrences.map((occurrence) => occurrence.monthKey)).toEqual([
       '2026-01',

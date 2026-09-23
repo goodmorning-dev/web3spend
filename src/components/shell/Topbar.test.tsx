@@ -92,6 +92,16 @@ describe('Topbar', () => {
     }
   })
 
+  it('leaves out the period filter on Subscriptions, which always uses the full history', async () => {
+    await db.transactions.put(makeTransaction())
+
+    renderAt('/app/subscriptions')
+
+    expect(await screen.findAllByRole('combobox', { name: 'Currency' })).toHaveLength(2)
+    expect(screen.getAllByRole('combobox', { name: 'Card' })).toHaveLength(2)
+    expect(screen.queryByRole('combobox', { name: 'Period' })).not.toBeInTheDocument()
+  })
+
   it('lets the card filter be changed to a specific card', async () => {
     await db.cards.put({ id: 'card-1', last4: '1234', cardHolderKey: 'jane doe', label: 'Card A' })
     await db.transactions.put(makeTransaction())

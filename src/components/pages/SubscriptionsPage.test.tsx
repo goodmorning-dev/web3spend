@@ -1,14 +1,40 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import type { StandardTransaction } from '@/types/transaction'
-import { formatUtcDate } from '@/utils/dates'
+import { formatUtcDate, formatUtcShortMonthLabel } from '@/utils/dates'
+import { formatMoney } from '@/utils/format'
 import SubscriptionsPage from './SubscriptionsPage'
 
-afterEach(resetDatabase)
+// Testing Library collapses whitespace in rendered text, including the
+// non-breaking spaces some locales put in money and date strings, so
+// expected strings need the same treatment to match on any machine.
+function normalized(text: string): string {
+  return text.replace(/\s+/g, ' ')
+}
+
+function money(amountMinor: number): string {
+  return normalized(formatMoney(amountMinor, 'EUR'))
+}
+
+function shortMonth(year: number, month: number): string {
+  return normalized(formatUtcShortMonthLabel(year, month))
+}
+
+beforeEach(() => {
+  // Only Date is faked, so "renews in N days" is stable while Dexie's own
+  // timers keep running normally.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-02-20T12:00:00.000Z'))
+})
+
+afterEach(async () => {
+  vi.useRealTimers()
+  await resetDatabase()
+})
 
 function makeTransaction(overrides: Partial<StandardTransaction> = {}): StandardTransaction {
   return {
@@ -32,6 +58,13 @@ function makeTransaction(overrides: Partial<StandardTransaction> = {}): Standard
   }
 }
 
+function monthlyNetflix(): StandardTransaction[] {
+  return [
+    makeTransaction({ id: '1', timestampUtc: '2026-01-15T10:00:00.000Z' }),
+    makeTransaction({ id: '2', timestampUtc: '2026-02-15T10:00:00.000Z' }),
+  ]
+}
+
 function renderSubscriptionsPage() {
   return render(
     <DashboardFiltersProvider>
@@ -48,50 +81,118 @@ describe('SubscriptionsPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('always shows the accuracy disclaimer once there is data', async () => {
+  it('always shows the accuracy note once there is data, with the full explanation on click', async () => {
+    const user = userEvent.setup()
     await db.transactions.put(makeTransaction())
 
     renderSubscriptionsPage()
 
-    expect(await screen.findByText(/these are guesses, not confirmed subscriptions/i)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/these are patterns we spotted, not confirmed subscriptions/i),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'How we detect these' }))
+
+    const explanation = await screen.findByRole('dialog')
+    expect(
+      within(explanation).getByText(/exact same amount on the same day of the month/i),
+    ).toBeInTheDocument()
+    expect(within(explanation).getByText(/period filter doesn't apply/i)).toBeInTheDocument()
   })
 
   it('lists a merchant that charged the same amount on the same day of the month at least twice', async () => {
+    await db.transactions.bulkPut(monthlyNetflix())
+
+    renderSubscriptionsPage()
+
+    const list = await screen.findByRole('region', { name: 'Active subscriptions' })
+    expect(within(list).getByText('Netflix')).toBeInTheDocument()
+    expect(within(list).getByText('Media, Books, Music', { exact: false })).toBeInTheDocument()
+    // rendered twice: once in the phone layout, once in the wider one
+    expect(within(list).getAllByText('Renews in 23 days')).toHaveLength(2)
+    expect(within(list).getByText(money(2798))).toBeInTheDocument()
+    expect(within(list).getByText(`since ${shortMonth(2026, 1)}`)).toBeInTheDocument()
+    expect(
+      within(list).getByRole('img', { name: 'Charged in 2 of the last 12 months' }),
+    ).toBeInTheDocument()
+  })
+
+  it('sums the active subscriptions into the summary cards', async () => {
     await db.transactions.bulkPut([
-      makeTransaction({ id: '1', timestampUtc: '2026-01-15T10:00:00.000Z' }),
-      makeTransaction({ id: '2', timestampUtc: '2026-02-15T10:00:00.000Z' }),
+      ...monthlyNetflix(),
+      makeTransaction({
+        id: '3',
+        description: 'Spotify',
+        amountMinor: 1099,
+        timestampUtc: '2026-01-19T10:00:00.000Z',
+      }),
+      makeTransaction({
+        id: '4',
+        description: 'Spotify',
+        amountMinor: 1099,
+        timestampUtc: '2026-02-19T10:00:00.000Z',
+      }),
     ])
 
     renderSubscriptionsPage()
 
-    expect(await screen.findByText('Netflix')).toBeInTheDocument()
-    // the amount also appears once per occurrence row inside the (collapsed)
-    // expanded list, so there are two matches once cards are seeded above
-    expect(screen.getAllByText('€13.99').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText(/day 15 of the month/i)).toBeInTheDocument()
-    expect(screen.getByText(/2 charges/i)).toBeInTheDocument()
+    expect(await screen.findByText(money(1399 + 1099))).toBeInTheDocument()
+    expect(screen.getByText('2 active subscriptions')).toBeInTheDocument()
+    expect(screen.getByText(money((1399 + 1099) * 12))).toBeInTheDocument()
+    // Netflix renews on Mar 15, before Spotify on Mar 19
+    expect(screen.getByText(`${money(1399)} in 23 days`)).toBeInTheDocument()
   })
 
   it('expands to list each underlying charge, collapsed by default', async () => {
     const user = userEvent.setup()
     await db.cards.put({ id: 'card-1', last4: '4242', cardHolderKey: 'jane doe', label: 'Card' })
+    await db.transactions.bulkPut(monthlyNetflix())
+
+    renderSubscriptionsPage()
+    const list = await screen.findByRole('region', { name: 'Active subscriptions' })
+
+    const januaryDate = normalized(formatUtcDate('2026-01-15T10:00:00.000Z'))
+    const februaryDate = normalized(formatUtcDate('2026-02-15T10:00:00.000Z'))
+    expect(within(list).getByText(januaryDate)).not.toBeVisible()
+
+    await user.click(within(list).getByText('Netflix'))
+
+    expect(within(list).getByText(januaryDate)).toBeVisible()
+    expect(within(list).getByText(februaryDate)).toBeVisible()
+    expect(within(list).getAllByText('•••• 4242')).toHaveLength(2)
+    expect(within(list).getByText(/day 15 of the month/i)).toBeVisible()
+  })
+
+  it('moves a subscription with no charge in the last 35 days into its own section, left out of the totals', async () => {
     await db.transactions.bulkPut([
-      makeTransaction({ id: '1', cardId: 'card-1', timestampUtc: '2026-01-15T10:00:00.000Z' }),
-      makeTransaction({ id: '2', cardId: 'card-1', timestampUtc: '2026-02-15T10:00:00.000Z' }),
+      ...monthlyNetflix(),
+      makeTransaction({
+        id: '3',
+        description: 'Disney+',
+        amountMinor: 899,
+        timestampUtc: '2025-10-14T10:00:00.000Z',
+      }),
+      makeTransaction({
+        id: '4',
+        description: 'Disney+',
+        amountMinor: 899,
+        timestampUtc: '2025-11-14T10:00:00.000Z',
+      }),
     ])
 
     renderSubscriptionsPage()
-    await screen.findByText('Netflix')
 
-    const januaryDate = formatUtcDate('2026-01-15T10:00:00.000Z')
-    const februaryDate = formatUtcDate('2026-02-15T10:00:00.000Z')
-    expect(screen.getByText(januaryDate)).not.toBeVisible()
+    const activeList = await screen.findByRole('region', { name: 'Active subscriptions' })
+    expect(within(activeList).queryByText('Disney+')).not.toBeInTheDocument()
 
-    await user.click(screen.getByText('Netflix'))
+    const stopped = screen.getByRole('group', { name: 'No recent charge' })
+    expect(within(stopped).getByText('No recent charge')).toBeInTheDocument()
+    expect(within(stopped).getByText('Disney+')).toBeInTheDocument()
+    expect(within(stopped).getAllByText(`Last charged ${shortMonth(2025, 11)}`)).toHaveLength(2)
 
-    expect(screen.getByText(januaryDate)).toBeVisible()
-    expect(screen.getByText(februaryDate)).toBeVisible()
-    expect(screen.getAllByText('•••• 4242')).toHaveLength(2)
+    expect(screen.getByText('1 active subscription')).toBeInTheDocument()
+    expect(screen.getAllByText(money(1399)).length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText(money(1399 + 899))).not.toBeInTheDocument()
   })
 
   it('shows an empty state instead of a false positive when nothing repeats', async () => {
@@ -118,7 +219,8 @@ describe('SubscriptionsPage', () => {
     renderSubscriptionsPage()
 
     // defaults to the first currency in sorted order (EUR)
-    expect(await screen.findByText('Netflix')).toBeInTheDocument()
+    const list = await screen.findByRole('region', { name: 'Active subscriptions' })
+    expect(within(list).getByText('Netflix')).toBeInTheDocument()
     expect(screen.queryByText('Only in USD')).not.toBeInTheDocument()
   })
 })

@@ -51,6 +51,15 @@ export function formatUtcMonthLabel(year: number, month: number): string {
   })
 }
 
+/** e.g. "Sep 2026", for tighter spots than formatUtcMonthLabel fits. */
+export function formatUtcShortMonthLabel(year: number, month: number): string {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
+}
+
 /**
  * MVP-PLAN §6: source timestamps and their explicit UTC timezone are
  * preserved and labeled, never reinterpreted in the viewer's local zone. A
