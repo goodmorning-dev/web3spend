@@ -13,6 +13,11 @@ import { trackImport } from '@/hooks/importActivity'
 import { cn } from '@/lib/utils'
 import { commitImport } from '@/matching/commitImport'
 import { clearDemoData } from '@/storage/demoData'
+import {
+  isQuotaExceededError,
+  requestPersistentStorage,
+  STORAGE_FULL_MESSAGE,
+} from '@/storage/persistence'
 import { sha256Hex } from '@/utils/hash'
 
 interface ImportResult {
@@ -44,7 +49,7 @@ interface ImportDropzoneProps {
  */
 function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) {
   const [status, setStatus] = useState<'idle' | 'processing'>('idle')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ title: string; message: string } | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -54,9 +59,11 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
     setResult(null)
 
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
-      setError(
-        'Only XLSX files are supported. Export your ether.fi transaction history as XLSX, not CSV or another format.',
-      )
+      setError({
+        title: "We couldn't read that file",
+        message:
+          'Only XLSX files are supported. Export your ether.fi transaction history as XLSX, not CSV or another format.',
+      })
       return
     }
 
@@ -84,11 +91,21 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
         }
         setResult(importResult)
         onImported?.(importResult)
+        // Now there's real data worth keeping, ask the browser not to clear
+        // it on its own when the device runs low on space (MVP-PLAN §5).
+        // Its answer shows up in Settings; nothing here waits on it.
+        void requestPersistentStorage().catch(() => {})
       } catch (err) {
         setError(
-          err instanceof Error
-            ? `We couldn't import that file: ${err.message}`
-            : 'Something went wrong reading that file.',
+          isQuotaExceededError(err)
+            ? { title: 'Out of storage space', message: STORAGE_FULL_MESSAGE }
+            : {
+                title: "We couldn't read that file",
+                message:
+                  err instanceof Error
+                    ? `We couldn't import that file: ${err.message}`
+                    : 'Something went wrong reading that file.',
+              },
         )
       } finally {
         setStatus('idle')
@@ -199,8 +216,8 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
         >
           <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
           <div className="min-w-0 flex-1">
-            <p className="mb-0.5 text-[13px] font-semibold">We couldn't read that file</p>
-            <p className="text-[12.5px] leading-normal text-text-dim">{error}</p>
+            <p className="mb-0.5 text-[13px] font-semibold">{error.title}</p>
+            <p className="text-[12.5px] leading-normal text-text-dim">{error.message}</p>
             <button
               type="button"
               onClick={() => setError(null)}

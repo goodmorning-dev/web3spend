@@ -4,6 +4,7 @@ import { buildDemoRows, DEMO_FILE_HASH, DEMO_PARSER_VERSION } from '@/adapters/d
 import { useDashboardFiltersOptional } from './DashboardFiltersContext'
 import { commitImport } from '@/matching/commitImport'
 import { hasRealData } from '@/storage/demoData'
+import { isQuotaExceededError, STORAGE_FULL_MESSAGE } from '@/storage/persistence'
 import { trackImport } from './importActivity'
 
 /**
@@ -52,7 +53,13 @@ export function useDemoData() {
       filters?.resetFilters()
       navigate('/app')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong loading the demo.')
+      setError(
+        isQuotaExceededError(err)
+          ? STORAGE_FULL_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : 'Something went wrong loading the demo.',
+      )
       setIsLoading(false)
     }
   }
