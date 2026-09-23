@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -39,9 +40,67 @@ function siteUrlPlugin(url: string): Plugin {
   }
 }
 
+// MVP-PLAN §9: "a restrictive content security policy". The app never
+// sends data anywhere, and this has the browser enforce that: scripts,
+// fonts, images, workers and every network request are limited to the
+// site's own address, so even code that got in some other way couldn't
+// load from or send to anywhere else. GitHub Pages can't set response
+// headers, so it goes in a meta tag, which must come before anything it
+// covers. Build only: the dev server injects inline scripts of its own
+// and talks to the page over a websocket.
+//
+// The one inline script (index.html's GitHub Pages redirect decoder) is
+// allowed by its hash, worked out here so editing it can't silently break
+// the page. The structured data block isn't executed, so it needs nothing.
+// Inline styles are allowed because the chart colors and the dialogs'
+// scroll lock inject <style> tags; styles can't run code, and with every
+// other destination locked to the site itself they can't send anything
+// out either.
+function contentSecurityPolicyPlugin(): Plugin {
+  return {
+    name: 'content-security-policy',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        const inlineScripts = html.matchAll(
+          /<script(?![^>]*\bsrc=)(?![^>]*type="application\/ld\+json")[^>]*>([\s\S]*?)<\/script>/g,
+        )
+        const scriptHashes = [...inlineScripts].map(
+          ([, body]) => `'sha256-${createHash('sha256').update(body).digest('base64')}'`,
+        )
+        const policy = [
+          "default-src 'self'",
+          `script-src 'self' ${scriptHashes.join(' ')}`.trim(),
+          "style-src 'self' 'unsafe-inline'",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'none'",
+        ].join('; ')
+
+        const charset = /<meta charset="[^"]*"\s*\/?>/i
+        if (!charset.test(html)) {
+          throw new Error('content-security-policy: index.html has no <meta charset> to follow')
+        }
+        return html.replace(
+          charset,
+          (tag) => `${tag}
+    <meta http-equiv="Content-Security-Policy" content="${policy}" />`,
+        )
+      },
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base,
+  build: {
+    // Vite inlines small files as data: URLs, which the content security
+    // policy's font rule doesn't allow. One font subset is small enough, so
+    // fonts always stay separate files.
+    assetsInlineLimit: (file) => (file.endsWith('.woff2') ? false : undefined),
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
@@ -49,6 +108,7 @@ export default defineConfig({
   },
   plugins: [
     siteUrlPlugin(siteUrl),
+    contentSecurityPolicyPlugin(),
     react(),
     tailwindcss(),
     VitePWA({

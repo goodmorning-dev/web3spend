@@ -16,6 +16,8 @@ Early development, pre-MVP. See [docs/MVP-PLAN.md](docs/MVP-PLAN.md) for product
 - All parsing, storage, and analysis happen in your browser, backed by IndexedDB.
 - No account, no wallet connection, no server upload of transaction data.
 - The only network activity is loading the app itself.
+- The published site carries a content security policy, so the browser itself refuses to load
+  code from, or send data to, any address other than the site's own.
 
 ## License
 
