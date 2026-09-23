@@ -131,7 +131,7 @@ function ImportDropzone({ onImported }: ImportDropzoneProps = {}) {
         onDrop={handleDrop}
         aria-label="Drop an XLSX file here, or browse for one"
         className={cn(
-          'flex w-full flex-col items-center gap-2.5 rounded-2xl border-[1.5px] border-dashed border-border bg-secondary px-6 py-9 text-center transition-colors hover:border-text-faint focus-visible:outline-none',
+          'flex w-full cursor-pointer flex-col items-center rounded-2xl border-[1.5px] border-dashed border-primary/55 bg-background/40 px-6 py-9 text-center transition-colors hover:border-primary/90 focus-visible:border-primary focus-visible:outline-none',
           isDragOver && 'border-primary bg-primary/10',
         )}
       >
@@ -145,23 +145,26 @@ function ImportDropzone({ onImported }: ImportDropzoneProps = {}) {
           className="hidden"
           tabIndex={-1}
         />
-        <div className="mb-0.5 flex size-[46px] items-center justify-center rounded-[13px] bg-primary/15 text-primary">
-          <Upload className="size-[21px]" strokeWidth={1.8} />
+        <div className="flex size-14 items-center justify-center rounded-2xl border border-primary/70 bg-gradient-to-b from-primary/25 to-primary/5 text-primary shadow-[0_0_28px_-6px_var(--color-primary)]">
+          <Upload className="size-6" strokeWidth={2} />
         </div>
-        <p className="text-[14.5px] font-semibold">Drag &amp; drop your XLSX export here</p>
-        <p className="text-[11px] font-semibold tracking-[0.06em] text-text-faint uppercase">or</p>
+        <p className="mt-5 text-lg font-semibold text-foreground">
+          Drag &amp; drop your XLSX export here
+        </p>
+        <p className="mt-2 text-[13px] text-text-faint">or</p>
         <Button
           type="button"
-          size="sm"
+          size="xl"
           onClick={(event) => {
             event.stopPropagation()
             openFilePicker()
           }}
+          className="mt-3 bg-gradient-to-b from-[#ffd54f] to-[#f2b01e] px-7 text-[15px] font-semibold text-primary-foreground shadow-[0_8px_24px_-10px_var(--color-primary)] hover:brightness-110"
         >
-          <Upload className="size-3.5" />
+          <Upload strokeWidth={2.2} />
           Browse files
         </Button>
-        <p className="mt-1 text-[11.5px] font-medium text-text-faint">
+        <p className="mt-4 text-[13px] text-text-faint">
           XLSX only · CSV exports aren't supported yet
         </p>
       </div>
