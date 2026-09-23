@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import Sidebar from './Sidebar'
@@ -26,6 +26,25 @@ describe('Sidebar', () => {
     )
     expect(screen.getByRole('link', { name: /import/i })).toHaveAttribute('href', '/app/import')
     expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('href', '/app/settings')
+  })
+
+  it('lists Settings with the other pages, right after Import', () => {
+    renderAt('/app')
+
+    const links = within(screen.getByRole('navigation', { name: 'Sidebar' })).getAllByRole('link')
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Dashboard',
+      'Transactions',
+      'Subscriptions',
+      'Import',
+      'Settings',
+    ])
+  })
+
+  it('takes you to the home page from the logo', () => {
+    renderAt('/app/transactions')
+
+    expect(screen.getByRole('link', { name: 'Web3Spend home' })).toHaveAttribute('href', '/home')
   })
 
   it('marks the Dashboard link active only on the exact /app route, not on nested pages', () => {
