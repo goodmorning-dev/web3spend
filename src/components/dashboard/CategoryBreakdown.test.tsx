@@ -160,7 +160,7 @@ describe('CategoryBreakdown', () => {
     const transportRow = screen.getByText('Transport').closest('li')!
     await user.hover(transportRow)
 
-    expect(transportRow.className).toContain('bg-muted')
+    expect(transportRow.firstElementChild!.className).toContain('bg-muted')
     // the label always reads "Total spent"; only the amount swaps to the
     // hovered category's own spend, never its name or share.
     expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${transportText}Total spent`)
@@ -171,7 +171,7 @@ describe('CategoryBreakdown', () => {
     // between adjacent slices/rows doesn't flash back to the grand total in
     // between; that means it doesn't happen synchronously with unhover.
     await waitFor(() => {
-      expect(transportRow.className).not.toContain('bg-muted')
+      expect(transportRow.firstElementChild!.className).not.toContain('bg-muted')
       expect(donutCenterText().replace(/\s+/g, ' ')).toBe(`${totalText}Total spent`)
     })
   })
@@ -235,5 +235,46 @@ describe('CategoryBreakdown', () => {
     await user.click(screen.getByRole('button', { name: /view all/i }))
 
     expect(onViewAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens a category when its row is clicked, but not the combined "Other" row', async () => {
+    const user = userEvent.setup()
+    const onSelectCategory = vi.fn()
+    const buckets: CategoryBucket[] = [
+      { category: 'Groceries', key: 'groceries', spendMinor: 6000, share: 0.6 },
+      { category: 'Transport', key: 'transport', spendMinor: 1000, share: 0.1 },
+      { category: 'Dining', key: 'dining', spendMinor: 1000, share: 0.1 },
+      { category: 'Fuel', key: 'fuel', spendMinor: 800, share: 0.08 },
+      { category: 'Books', key: 'books', spendMinor: 700, share: 0.07 },
+      { category: 'Music', key: 'music', spendMinor: 500, share: 0.05 },
+    ]
+
+    render(
+      <CategoryBreakdown
+        buckets={buckets}
+        currency="EUR"
+        onViewAll={() => {}}
+        onSelectCategory={onSelectCategory}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /groceries/i }))
+    expect(onSelectCategory).toHaveBeenCalledWith('groceries')
+
+    // Music rolls up into "Other", which stands for several categories
+    expect(screen.getByText('Other')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /other/i })).not.toBeInTheDocument()
+  })
+
+  it('leaves rows as plain text when nothing handles a click', () => {
+    render(
+      <CategoryBreakdown
+        buckets={[{ category: 'Groceries', key: 'groceries', spendMinor: 1000, share: 1 }]}
+        currency="EUR"
+        onViewAll={() => {}}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: /groceries/i })).not.toBeInTheDocument()
   })
 })

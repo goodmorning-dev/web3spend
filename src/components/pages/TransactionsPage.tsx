@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { FilterSelectOption } from '@/components/shell/FilterSelect'
 import TransactionsTable from '@/components/transactions/TransactionsTable'
 import TransactionsToolbar from '@/components/transactions/TransactionsToolbar'
@@ -40,7 +41,25 @@ function TransactionsPage() {
   const transactions = useFilteredTransactions(filters)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState(ALL_STATUSES)
-  const [category, setCategory] = useState(ALL_CATEGORIES)
+  // The category filter lives in the URL (?category=<key>) rather than in
+  // local state, so the Dashboard's category breakdown can link straight to
+  // one category's transactions, and the back button returns there.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const category = searchParams.get('category') ?? ALL_CATEGORIES
+  function setCategory(value: string) {
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous)
+        if (value === ALL_CATEGORIES) {
+          next.delete('category')
+        } else {
+          next.set('category', value)
+        }
+        return next
+      },
+      { replace: true },
+    )
+  }
 
   // Set by picking a day on the Dashboard's activity heatmap (MVP-PLAN §5);
   // narrows the already currency/card/period-scoped set further, the same

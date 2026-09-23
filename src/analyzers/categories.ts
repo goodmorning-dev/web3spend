@@ -8,6 +8,10 @@ export interface CategoryBucket {
    * same category merged together and shown without the code (see
    * categoryMergeKey / displayCategoryLabel). */
   category: string
+  /** categoryMergeKey of the category: what the Transactions page's
+   * category filter matches on. Absent on a synthetic bucket, like the
+   * dashboard's "Other" rollup, that stands for several categories. */
+  key?: string
   spendMinor: number
   /** 0-1, this category's share of total cleared spend across all categories. */
   share: number
@@ -21,13 +25,14 @@ export interface CategoryBucket {
 export function aggregateByCategory(transactions: StandardTransaction[]): CategoryBucket[] {
   assertSingleCurrency(transactions)
 
-  const totalsByKey = new Map<string, { label: string; spendMinor: number }>()
+  const totalsByKey = new Map<string, { key: string; label: string; spendMinor: number }>()
   for (const transaction of transactions) {
     if (!isEligiblePurchase(transaction)) {
       continue
     }
     const key = categoryMergeKey(transaction.categoryRaw)
     const bucket = totalsByKey.get(key) ?? {
+      key,
       label: displayCategoryLabel(transaction.categoryRaw),
       spendMinor: 0,
     }
@@ -35,11 +40,15 @@ export function aggregateByCategory(transactions: StandardTransaction[]): Catego
     totalsByKey.set(key, bucket)
   }
 
-  const totalSpendMinor = [...totalsByKey.values()].reduce((sum, { spendMinor }) => sum + spendMinor, 0)
+  const totalSpendMinor = [...totalsByKey.values()].reduce(
+    (sum, { spendMinor }) => sum + spendMinor,
+    0,
+  )
 
   return [...totalsByKey.values()]
-    .map(({ label, spendMinor }) => ({
+    .map(({ key, label, spendMinor }) => ({
       category: label,
+      key,
       spendMinor,
       share: totalSpendMinor > 0 ? spendMinor / totalSpendMinor : 0,
     }))

@@ -42,7 +42,7 @@ function latestYear(transactions: StandardTransaction[]): number {
 function DashboardPage() {
   const navigate = useNavigate()
   const overallSummary = useDashboardSummary()
-  const { filters, options, setDay } = useDashboardFilters()
+  const { filters, options, setDay, clearDay } = useDashboardFilters()
   const filteredTransactions = useFilteredTransactions(filters)
   const currencyScopedTransactions = useCurrencyScopedTransactions(filters)
   // Set once a file finishes processing in this component's lifetime, so a
@@ -131,6 +131,15 @@ function DashboardPage() {
                 buckets={aggregateByCategory(filteredTransactions)}
                 currency={filters.currency}
                 onViewAll={goToTransactions}
+                onSelectCategory={(key) => {
+                  // A day picked on the heatmap would otherwise narrow the
+                  // list further than the category the viewer just asked for.
+                  clearDay()
+                  navigate({
+                    pathname: '/app/transactions',
+                    search: `?${new URLSearchParams({ category: key })}`,
+                  })
+                }}
               />
             </div>
             <ActivityHeatmap
