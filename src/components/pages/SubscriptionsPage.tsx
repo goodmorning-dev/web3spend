@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 function ListHeader({ statusLabel }: { statusLabel: string }) {
   return (
     <div className="hidden items-center gap-4 border-y border-border px-5 py-2 text-[10px] font-semibold tracking-[0.06em] text-text-faint uppercase sm:flex">
-      <span className="flex-1 pl-14">Subscription</span>
+      <span className="flex-1">Subscription</span>
       <span className={COLUMN_CLASS.months}>Last 12 months</span>
       <span className={COLUMN_CLASS.paid}>Paid so far</span>
       <span className={COLUMN_CLASS.status}>{statusLabel}</span>
