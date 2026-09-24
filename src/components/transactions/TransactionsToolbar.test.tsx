@@ -12,6 +12,10 @@ const CATEGORY_OPTIONS = [
   { value: 'all', label: 'All categories' },
   { value: 'Groceries', label: 'Groceries' },
 ]
+const MODE_OPTIONS = [
+  { value: 'all', label: 'Direct and Borrow' },
+  { value: 'Borrow Mode', label: 'Borrow' },
+]
 
 function ControlledSearch() {
   const [search, setSearch] = useState('')
@@ -25,6 +29,9 @@ function ControlledSearch() {
       category="all"
       categoryOptions={CATEGORY_OPTIONS}
       onCategoryChange={vi.fn()}
+      mode="all"
+      modeOptions={MODE_OPTIONS}
+      onModeChange={vi.fn()}
     />
   )
 }
@@ -43,10 +50,11 @@ describe('TransactionsToolbar', () => {
     input.blur()
   })
 
-  it('reports the chosen status and category', async () => {
+  it('reports the chosen status, category and spending mode', async () => {
     const user = userEvent.setup()
     const onStatusChange = vi.fn()
     const onCategoryChange = vi.fn()
+    const onModeChange = vi.fn()
 
     render(
       <TransactionsToolbar
@@ -58,6 +66,9 @@ describe('TransactionsToolbar', () => {
         category="all"
         categoryOptions={CATEGORY_OPTIONS}
         onCategoryChange={onCategoryChange}
+        mode="all"
+        modeOptions={MODE_OPTIONS}
+        onModeChange={onModeChange}
       />,
     )
 
@@ -68,5 +79,9 @@ describe('TransactionsToolbar', () => {
     await user.click(screen.getByRole('combobox', { name: 'Category' }))
     await user.click(await screen.findByRole('option', { name: 'Groceries' }))
     expect(onCategoryChange).toHaveBeenCalledWith('Groceries')
+
+    await user.click(screen.getByRole('combobox', { name: 'Spending mode' }))
+    await user.click(await screen.findByRole('option', { name: 'Borrow' }))
+    expect(onModeChange).toHaveBeenCalledWith('Borrow Mode')
   })
 })

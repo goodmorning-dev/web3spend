@@ -13,6 +13,12 @@ import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
 const ALL_STATUSES = 'all'
 const ALL_CATEGORIES = 'all'
+const ALL_MODES = 'all'
+
+const MODE_LABELS: Record<string, string> = {
+  'Direct Pay': 'Direct',
+  'Borrow Mode': 'Borrow',
+}
 
 const STATUS_LABELS: Record<string, string> = {
   CLEARED: 'Cleared',
@@ -32,8 +38,8 @@ function matchesSearch(transaction: StandardTransaction, query: string): boolean
 /**
  * MVP-PLAN §5: the searchable, filterable transaction list, still scoped to
  * the shared currency/card/period filters everywhere else on the dashboard
- * respects; search and the status/category dropdowns here narrow that set
- * further, they don't replace it.
+ * respects; search and the status/category/spending mode dropdowns here
+ * narrow that set further, they don't replace it.
  */
 function TransactionsPage() {
   const overallSummary = useDashboardSummary()
@@ -41,6 +47,7 @@ function TransactionsPage() {
   const transactions = useFilteredTransactions(filters)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState(ALL_STATUSES)
+  const [mode, setMode] = useState(ALL_MODES)
   // The category filter lives in the URL (?category=<key>) rather than in
   // local state, so the Dashboard's category breakdown can link straight to
   // one category's transactions, and the back button returns there.
@@ -86,6 +93,19 @@ function TransactionsPage() {
     ]
   }, [transactions])
 
+  // Only the modes actually present, like the status list, so there's no
+  // Borrow option to pick for someone who has never used Borrow Mode.
+  // Direct first, as the everyday one.
+  const modeOptions = useMemo<FilterSelectOption[]>(() => {
+    const present = new Set((transactions ?? []).map((transaction) => transaction.spendingMode))
+    return [
+      { value: ALL_MODES, label: 'Direct and Borrow' },
+      ...Object.entries(MODE_LABELS)
+        .filter(([value]) => present.has(value as StandardTransaction['spendingMode']))
+        .map(([value, label]) => ({ value, label })),
+    ]
+  }, [transactions])
+
   const categoryOptions = useMemo<FilterSelectOption[]>(() => {
     // ether.fi's export mixes MCC-coded and bare variants of what's
     // otherwise the same category (e.g. "5411 - Grocery Stores and
@@ -110,6 +130,7 @@ function TransactionsPage() {
     const query = search.trim().toLowerCase()
     return transactions
       .filter((transaction) => status === ALL_STATUSES || transaction.status === status)
+      .filter((transaction) => mode === ALL_MODES || transaction.spendingMode === mode)
       .filter(
         (transaction) =>
           category === ALL_CATEGORIES || categoryMergeKey(transaction.categoryRaw) === category,
@@ -120,7 +141,7 @@ function TransactionsPage() {
           !selectedDateKey || getUtcDateKey(transaction.timestampUtc) === selectedDateKey,
       )
       .sort((a, b) => b.timestampUtc.localeCompare(a.timestampUtc))
-  }, [transactions, search, status, category, selectedDateKey])
+  }, [transactions, search, status, mode, category, selectedDateKey])
 
   if (overallSummary === undefined) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
@@ -162,6 +183,9 @@ function TransactionsPage() {
         category={category}
         categoryOptions={categoryOptions}
         onCategoryChange={setCategory}
+        mode={mode}
+        modeOptions={modeOptions}
+        onModeChange={setMode}
       />
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <div>
