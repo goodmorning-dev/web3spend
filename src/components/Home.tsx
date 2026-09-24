@@ -27,8 +27,9 @@ import { useDemoData } from '@/hooks/useDemoData'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { cn } from '@/lib/utils'
 
-// Gold and green run through the whole page: privacy leans green, the
-// rest gold, and the headings' accent words blend the two.
+// Gold and green run through the whole page: privacy and openness lean
+// green, the rest gold, and the section headings' accent words blend the
+// two.
 const PROMISES = [
   {
     icon: ShieldCheck,
@@ -46,7 +47,7 @@ const PROMISES = [
     icon: Code2,
     title: 'Open source',
     description: 'Community driven',
-    iconClassName: 'text-primary',
+    iconClassName: 'text-positive',
   },
 ]
 
@@ -90,13 +91,20 @@ function Home() {
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
+      {/* Background glows at the page's edges: gold on the left and green
+          on the right, both high enough to show on a 1080px tall screen
+          without scrolling, then gold on the left again further down. */}
       <div
         aria-hidden="true"
-        className="absolute top-1/4 left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:block sm:size-[28rem]"
+        className="absolute top-[140px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:block sm:size-[28rem]"
       />
       <div
         aria-hidden="true"
-        className="absolute top-[55%] right-0 -z-10 hidden size-96 translate-x-1/2 rounded-full bg-positive/15 blur-3xl sm:block"
+        className="absolute top-[400px] right-0 -z-10 hidden size-96 translate-x-1/2 rounded-full bg-positive/20 blur-3xl sm:block sm:size-[28rem]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-[1050px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl sm:block sm:size-[28rem]"
       />
       <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-8 sm:gap-20 sm:py-10">
         <header className="flex items-center justify-between">
@@ -117,7 +125,7 @@ function Home() {
             <h1 className="font-heading text-4xl leading-[1.1] font-semibold sm:text-5xl">
               Your spending.
               <br />
-              <span className="text-brand-gradient">Your data.</span> Your control.
+              <span className="text-primary">Your data.</span> Your control.
             </h1>
             <p className="max-w-md text-base text-text-dim">
               Import your ether.fi transaction export and get clear insights into your spending and
@@ -177,10 +185,6 @@ function Home() {
                 <div
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-r from-[#0d1016] from-45% via-[#0d1016]/95 to-transparent"
-                />
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-6 top-0 z-10 h-px bg-[linear-gradient(90deg,transparent,var(--color-primary),var(--color-positive),transparent)] opacity-60"
                 />
                 <div className="relative z-10 flex flex-col gap-2.5">
                   <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary bg-gradient-to-br from-primary/15 to-positive/10">

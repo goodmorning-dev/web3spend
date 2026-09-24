@@ -114,12 +114,10 @@ function PrivacyFlow() {
 
       <FlowConnector direction="in" delay="0s" />
 
-      <div className="shrink-0 rounded-2xl bg-gradient-to-br from-primary/70 to-positive/70 p-px shadow-[0_0_28px_-8px] shadow-positive/50">
-        <div className="flex flex-col items-center gap-1 rounded-[15px] bg-[#0c1411] px-4 py-3 text-center">
-          <Funnel className="size-6 text-positive" />
-          <span className="text-xs font-semibold">Your browser</span>
-          <span className="text-[10.5px] text-text-faint">on this device</span>
-        </div>
+      <div className="flex shrink-0 flex-col items-center gap-1 rounded-2xl border border-positive/35 bg-positive/10 px-4 py-3 text-center shadow-[0_0_28px_-8px] shadow-positive/50">
+        <Funnel className="size-6 text-positive" />
+        <span className="text-xs font-semibold">Your browser</span>
+        <span className="text-[10.5px] text-text-faint">on this device</span>
       </div>
 
       <FlowConnector direction="out" delay="0.9s" />
