@@ -66,7 +66,7 @@ function RoadmapSection() {
       <div className="flex flex-col items-start gap-2">
         <span className="text-xs font-semibold tracking-wide text-text-dim uppercase">Roadmap</span>
         <h2 id="roadmap" className="font-heading text-2xl font-semibold sm:text-3xl">
-          Where we&apos;re <span className="text-brand-gradient">headed</span>.
+          Where we&apos;re <span className="text-primary">headed</span>.
         </h2>
         <p className="max-w-sm text-base text-text-dim">
           Live today, with more on the way. Here&apos;s the plan.

@@ -39,7 +39,7 @@ function UseAnywhereSection() {
           Use it anywhere
         </span>
         <h2 id="use-anywhere" className="font-heading text-2xl font-semibold sm:text-3xl">
-          In your browser, or <span className="text-brand-gradient">as an app</span>.
+          In your browser, or <span className="text-primary">as an app</span>.
         </h2>
         <p className="text-base text-text-dim">
           Web3Spend installs like a regular app on your computer or phone: its own icon, its own

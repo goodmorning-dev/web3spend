@@ -28,8 +28,7 @@ import { usePageTitle } from '@/hooks/usePageTitle'
 import { cn } from '@/lib/utils'
 
 // Gold and green run through the whole page: privacy and openness lean
-// green, the rest gold, and the section headings' accent words blend the
-// two.
+// green, the rest gold.
 const PROMISES = [
   {
     icon: ShieldCheck,
@@ -166,8 +165,7 @@ function Home() {
               How it works
             </span>
             <h2 id="how-it-works" className="font-heading text-2xl font-semibold sm:text-3xl">
-              From export to insights in <span className="text-brand-gradient">3 simple steps</span>
-              .
+              From export to insights in <span className="text-primary">3 simple steps</span>.
             </h2>
           </div>
           <ol className="grid grid-cols-1 gap-5 sm:grid-cols-3">

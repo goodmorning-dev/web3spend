@@ -179,7 +179,7 @@ function PrivacySection() {
               Privacy
             </span>
             <h2 id="privacy" className="font-heading text-2xl font-semibold sm:text-3xl">
-              Private by design, <span className="text-brand-gradient">not by promise</span>.
+              Private by design, <span className="text-primary">not by promise</span>.
             </h2>
             <p className="max-w-md text-base text-text-dim">
               &quot;100% private&quot; isn&apos;t a setting you have to trust. It&apos;s how
