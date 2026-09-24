@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import MobileTabBar from './MobileTabBar'
 
 function renderAt(path: string) {
@@ -103,5 +103,17 @@ describe('MobileTabBar', () => {
       'aria-current',
       'page',
     )
+  })
+
+  it('glides back to the top when the tab already open is tapped again', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    renderAt('/app/transactions')
+
+    fireEvent.click(screen.getByRole('link', { name: 'Dashboard' }))
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('link', { name: 'Dashboard' }))
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' })
+    scrollTo.mockRestore()
   })
 })

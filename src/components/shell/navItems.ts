@@ -10,3 +10,11 @@ export const NAV_ITEMS = [
   { to: '/app/import', end: false, label: 'Import', icon: Upload },
   { to: '/app/settings', end: false, label: 'Settings', icon: Settings },
 ]
+
+export type NavItem = (typeof NAV_ITEMS)[number]
+
+export function isNavItemActive(item: NavItem, pathname: string): boolean {
+  return item.end
+    ? pathname === item.to
+    : pathname === item.to || pathname.startsWith(`${item.to}/`)
+}

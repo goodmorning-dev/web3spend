@@ -17,6 +17,9 @@ if (!Element.prototype.releasePointerCapture) {
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {}
 }
+// jsdom's window.scrollTo only logs "not implemented"; a no-op keeps test
+// output clean, and tests that care can spy on it.
+window.scrollTo = () => {}
 
 // A focused element left behind when a test ends becomes a detached node
 // once React Testing Library unmounts it, and jsdom doesn't reset

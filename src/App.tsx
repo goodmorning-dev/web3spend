@@ -6,6 +6,7 @@ import SubscriptionsPage from '@/components/pages/SubscriptionsPage'
 import TransactionsPage from '@/components/pages/TransactionsPage'
 import AppShell from '@/components/shell/AppShell'
 import Home from '@/components/Home'
+import ScrollToTopOnNavigate from '@/components/ScrollToTopOnNavigate'
 import { InstallPromptProvider } from '@/hooks/InstallPromptContext'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
     // load - a listener scoped to Settings alone would miss it for anyone
     // who hasn't already navigated there.
     <InstallPromptProvider>
+      <ScrollToTopOnNavigate />
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<Home />} />

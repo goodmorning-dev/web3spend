@@ -31,6 +31,35 @@ describe('SpendChart', () => {
     expect(screen.getByText('Average monthly')).toBeInTheDocument()
   })
 
+  it('lets a sideways drag scrub the chart without scrolling the page, but not an up or down swipe', () => {
+    const { container } = render(
+      <SpendChart
+        trend={[
+          makePoint({ day: 1, thisMonthMinor: 450, lastMonthMinor: 300, averageMonthlyMinor: 350 }),
+        ]}
+        currency="EUR"
+      />,
+    )
+
+    expect(container.querySelector('[data-slot="chart"]')).toHaveClass('touch-pan-y')
+  })
+
+  it("doesn't outline a series or select axis text when the chart is double clicked", () => {
+    const { container } = render(
+      <SpendChart
+        trend={[
+          makePoint({ day: 1, thisMonthMinor: 450, lastMonthMinor: 300, averageMonthlyMinor: 350 }),
+        ]}
+        currency="EUR"
+      />,
+    )
+
+    expect(container.querySelector('[data-slot="chart"]')).toHaveClass(
+      'select-none',
+      '[&_g[tabindex]]:outline-hidden',
+    )
+  })
+
   it('toggles a series off (dimmed, aria-pressed false) when its legend entry is clicked, and back on', async () => {
     const user = userEvent.setup()
     const trend = [
