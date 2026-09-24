@@ -5,6 +5,12 @@
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Opened from the iPhone home screen, iOS otherwise picks how to draw
+         the status bar above the app, which can be a light band over a dark
+         page. Black matches the app's own background. theme-color does the
+         same for the browser's toolbar where it's tinted. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="theme-color" content="#0a0d13" />
     <title>Web3Spend: private spending insights for your ether.fi card</title>
     <meta
       name="description"
