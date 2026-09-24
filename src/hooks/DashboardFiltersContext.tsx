@@ -1,5 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { getDataSource, type DataSource } from '@/storage/dataSource'
 import { useDashboardFilterOptions, type DashboardFilterOptions } from './useDashboardFilterOptions'
+import { useDataSource } from './useDataSource'
 
 /** The period every view under /app is scoped to: one month, or
  * everything on record. */
@@ -37,12 +39,13 @@ export interface DashboardFiltersContextValue {
    * other. Currency and card selection are left untouched. */
   setDay: (year: number, month: number, day: number) => void
   clearDay: () => void
-  /** Clears every override back to whatever the data itself defaults to.
-   * A stale card/currency/period override survives on its own even once
-   * the data it referred to is gone, so after deleting all local data a
-   * caller must reset explicitly; otherwise a re-import that assigns new
-   * card IDs would still get filtered by the deleted card's old ID and
-   * silently appear empty. */
+  /** Clears every override for the dataset on screen back to whatever the
+   * data itself defaults to. A stale card/currency/period override
+   * survives on its own even once the data it referred to is gone, so
+   * after deleting all local data (or rebuilding the demo) a caller must
+   * reset explicitly; otherwise a re-import that assigns new card IDs
+   * would still get filtered by the deleted card's old ID and silently
+   * appear empty. */
   resetFilters: () => void
 }
 
@@ -56,7 +59,21 @@ const DashboardFiltersContext = createContext<DashboardFiltersContextValue | nul
  */
 export function DashboardFiltersProvider({ children }: { children: ReactNode }) {
   const options = useDashboardFilterOptions()
-  const [overrides, setOverrides] = useState<Partial<SelectedFilters>>({})
+  // Kept separately for the person's own data and the demo, so looking at
+  // the demo and coming back leaves their own selection as it was. Each
+  // change applies to whichever dataset is on screen when it's made, read
+  // at that moment rather than from the last render, so a reset called
+  // right after switching (as opening the demo does) lands on the right one.
+  const source = useDataSource()
+  const [overridesBySource, setOverridesBySource] = useState<
+    Record<DataSource, Partial<SelectedFilters>>
+  >({ real: {}, demo: {} })
+  const overrides = overridesBySource[source]
+
+  function setOverrides(change: (prev: Partial<SelectedFilters>) => Partial<SelectedFilters>) {
+    const target = getDataSource()
+    setOverridesBySource((prev) => ({ ...prev, [target]: change(prev[target]) }))
+  }
 
   const defaults = useMemo<SelectedFilters | null>(() => {
     if (!options || options.currencies.length === 0 || options.periods.length === 0) {
@@ -85,7 +102,7 @@ export function DashboardFiltersProvider({ children }: { children: ReactNode }) 
           ? { ...prev, period: { ...prev.period, day: undefined } }
           : prev,
       ),
-    resetFilters: () => setOverrides({}),
+    resetFilters: () => setOverrides(() => ({})),
   }
 
   return (

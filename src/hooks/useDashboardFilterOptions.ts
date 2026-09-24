@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { getUtcMonth, getUtcYear } from '@/utils/dates'
 import { db } from '@/storage/db'
+import { useDataSource } from './useDataSource'
 import type { Card } from '@/types/card'
 
 export interface AvailablePeriod {
@@ -20,6 +21,7 @@ export interface DashboardFilterOptions {
  * the filter dropdowns immediately, without a manual refetch.
  */
 export function useDashboardFilterOptions(): DashboardFilterOptions | undefined {
+  const source = useDataSource()
   return useLiveQuery(async () => {
     const [cards, transactions] = await Promise.all([db.cards.toArray(), db.transactions.toArray()])
 
@@ -39,5 +41,5 @@ export function useDashboardFilterOptions(): DashboardFilterOptions | undefined 
       .sort((a, b) => b.year - a.year || b.month - a.month)
 
     return { cards, currencies, periods }
-  })
+  }, [source])
 }

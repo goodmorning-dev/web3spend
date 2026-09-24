@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { utils, write, type WorkBook } from 'xlsx'
-import { buildDemoRows, DEMO_FILE_HASH, DEMO_PARSER_VERSION } from '@/adapters/demoData'
-import { commitImport } from '@/matching/commitImport'
-import { db } from '@/storage/db'
+import { getDataSource } from '@/storage/dataSource'
+import { db, demoDb, realDb } from '@/storage/db'
+import { openDemo } from '@/storage/demoData'
 import { resetDatabase } from '@/storage/test-helpers'
 import ImportDropzone from './ImportDropzone'
 
@@ -149,13 +149,9 @@ describe('ImportDropzone', () => {
     expect(await db.transactions.count()).toBe(1)
   })
 
-  it('clears any loaded demo data before committing a real import', async () => {
-    await commitImport(buildDemoRows(), {
-      fileHash: DEMO_FILE_HASH,
-      parserVersion: DEMO_PARSER_VERSION,
-      unsupportedCount: 0,
-    })
-    expect(await db.transactions.count()).toBeGreaterThan(0)
+  it("goes back to the person's own data for a file imported while the demo is on screen", async () => {
+    await openDemo()
+    const demoCount = await demoDb.transactions.count()
 
     const user = userEvent.setup()
     render(<ImportDropzone />)
@@ -164,9 +160,9 @@ describe('ImportDropzone', () => {
     await user.upload(input, toFile(buildValidWorkbook()))
 
     expect(await screen.findByText('1 added, 0 updated.')).toBeInTheDocument()
-    expect(await db.transactions.count()).toBe(1)
-    expect(await db.imports.where('fileHash').equals(DEMO_FILE_HASH).count()).toBe(0)
-    expect(await db.cards.where('cardHolderKey').equals('demo').count()).toBe(0)
+    expect(getDataSource()).toBe('real')
+    expect(await realDb.transactions.count()).toBe(1)
+    expect(await demoDb.transactions.count()).toBe(demoCount)
   })
 
   it('shows the optional result action once an import finishes, and not before', async () => {

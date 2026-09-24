@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { ETHERFI_PARSER_VERSION, etherfiAdapter, type UnsupportedRow } from '@/adapters'
 import { cn } from '@/lib/utils'
 import { commitImport } from '@/matching/commitImport'
-import { clearDemoData } from '@/storage/demoData'
+import { setDataSource } from '@/storage/dataSource'
 import { sha256Hex } from '@/utils/hash'
 
 interface ImportResult {
@@ -64,9 +64,10 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
       const buffer = await file.arrayBuffer()
       const fileHash = await sha256Hex(buffer)
       const { rows, unsupported } = etherfiAdapter.parse(buffer)
-      // The demo dataset is meant to be disposable (MVP-PLAN §5): a real
-      // import replaces it outright rather than merging alongside it.
-      await clearDemoData()
+      // A real import always goes into the person's own data. If the demo
+      // is on screen, switch back first, so the result shows up right
+      // away; the demo's own database is left alone.
+      setDataSource('real')
       const { rowCounts, alreadyImported } = await commitImport(rows, {
         fileHash,
         parserVersion: ETHERFI_PARSER_VERSION,

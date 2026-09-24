@@ -1,6 +1,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
+import { setDataSource } from '@/storage/dataSource'
 import { db } from '@/storage/db'
+import { openDemo } from '@/storage/demoData'
 import { resetDatabase } from '@/storage/test-helpers'
 import type { StandardTransaction } from '@/types/transaction'
 import { DashboardFiltersProvider, useDashboardFilters } from './DashboardFiltersContext'
@@ -137,6 +139,27 @@ describe('useDashboardFilters', () => {
     act(() => result.current.setPeriod({ kind: 'all' }))
     act(() => result.current.clearDay())
     expect(result.current.filters?.period).toEqual({ kind: 'all' })
+  })
+
+  it("keeps the person's own selection while the demo is on screen, and back again", async () => {
+    await db.transactions.bulkPut([
+      makeTransaction({ id: 'txn-eur' }),
+      makeTransaction({ id: 'txn-usd', currency: 'USD', identityKey: 'key-2' }),
+    ])
+    const { result } = renderWithProvider()
+    await waitFor(() => expect(result.current.filters).not.toBeNull())
+
+    act(() => result.current.setCurrency('USD'))
+    expect(result.current.filters?.currency).toBe('USD')
+
+    await act(async () => {
+      await openDemo()
+    })
+    await waitFor(() => expect(result.current.filters?.currency).toBe('EUR'))
+
+    act(() => setDataSource('real'))
+    await waitFor(() => expect(result.current.options?.currencies).toEqual(['EUR', 'USD']))
+    expect(result.current.filters?.currency).toBe('USD')
   })
 
   it('resetFilters clears a stale card override so data re-imported with new IDs is not silently hidden', async () => {

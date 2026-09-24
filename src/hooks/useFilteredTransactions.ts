@@ -4,6 +4,7 @@ import { db } from '@/storage/db'
 import type { StandardTransaction } from '@/types/transaction'
 import type { SelectedFilters } from './DashboardFiltersContext'
 import { toDashboardFilters } from './toDashboardFilters'
+import { useDataSource } from './useDataSource'
 
 /**
  * The shared data source for every dashboard view (KPIs, charts, heatmap,
@@ -15,11 +16,12 @@ import { toDashboardFilters } from './toDashboardFilters'
 export function useFilteredTransactions(
   filters: SelectedFilters | null,
 ): StandardTransaction[] | undefined {
+  const source = useDataSource()
   return useLiveQuery(async () => {
     if (!filters) {
       return undefined
     }
     const all = await db.transactions.toArray()
     return filterTransactions(all, toDashboardFilters(filters))
-  }, [filters])
+  }, [filters, source])
 }

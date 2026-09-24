@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/storage/db'
+import { useDataSource } from './useDataSource'
 
 export interface DashboardSummary {
   transactionCount: number
@@ -15,6 +16,7 @@ export interface DashboardSummary {
  * module lands in Milestone 2 once real aggregation is needed.
  */
 export function useDashboardSummary(): DashboardSummary | undefined {
+  const source = useDataSource()
   return useLiveQuery(async () => {
     const [transactions, imports] = await Promise.all([
       db.transactions.toArray(),
@@ -34,5 +36,5 @@ export function useDashboardSummary(): DashboardSummary | undefined {
       latestTimestampUtc: timestamps[timestamps.length - 1] ?? null,
       latestImportedAt,
     }
-  })
+  }, [source])
 }

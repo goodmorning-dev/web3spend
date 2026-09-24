@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
+import DemoBanner from './DemoBanner'
 import MobileTabBar from './MobileTabBar'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
@@ -7,7 +8,7 @@ import Topbar from './Topbar'
 /**
  * The layout for everything under /app: sidebar navigation (a floating tab
  * bar on phones), the shared currency/card/period filters (MVP-PLAN §5),
- * and the topbar. Individual pages render into the Outlet below; on phones
+ * the topbar, and a banner while the demo is on screen. Individual pages render into the Outlet below; on phones
  * their bottom padding leaves room to scroll the last content clear of the
  * tab bar.
  */
@@ -21,6 +22,7 @@ function AppShell() {
         />
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 pb-[calc(112px+env(safe-area-inset-bottom))] sm:p-6">
+          <DemoBanner />
           <Topbar />
           <Outlet />
         </div>
