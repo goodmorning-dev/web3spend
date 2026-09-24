@@ -17,12 +17,11 @@ import step3Image from '@/assets/step03.webp'
 import xLeftImage from '@/assets/x-left.webp'
 import xRightImage from '@/assets/x-right.webp'
 import { Button } from '@/components/ui/button'
-import { GithubLogoIcon, XLogoIcon } from '@/components/home/BrandIcons'
+import { XLogoIcon } from '@/components/home/BrandIcons'
 import HeroCard from '@/components/home/HeroCard'
+import SiteFooter from '@/components/SiteFooter'
 import { useDemoData } from '@/hooks/useDemoData'
 import { usePageTitle } from '@/hooks/usePageTitle'
-
-const REPO_URL = 'https://github.com/goodmorning-dev/web3spend'
 
 const PROMISES = [
   {
@@ -229,26 +228,7 @@ function Home() {
         </section>
       </div>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 py-6 text-sm text-text-faint sm:flex-row sm:justify-between">
-          <div className="flex items-center gap-2">
-            <img src={logoImage} alt="" className="size-6 shrink-0" />
-            <span className="font-heading text-sm font-semibold text-foreground">Web3Spend</span>
-            <span>
-              Built for the community. <span aria-hidden="true">💛</span>
-            </span>
-          </div>
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 font-medium text-text-dim hover:text-primary"
-          >
-            <GithubLogoIcon className="size-4" />
-            Source on GitHub
-          </a>
-        </div>
-      </footer>
+      <SiteFooter className="mx-auto max-w-6xl px-6 py-6" />
     </main>
   )
 }

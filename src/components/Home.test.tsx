@@ -103,6 +103,14 @@ describe('Home', () => {
     expect(link).toHaveAttribute('target', '_blank')
   })
 
+  it('credits goodmorning.dev in the footer, opening in a new tab', () => {
+    renderHome()
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Made by goodmorning.dev')
+    const link = screen.getByRole('link', { name: 'goodmorning.dev' })
+    expect(link).toHaveAttribute('href', 'https://goodmorning.dev')
+    expect(link).toHaveAttribute('target', '_blank')
+  })
+
   it('links to the GitHub repo in the footer, opening in a new tab', () => {
     renderHome()
     const link = screen.getByRole('link', { name: /source on github/i })
