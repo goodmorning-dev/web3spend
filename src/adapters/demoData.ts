@@ -20,20 +20,19 @@ interface DemoSeedRow {
   description: string
   categoryRaw: string
   amountMinor: number
-  cashbackMinor: number
   status: ParsedTransactionRow['status']
   /** Defaults to Direct Pay. The bigger purchases (travel, electronics,
-   * furniture, sports gear) use Borrow Mode, as people tend to, spread so
-   * each month of the demo has some of both. */
+   * furniture, clothing, sports gear) use Borrow Mode, as people tend to,
+   * spread so each month of the demo has plenty of both. */
   spendingMode?: SpendingMode
 }
 
 // Two cards, a handful of merchants per category, spread over the last
 // ~10 weeks so the dashboard's current-month view, the previous-month
 // comparison, and the activity heatmap all have something to show
-// regardless of which real-world date this runs on. Cashback is roughly
-// 2.5% of spend, matching the effective-cashback figures used elsewhere in
-// this app's own design reference. Recurring merchants live in
+// regardless of which real-world date this runs on. Cashback isn't seeded:
+// applyDemoCashback works it out from ether.fi's monthly tiers. Recurring
+// merchants live in
 // SUBSCRIPTION_SEEDS instead: a stray one-off charge from the same merchant
 // and amount would make its month look like a double charge, which
 // detectSubscriptions deliberately ignores.
@@ -45,7 +44,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Amazon',
     categoryRaw: 'Miscellaneous and Specialty Retail Stores',
     amountMinor: 8999,
-    cashbackMinor: 225,
     status: 'CLEARED',
   },
   {
@@ -55,7 +53,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Uber',
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 2450,
-    cashbackMinor: 62,
     status: 'PENDING',
   },
   {
@@ -65,7 +62,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Starbucks',
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 1240,
-    cashbackMinor: 31,
     status: 'CLEARED',
   },
   {
@@ -75,7 +71,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'MediaMarkt',
     categoryRaw: '5732 - Electronics Stores',
     amountMinor: 24900,
-    cashbackMinor: 623,
     status: 'CLEARED',
     spendingMode: 'Borrow Mode',
   },
@@ -86,8 +81,17 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Carrefour',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 6420,
-    cashbackMinor: 161,
     status: 'CLEARED',
+  },
+  {
+    daysAgo: 7,
+    last4: '1090',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
+    description: 'Apple Store',
+    categoryRaw: '5732 - Electronics Stores',
+    amountMinor: 12900,
+    status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
   },
   {
     daysAgo: 8,
@@ -96,7 +100,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Shell',
     categoryRaw: 'Service Stations',
     amountMinor: 5210,
-    cashbackMinor: 130,
     status: 'CLEARED',
   },
   {
@@ -106,7 +109,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Zara',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 5600,
-    cashbackMinor: 140,
     status: 'CLEARED',
   },
   {
@@ -116,7 +118,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Bolt',
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 980,
-    cashbackMinor: 24,
     status: 'CANCELLED',
   },
   {
@@ -126,7 +127,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'IKEA',
     categoryRaw: '5712 - Furniture, Home Furnishings, and Equipment Stores',
     amountMinor: 18950,
-    cashbackMinor: 474,
     status: 'CLEARED',
     spendingMode: 'Borrow Mode',
   },
@@ -137,7 +137,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Lidl',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 4115,
-    cashbackMinor: 103,
     status: 'CLEARED',
   },
   {
@@ -147,7 +146,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Steam',
     categoryRaw: 'Digital Goods: Games',
     amountMinor: 1999,
-    cashbackMinor: 50,
     status: 'CLEARED',
   },
   {
@@ -157,7 +155,6 @@ const SEEDS: DemoSeedRow[] = [
     description: "McDonald's",
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 870,
-    cashbackMinor: 22,
     status: 'CLEARED',
   },
   {
@@ -167,8 +164,17 @@ const SEEDS: DemoSeedRow[] = [
     description: 'H&M',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 3240,
-    cashbackMinor: 81,
     status: 'CLEARED',
+  },
+  {
+    daysAgo: 17,
+    last4: '4821',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
+    description: 'Airbnb',
+    categoryRaw: '7011 - Hotels, Motels, and Resorts',
+    amountMinor: 17640,
+    status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
   },
   {
     daysAgo: 18,
@@ -177,7 +183,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Uber Eats',
     categoryRaw: '5812 - Eating Places and Restaurants',
     amountMinor: 2870,
-    cashbackMinor: 72,
     status: 'CLEARED',
   },
   {
@@ -187,7 +192,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Carrefour',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 7230,
-    cashbackMinor: 181,
     status: 'CLEARED',
   },
   {
@@ -197,7 +201,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Booking.com',
     categoryRaw: '4722 - Travel Agencies',
     amountMinor: 18500,
-    cashbackMinor: 462,
     status: 'CLEARED',
     spendingMode: 'Borrow Mode',
   },
@@ -208,7 +211,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Amazon',
     categoryRaw: 'Miscellaneous and Specialty Retail Stores',
     amountMinor: -8999,
-    cashbackMinor: 0,
     status: 'CLEARED',
   },
   {
@@ -218,7 +220,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Shell',
     categoryRaw: 'Service Stations',
     amountMinor: 4890,
-    cashbackMinor: 122,
     status: 'CLEARED',
   },
   {
@@ -228,7 +229,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Starbucks',
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 1350,
-    cashbackMinor: 34,
     status: 'CLEARED',
   },
   {
@@ -238,7 +238,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Zara',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 4780,
-    cashbackMinor: 120,
     status: 'CLEARED',
   },
   {
@@ -248,7 +247,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Ryanair',
     categoryRaw: '4511 - Airlines, Air Carriers',
     amountMinor: 16480,
-    cashbackMinor: 412,
     status: 'CLEARED',
     spendingMode: 'Borrow Mode',
   },
@@ -259,7 +257,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Lidl',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 3860,
-    cashbackMinor: 97,
     status: 'CLEARED',
   },
   {
@@ -269,8 +266,17 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Bolt',
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 1620,
-    cashbackMinor: 41,
     status: 'CLEARED',
+  },
+  {
+    daysAgo: 36,
+    last4: '1090',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
+    description: 'Zalando',
+    categoryRaw: "5691 - Men's and Women's Clothing Stores",
+    amountMinor: 8995,
+    status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
   },
   {
     daysAgo: 37,
@@ -279,7 +285,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Uber Eats',
     categoryRaw: '5812 - Eating Places and Restaurants',
     amountMinor: 3320,
-    cashbackMinor: 83,
     status: 'CLEARED',
   },
   {
@@ -289,7 +294,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Carrefour',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 5940,
-    cashbackMinor: 149,
     status: 'CLEARED',
   },
   {
@@ -299,7 +303,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'H&M',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 2860,
-    cashbackMinor: 72,
     status: 'CLEARED',
   },
   {
@@ -309,7 +312,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Shell',
     categoryRaw: 'Service Stations',
     amountMinor: 4460,
-    cashbackMinor: 112,
     status: 'CLEARED',
   },
   {
@@ -319,7 +321,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Steam',
     categoryRaw: 'Digital Goods: Games',
     amountMinor: 2999,
-    cashbackMinor: 75,
     status: 'CLEARED',
   },
   {
@@ -329,7 +330,6 @@ const SEEDS: DemoSeedRow[] = [
     description: "McDonald's",
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 960,
-    cashbackMinor: 24,
     status: 'CLEARED',
   },
   {
@@ -339,7 +339,16 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Booking.com',
     categoryRaw: '4722 - Travel Agencies',
     amountMinor: 24300,
-    cashbackMinor: 608,
+    status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
+  },
+  {
+    daysAgo: 52,
+    last4: '4821',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
+    description: 'Lufthansa',
+    categoryRaw: '4511 - Airlines, Air Carriers',
+    amountMinor: 15830,
     status: 'CLEARED',
     spendingMode: 'Borrow Mode',
   },
@@ -350,7 +359,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Zara',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 3990,
-    cashbackMinor: 100,
     status: 'CLEARED',
   },
   {
@@ -360,7 +368,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Lidl',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 4520,
-    cashbackMinor: 113,
     status: 'CLEARED',
   },
   {
@@ -370,7 +377,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Bolt',
     categoryRaw: '4121 - Taxicabs and Limousines',
     amountMinor: 1180,
-    cashbackMinor: 30,
     status: 'CLEARED',
   },
   {
@@ -380,7 +386,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Decathlon',
     categoryRaw: '5941 - Sporting Goods Stores',
     amountMinor: 11990,
-    cashbackMinor: 300,
     status: 'CLEARED',
     spendingMode: 'Borrow Mode',
   },
@@ -391,7 +396,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Carrefour',
     categoryRaw: '5411 - Grocery Stores and Supermarkets',
     amountMinor: 6780,
-    cashbackMinor: 170,
     status: 'CLEARED',
   },
   {
@@ -401,7 +405,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Uber Eats',
     categoryRaw: '5812 - Eating Places and Restaurants',
     amountMinor: 2450,
-    cashbackMinor: 61,
     status: 'CLEARED',
   },
   {
@@ -411,7 +414,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'Starbucks',
     categoryRaw: '5814 - Fast Food Restaurants',
     amountMinor: 1180,
-    cashbackMinor: 30,
     status: 'CLEARED',
   },
   {
@@ -421,7 +423,6 @@ const SEEDS: DemoSeedRow[] = [
     description: 'H&M',
     categoryRaw: '5651 - Family Clothing Stores',
     amountMinor: 3410,
-    cashbackMinor: 85,
     status: 'CLEARED',
   },
 ]
@@ -431,7 +432,6 @@ interface DemoSubscriptionSeed {
   description: string
   categoryRaw: string
   amountMinor: number
-  cashbackMinor: number
   /** Kept at 28 or below so every month, February included, has this day. */
   dayOfMonth: number
   /** How many months before the current one the first charge landed in. */
@@ -452,7 +452,6 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
     description: 'Spotify',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 1099,
-    cashbackMinor: 27,
     dayOfMonth: 19,
     firstMonthsAgo: 11,
     lastMonthsAgo: 0,
@@ -462,7 +461,6 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
     description: 'Netflix',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 1399,
-    cashbackMinor: 35,
     dayOfMonth: 17,
     firstMonthsAgo: 7,
     lastMonthsAgo: 0,
@@ -472,7 +470,6 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
     description: 'Adobe',
     categoryRaw: 'Digital Goods: Software',
     amountMinor: 2299,
-    cashbackMinor: 57,
     dayOfMonth: 8,
     firstMonthsAgo: 5,
     lastMonthsAgo: 0,
@@ -482,7 +479,6 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
     description: 'iCloud+',
     categoryRaw: 'Digital Goods: Applications (Excludes Games)',
     amountMinor: 299,
-    cashbackMinor: 7,
     dayOfMonth: 3,
     firstMonthsAgo: 9,
     lastMonthsAgo: 0,
@@ -492,7 +488,6 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
     description: 'YouTube Premium',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 1299,
-    cashbackMinor: 32,
     dayOfMonth: 11,
     firstMonthsAgo: 4,
     lastMonthsAgo: 0,
@@ -502,7 +497,6 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
     description: 'PureGym',
     categoryRaw: '7997 - Membership Clubs (Sports, Recreation, Athletic)',
     amountMinor: 3900,
-    cashbackMinor: 98,
     dayOfMonth: 1,
     firstMonthsAgo: 6,
     lastMonthsAgo: 0,
@@ -512,7 +506,6 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
     description: 'Duolingo',
     categoryRaw: 'Digital Goods: Applications (Excludes Games)',
     amountMinor: 699,
-    cashbackMinor: 17,
     dayOfMonth: 24,
     firstMonthsAgo: 2,
     lastMonthsAgo: 0,
@@ -522,12 +515,60 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
     description: 'Disney+',
     categoryRaw: 'Digital Goods: Media, Books, Music',
     amountMinor: 899,
-    cashbackMinor: 22,
     dayOfMonth: 14,
     firstMonthsAgo: 8,
     lastMonthsAgo: 3,
   },
 ]
+
+/**
+ * ether.fi's cashback as the demo models it: 3% on the first €1,000 of card
+ * spending in a calendar month (UTC), across both cards, and 1% on
+ * everything after that. A purchase that crosses the €1,000 mark earns 3%
+ * on the part below it and 1% on the rest. A cancelled purchase earns
+ * nothing and doesn't count toward the €1,000. A refund (a negative
+ * amount) takes its cashback back at 3%, the rate an ordinary purchase
+ * earns, and doesn't move the month's total either.
+ */
+export const DEMO_CASHBACK = {
+  monthlyThresholdMinor: 100_000,
+  rateUpToThreshold: 0.03,
+  rateAfterThreshold: 0.01,
+}
+
+export function applyDemoCashback(rows: ParsedTransactionRow[]): ParsedTransactionRow[] {
+  const spentByMonth = new Map<string, number>()
+  const cashbackByRow = new Map<ParsedTransactionRow, number>()
+  const inOrder = [...rows].sort((a, b) => a.timestampUtc.localeCompare(b.timestampUtc))
+
+  for (const row of inOrder) {
+    if (row.status === 'CANCELLED') {
+      cashbackByRow.set(row, 0)
+      continue
+    }
+    if (row.amountMinor < 0) {
+      cashbackByRow.set(row, Math.round(row.amountMinor * DEMO_CASHBACK.rateUpToThreshold))
+      continue
+    }
+    const month = row.timestampUtc.slice(0, 7)
+    const spentBefore = spentByMonth.get(month) ?? 0
+    const upToThreshold = Math.max(
+      0,
+      Math.min(row.amountMinor, DEMO_CASHBACK.monthlyThresholdMinor - spentBefore),
+    )
+    const afterThreshold = row.amountMinor - upToThreshold
+    cashbackByRow.set(
+      row,
+      Math.round(
+        upToThreshold * DEMO_CASHBACK.rateUpToThreshold +
+          afterThreshold * DEMO_CASHBACK.rateAfterThreshold,
+      ),
+    )
+    spentByMonth.set(month, spentBefore + row.amountMinor)
+  }
+
+  return rows.map((row) => ({ ...row, cashbackMinor: cashbackByRow.get(row) ?? 0 }))
+}
 
 function toRow(seed: Omit<DemoSeedRow, 'daysAgo'>, timestamp: Date): ParsedTransactionRow {
   const currency = 'EUR'
@@ -542,7 +583,8 @@ function toRow(seed: Omit<DemoSeedRow, 'daysAgo'>, timestamp: Date): ParsedTrans
     currency,
     originalAmountMinor: seed.amountMinor,
     originalCurrency: currency,
-    cashbackMinor: seed.cashbackMinor,
+    // filled in afterwards by applyDemoCashback, once every row's date is known
+    cashbackMinor: 0,
     cashbackCurrency: currency,
     categoryRaw: seed.categoryRaw,
     spendingMode: seed.spendingMode ?? 'Direct Pay',
@@ -578,5 +620,5 @@ export function buildDemoRows(): ParsedTransactionRow[] {
     return rows
   })
 
-  return [...oneOffRows, ...subscriptionRows]
+  return applyDemoCashback([...oneOffRows, ...subscriptionRows])
 }

@@ -11,10 +11,14 @@ interface TransactionsToolbarProps {
   category: string
   categoryOptions: FilterSelectOption[]
   onCategoryChange: (category: string) => void
+  mode: string
+  modeOptions: FilterSelectOption[]
+  onModeChange: (mode: string) => void
 }
 
 /** Narrows the currently filtered (currency/card/period) transaction set
- * further, by merchant text, status, and ether.fi's raw category. */
+ * further, by merchant text, status, ether.fi's raw category, and whether
+ * a purchase was paid directly or in Borrow Mode. */
 function TransactionsToolbar({
   search,
   onSearchChange,
@@ -24,6 +28,9 @@ function TransactionsToolbar({
   category,
   categoryOptions,
   onCategoryChange,
+  mode,
+  modeOptions,
+  onModeChange,
 }: TransactionsToolbarProps) {
   return (
     <div className="flex flex-col gap-2.5 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center">
@@ -50,6 +57,13 @@ function TransactionsToolbar({
         value={category}
         options={categoryOptions}
         onChange={onCategoryChange}
+        triggerClassName="w-full sm:w-auto"
+      />
+      <FilterSelect
+        ariaLabel="Spending mode"
+        value={mode}
+        options={modeOptions}
+        onChange={onModeChange}
         triggerClassName="w-full sm:w-auto"
       />
     </div>
