@@ -25,9 +25,10 @@ import UseAnywhereSection from '@/components/home/UseAnywhereSection'
 import SiteFooter from '@/components/SiteFooter'
 import { useDemoData } from '@/hooks/useDemoData'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import { cn } from '@/lib/utils'
 
-// Privacy gets the page's second accent color, green, as it does in the
-// privacy section further down; everything else stays gold.
+// Gold and green run through the whole page: privacy leans green, the
+// rest gold, and the headings' accent words blend the two.
 const PROMISES = [
   {
     icon: ShieldCheck,
@@ -51,6 +52,7 @@ const PROMISES = [
 
 const STEPS: {
   icon: ComponentType<{ className?: string }>
+  iconClassName: string
   image: string
   tag: string
   title: string
@@ -58,6 +60,7 @@ const STEPS: {
 }[] = [
   {
     icon: FileDown,
+    iconClassName: 'text-primary',
     image: step1Image,
     tag: 'Step 01',
     title: 'Export from ether.fi',
@@ -65,6 +68,7 @@ const STEPS: {
   },
   {
     icon: Upload,
+    iconClassName: 'text-positive',
     image: step2Image,
     tag: 'Step 02',
     title: 'Import here',
@@ -72,6 +76,7 @@ const STEPS: {
   },
   {
     icon: BarChart3,
+    iconClassName: 'text-primary',
     image: step3Image,
     tag: 'Step 03',
     title: 'See your spending',
@@ -88,6 +93,10 @@ function Home() {
       <div
         aria-hidden="true"
         className="absolute top-1/4 left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:block sm:size-[28rem]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-[55%] right-0 -z-10 hidden size-96 translate-x-1/2 rounded-full bg-positive/15 blur-3xl sm:block"
       />
       <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-8 sm:gap-20 sm:py-10">
         <header className="flex items-center justify-between">
@@ -108,7 +117,7 @@ function Home() {
             <h1 className="font-heading text-4xl leading-[1.1] font-semibold sm:text-5xl">
               Your spending.
               <br />
-              <span className="text-primary">Your data.</span> Your control.
+              <span className="text-brand-gradient">Your data.</span> Your control.
             </h1>
             <p className="max-w-md text-base text-text-dim">
               Import your ether.fi transaction export and get clear insights into your spending and
@@ -130,7 +139,7 @@ function Home() {
             <ul className="mt-3 flex flex-wrap items-start gap-6">
               {PROMISES.map(({ icon: Icon, title, description, iconClassName }) => (
                 <li key={title} className="flex items-center gap-2.5">
-                  <Icon className={`size-7 shrink-0 ${iconClassName}`} />
+                  <Icon className={cn('size-7 shrink-0', iconClassName)} />
                   <span className="flex flex-col">
                     <span className="text-sm font-semibold">{title}</span>
                     <span className="text-xs text-text-faint">{description}</span>
@@ -149,11 +158,12 @@ function Home() {
               How it works
             </span>
             <h2 id="how-it-works" className="font-heading text-2xl font-semibold sm:text-3xl">
-              From export to insights in <span className="text-primary">3 simple steps</span>.
+              From export to insights in <span className="text-brand-gradient">3 simple steps</span>
+              .
             </h2>
           </div>
           <ol className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            {STEPS.map(({ icon: Icon, image, tag, title, description }) => (
+            {STEPS.map(({ icon: Icon, iconClassName, image, tag, title, description }) => (
               <li
                 key={title}
                 className="relative flex min-h-[210px] flex-col gap-2.5 overflow-hidden rounded-2xl border border-[#161a24] bg-[#0d1016] p-5"
@@ -168,9 +178,13 @@ function Home() {
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-r from-[#0d1016] from-45% via-[#0d1016]/95 to-transparent"
                 />
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-6 top-0 z-10 h-px bg-[linear-gradient(90deg,transparent,var(--color-primary),var(--color-positive),transparent)] opacity-60"
+                />
                 <div className="relative z-10 flex flex-col gap-2.5">
-                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary text-primary">
-                    <Icon className="size-5" />
+                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary bg-gradient-to-br from-primary/15 to-positive/10">
+                    <Icon className={cn('size-5', iconClassName)} />
                   </div>
                   <span className="text-[11px] font-semibold tracking-wide text-foreground/80 uppercase [text-shadow:0_1px_4px_rgb(0_0_0/0.7)]">
                     {tag}
@@ -200,7 +214,7 @@ function Home() {
           />
           <div
             aria-hidden="true"
-            className="absolute top-1/2 right-0 -z-10 size-32 translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-2xl"
+            className="absolute top-1/2 right-0 -z-10 size-32 translate-x-1/2 -translate-y-1/2 rounded-full bg-positive/20 blur-2xl"
           />
 
           <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">

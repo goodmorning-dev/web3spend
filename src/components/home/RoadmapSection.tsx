@@ -29,6 +29,22 @@ const STAGES: { title: string; status: StageStatus; description: string }[] = [
   },
 ]
 
+// The line down to the next stage starts in this stage's color and fades
+// out: green from what's live, gold from what's next.
+const LINE_STYLE: Record<StageStatus, string> = {
+  Live: 'from-positive/60',
+  Next: 'from-primary/50',
+  Later: 'from-white/15',
+  Exploring: 'from-white/10',
+}
+
+const NUMBER_STYLE: Record<StageStatus, string> = {
+  Live: 'border-positive/40 bg-positive/15 text-positive',
+  Next: 'border-primary/40 bg-primary/10 text-primary',
+  Later: 'border-white/10 bg-[#0d1016] text-primary',
+  Exploring: 'border-white/10 bg-[#0d1016] text-primary',
+}
+
 const STATUS_STYLE: Record<StageStatus, string> = {
   Live: 'bg-positive/15 text-positive',
   Next: 'bg-primary/15 text-primary',
@@ -38,7 +54,8 @@ const STATUS_STYLE: Record<StageStatus, string> = {
 
 /**
  * Where the app is headed: numbered stages on a timeline, each with a
- * status tag. Live gets the privacy green, what's next gets gold.
+ * status tag. Live gets green, what's next gets gold, and the line between
+ * them blends one into the other.
  */
 function RoadmapSection() {
   return (
@@ -49,7 +66,7 @@ function RoadmapSection() {
       <div className="flex flex-col items-start gap-2">
         <span className="text-xs font-semibold tracking-wide text-text-dim uppercase">Roadmap</span>
         <h2 id="roadmap" className="font-heading text-2xl font-semibold sm:text-3xl">
-          Where we&apos;re <span className="text-primary">headed</span>.
+          Where we&apos;re <span className="text-brand-gradient">headed</span>.
         </h2>
         <p className="max-w-sm text-base text-text-dim">
           Live today, with more on the way. Here&apos;s the plan.
@@ -64,16 +81,17 @@ function RoadmapSection() {
               {!isLast && (
                 <span
                   aria-hidden="true"
-                  className="absolute top-10 bottom-0 left-5 w-px -translate-x-1/2 bg-white/10"
+                  className={cn(
+                    'absolute top-10 bottom-0 left-5 w-px -translate-x-1/2 bg-gradient-to-b to-white/10',
+                    LINE_STYLE[status],
+                  )}
                 />
               )}
               <span
                 aria-hidden="true"
                 className={cn(
                   'relative flex size-10 items-center justify-center rounded-full border font-heading text-sm font-semibold',
-                  status === 'Live'
-                    ? 'border-positive/40 bg-positive/15 text-positive'
-                    : 'border-white/10 bg-[#0d1016] text-primary',
+                  NUMBER_STYLE[status],
                 )}
               >
                 {String(index + 1).padStart(2, '0')}
