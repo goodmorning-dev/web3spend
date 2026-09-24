@@ -20,14 +20,14 @@ describe('App routing', () => {
   it('redirects the root path to /home', () => {
     renderAt('/')
     expect(
-      screen.getByRole('heading', { name: /your spending/i, level: 1 }),
+      screen.getByRole('heading', { name: /finally clear/i, level: 1 }),
     ).toBeInTheDocument()
   })
 
   it('renders Home at /home', () => {
     renderAt('/home')
     expect(
-      screen.getByRole('heading', { name: /your spending/i, level: 1 }),
+      screen.getByRole('heading', { name: /finally clear/i, level: 1 }),
     ).toBeInTheDocument()
   })
 
@@ -83,7 +83,7 @@ describe('App routing', () => {
   it('redirects an unknown path to /home', () => {
     renderAt('/something-that-does-not-exist')
     expect(
-      screen.getByRole('heading', { name: /your spending/i, level: 1 }),
+      screen.getByRole('heading', { name: /finally clear/i, level: 1 }),
     ).toBeInTheDocument()
   })
 

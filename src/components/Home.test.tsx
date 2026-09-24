@@ -31,6 +31,19 @@ describe('Home', () => {
     expect(document.title).toBe(HOME_TITLE)
   })
 
+  it('leads with the tagline', () => {
+    renderHome()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Your crypto card spending, finally clear.',
+    )
+  })
+
+  it('says it works offline once loaded, not after an install', () => {
+    renderHome()
+    expect(screen.getByText('Once loaded')).toBeInTheDocument()
+    expect(screen.queryByText('After install')).not.toBeInTheDocument()
+  })
+
   it('states the privacy promise up front', () => {
     renderHome()
     expect(
@@ -41,8 +54,20 @@ describe('Home', () => {
   it('explains how it works in three steps', () => {
     renderHome()
     expect(screen.getByText('Export from ether.fi')).toBeInTheDocument()
-    expect(screen.getByText('Import here')).toBeInTheDocument()
+    expect(screen.getByText('Drop it in')).toBeInTheDocument()
     expect(screen.getByText('See your spending')).toBeInTheDocument()
+  })
+
+  it("says how to export, with a link to ether.fi's guide", () => {
+    renderHome()
+    const section = screen.getByRole('region', { name: /3 simple steps/i })
+
+    expect(within(section).getByText('How do I export?')).toBeInTheDocument()
+    expect(within(section).getByText(/open transaction history/i)).toBeInTheDocument()
+    expect(within(section).getByRole('link', { name: /ether\.fi's guide/i })).toHaveAttribute(
+      'href',
+      'https://help.ether.fi/en/articles/685844-how-to-download-your-card-transaction-history',
+    )
   })
 
   it('links the import call-to-action to /app', () => {
@@ -99,9 +124,10 @@ describe('Home', () => {
     expect(screen.getByRole('link', { name: /open app/i })).toHaveAttribute('href', '/app')
   })
 
-  it('links the "want a new provider" card to X, opening in a new tab', () => {
+  it('asks which card to support next, linking to X in a new tab', () => {
     renderHome()
-    const link = screen.getByRole('link', { name: /let us know on x/i })
+    expect(screen.getByRole('heading', { name: 'Want to see your card here?' })).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: /request a card/i })
     expect(link).toHaveAttribute('href', 'https://x.com/goodmorningdevs')
     expect(link).toHaveAttribute('target', '_blank')
   })
@@ -185,5 +211,28 @@ describe('Home', () => {
     ])
     expect(within(stages[0]).getByText('Live')).toBeInTheDocument()
     expect(within(stages[1]).getByText('Next')).toBeInTheDocument()
+  })
+
+  it('answers the common questions, each opening on click', async () => {
+    renderHome()
+    const section = screen.getByRole('region', { name: /questions, answered/i })
+    const questions = within(section)
+      .getAllByRole('group')
+      .map((item) => item.querySelector('summary')?.textContent)
+
+    expect(questions).toEqual([
+      "How do I know my data isn't sent anywhere?",
+      'Where do I get my export?',
+      'Is this affiliated with ether.fi?',
+      'What does it show me?',
+    ])
+
+    const affiliation = within(section).getByText('Is this affiliated with ether.fi?')
+    expect(affiliation.closest('details')).not.toHaveAttribute('open')
+    await userEvent.click(affiliation)
+    expect(affiliation.closest('details')).toHaveAttribute('open')
+    expect(
+      within(section).getByText(/isn't affiliated with or endorsed by ether\.fi/i),
+    ).toBeVisible()
   })
 })
