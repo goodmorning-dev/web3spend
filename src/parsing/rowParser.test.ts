@@ -48,6 +48,43 @@ describe('parseRow', () => {
     })
   })
 
+  it.each([
+    'topup',
+    'swap',
+    'repay',
+    'liquid_deposit',
+    'liquid_execute_withdrawal',
+    'stake_deposit',
+    'frax_deposit',
+    'frax_withdraw',
+  ])('skips %s as account activity rather than reporting it as unsupported', (type) => {
+    // Shaped like the real rows: no card, status or spending mode, and a
+    // crypto amount with more decimals than a card purchase ever has.
+    const result = parseRow(
+      makeRawRow({
+        type,
+        description: 'USDC',
+        status: null,
+        amount: 1246.939747,
+        currency: 'USD',
+        card: null,
+        'card holder name': null,
+        'original amount': 1246.939747,
+        'original currency': 'USDC',
+        'cashback earned': null,
+        'cashback currency': null,
+        category: null,
+        'spending mode': null,
+      }),
+    )
+    expect(result).toEqual({ ok: false, skipped: 'account-activity' })
+  })
+
+  it('still reports an unknown card transaction type, such as a refund', () => {
+    const result = parseRow(makeRawRow({ type: 'card_refund' }))
+    expect(result).toEqual({ ok: false, reason: 'Unsupported transaction type: card_refund' })
+  })
+
   it('rejects an unrecognized transaction type instead of coercing it', () => {
     const result = parseRow(makeRawRow({ type: 'atm_withdrawal' }))
     expect(result).toEqual({ ok: false, reason: 'Unsupported transaction type: atm_withdrawal' })

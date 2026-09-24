@@ -171,6 +171,7 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Use CLEARED card_spend rows for the default purchase total.
 - PENDING and CANCELLED are excluded from cleared spending and its cashback calculation.
 - Unknown types, statuses, or payment modes must be reported. Never silently count them as ordinary spending or assume Direct Pay.
+- Account activity that isn't card spending (top-ups, swaps, Borrow Mode repayments, and moves into or out of ether.fi's Liquid vaults, staking and Frax) is recognized and left out of the import without being reported as unsupported. The MVP doesn't show it.
 - Normalize category whitespace and mojibake only; retain the original category text as-is (MCC prefix included where present) and use it directly everywhere a category is shown, grouped, or filtered.
 - No mapping to a small, curated set of app-level categories in the MVP. That taxonomy, and the "Uncategorized" fallback it implies, are deferred to v2 (see §13).
 - Describe cashback as recorded cashback on the selected purchases. The export does not establish when it was claimed or received.
