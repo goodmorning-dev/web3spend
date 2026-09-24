@@ -38,7 +38,7 @@ function DemoBanner() {
           ? "You're looking at demo data, not your own."
           : "You're looking at demo data."}
       </p>
-      <Button type="button" size="sm" variant="outline" onClick={leaveDemo}>
+      <Button type="button" size="sm" variant="destructive" onClick={leaveDemo}>
         {hasRealData ? 'Back to your data' : 'Exit demo'}
       </Button>
     </div>
