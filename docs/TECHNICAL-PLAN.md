@@ -169,7 +169,9 @@ db.version(1).stores({
    fixed row index.
 4. **Row parsing & validation**: per row, parse/validate types (dates, numeric amounts,
    currency codes, enum fields); unknown `type`, `status`, or `spending mode` values are
-   collected as "unsupported rows," never silently coerced into a known bucket.
+   collected as "unsupported rows," never silently coerced into a known bucket. Known
+   account-activity types (`topup`, `swap`, `repay`, and anything starting `liquid_`,
+   `stake_` or `frax_`) aren't card spending, so they're skipped without being reported.
 5. **Normalization**: trim/collapse whitespace and strip non-breaking-space / mojibake
    artifacts from `category` (the MCC prefix, if present, is left in place — no mapping step
    consumes it in the MVP; see section 7); convert amounts to integer minor units; parse

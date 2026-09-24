@@ -60,7 +60,8 @@ const NOTES: {
     key: 'unsupported',
     icon: TriangleAlert,
     title: 'Unsupported rows are reported',
-    description: "Rows we can't understand are reported plainly instead of being silently skipped.",
+    description:
+      "Only card purchases are shown for now, so top-ups, swaps and deposits are left out. Anything else we can't understand is reported plainly instead of being silently skipped.",
   },
 ]
 

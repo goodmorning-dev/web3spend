@@ -314,4 +314,58 @@ describe('etherfiAdapter', () => {
       ['Paid by borrowing', 'Borrow Mode'],
     ])
   })
+
+  it('leaves out top-ups, swaps and deposits without reporting them, and imports the purchases around them', () => {
+    const purchase = (description: string) => [
+      '2026-06-05 14:50:05 UTC',
+      'card_spend',
+      description,
+      'CLEARED',
+      8.99,
+      'EUR',
+      '9620',
+      'Person 001',
+      8.99,
+      'EUR',
+      0.27,
+      'EUR',
+      '5411 - Grocery Stores and Supermarkets',
+      'Direct Pay',
+    ]
+    const activity = (type: string, amount: number, originalCurrency: string) => [
+      '2026-06-03 21:44:47 UTC',
+      type,
+      originalCurrency,
+      null,
+      amount,
+      'USD',
+      null,
+      null,
+      amount,
+      originalCurrency,
+      null,
+      null,
+      null,
+      null,
+    ]
+    const workbook = utils.book_new()
+    utils.book_append_sheet(
+      workbook,
+      utils.aoa_to_sheet([
+        HEADER_ROW,
+        purchase('Merchant 0C229F'),
+        activity('topup', 16.53738337, 'WETH'),
+        activity('liquid_deposit', 79.95427519, 'EURC'),
+        activity('swap', 80.01979, 'USDC'),
+        activity('frax_withdraw', 80.01979, 'FRXUSD'),
+        purchase('Merchant 5E5CB9'),
+      ]),
+      'All Transactions',
+    )
+
+    const { rows, unsupported } = etherfiAdapter.parse(toArrayBuffer(workbook))
+
+    expect(unsupported).toEqual([])
+    expect(rows.map((parsed) => parsed.description)).toEqual(['Merchant 0C229F', 'Merchant 5E5CB9'])
+  })
 })

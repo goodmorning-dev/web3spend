@@ -59,7 +59,7 @@ function parse(data: ArrayBuffer): ParseResult {
     const result = parseRow(raw)
     if (result.ok) {
       rows.push(result.row)
-    } else {
+    } else if ('reason' in result) {
       // +2: 1 to move from a 0-based header index to a 1-based spreadsheet
       // row, +1 more because data starts on the row after the header.
       unsupported.push({ rowNumber: headerRowIndex + 2 + index, reason: result.reason })
