@@ -27,14 +27,14 @@ import { useDemoData } from '@/hooks/useDemoData'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { cn } from '@/lib/utils'
 
-// Gold and green run through the whole page: privacy and openness lean
-// green, the rest gold.
+// Gold and the second accent (accent-2) run through the whole page:
+// privacy and openness lean on the second accent, the rest gold.
 const PROMISES = [
   {
     icon: ShieldCheck,
     title: '100% private',
     description: 'Stays on your device',
-    iconClassName: 'text-positive',
+    iconClassName: 'text-accent-2',
   },
   {
     icon: WifiOff,
@@ -46,7 +46,7 @@ const PROMISES = [
     icon: Code2,
     title: 'Open source',
     description: 'Community driven',
-    iconClassName: 'text-positive',
+    iconClassName: 'text-accent-2',
   },
 ]
 
@@ -68,7 +68,7 @@ const STEPS: {
   },
   {
     icon: Upload,
-    iconClassName: 'text-positive',
+    iconClassName: 'text-accent-2',
     image: step2Image,
     tag: 'Step 02',
     title: 'Import here',
@@ -90,16 +90,17 @@ function Home() {
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
-      {/* Background glows at the page's edges: gold on the left and green
-          on the right, both high enough to show on a 1080px tall screen
-          without scrolling, then gold on the left again further down. */}
+      {/* Background glows at the page's edges: gold on the left and the
+          second accent on the right, both high enough to show on a 1080px
+          tall screen without scrolling, then gold on the left again
+          further down. */}
       <div
         aria-hidden="true"
         className="absolute top-[140px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:block sm:size-[28rem]"
       />
       <div
         aria-hidden="true"
-        className="absolute top-[400px] right-0 -z-10 hidden size-96 translate-x-1/2 rounded-full bg-positive/20 blur-3xl sm:block sm:size-[28rem]"
+        className="absolute top-[400px] right-0 -z-10 hidden size-96 translate-x-1/2 rounded-full bg-accent-2/20 blur-3xl sm:block sm:size-[28rem]"
       />
       <div
         aria-hidden="true"
@@ -185,7 +186,7 @@ function Home() {
                   className="absolute inset-0 bg-gradient-to-r from-[#0d1016] from-45% via-[#0d1016]/95 to-transparent"
                 />
                 <div className="relative z-10 flex flex-col gap-2.5">
-                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary bg-gradient-to-br from-primary/15 to-positive/10">
+                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary bg-gradient-to-br from-primary/15 to-accent-2/10">
                     <Icon className={cn('size-5', iconClassName)} />
                   </div>
                   <span className="text-[11px] font-semibold tracking-wide text-foreground/80 uppercase [text-shadow:0_1px_4px_rgb(0_0_0/0.7)]">
@@ -216,7 +217,7 @@ function Home() {
           />
           <div
             aria-hidden="true"
-            className="absolute top-1/2 right-0 -z-10 size-32 translate-x-1/2 -translate-y-1/2 rounded-full bg-positive/20 blur-2xl"
+            className="absolute top-1/2 right-0 -z-10 size-32 translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-2/20 blur-2xl"
           />
 
           <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">

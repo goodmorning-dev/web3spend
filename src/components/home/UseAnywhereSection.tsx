@@ -12,7 +12,7 @@ const PLATFORMS = [
   },
   {
     icon: TabletSmartphone,
-    iconClassName: 'text-positive',
+    iconClassName: 'text-accent-2',
     title: 'iPhone and iPad',
     how: 'In Safari, tap Share, then Add to Home Screen.',
   },
@@ -50,12 +50,12 @@ function UseAnywhereSection() {
       <div className="relative w-full">
         <span
           aria-hidden="true"
-          className="absolute inset-x-8 top-0 z-10 h-px bg-[linear-gradient(90deg,transparent,var(--color-primary),var(--color-positive),transparent)] opacity-60"
+          className="absolute inset-x-8 top-0 z-10 h-px bg-[linear-gradient(90deg,transparent,var(--color-primary),var(--color-accent-2),transparent)] opacity-60"
         />
         <ul className="grid w-full grid-cols-1 divide-y divide-white/5 rounded-2xl border border-[#161a24] bg-[#0d1016] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {PLATFORMS.map(({ icon: Icon, iconClassName, title, how }) => (
             <li key={title} className="flex items-start gap-3.5 p-5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-primary/15 to-positive/10">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-primary/15 to-accent-2/10">
                 <Icon className={cn('size-5', iconClassName)} />
               </span>
               <span className="flex flex-col gap-1">

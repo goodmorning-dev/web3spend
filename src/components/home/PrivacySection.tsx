@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 const POINTS = [
   {
     icon: Laptop,
-    iconClassName: 'text-positive',
+    iconClassName: 'text-accent-2',
     title: 'Read in your browser',
     description:
       'Your XLSX export is opened by code running on your own device. It never gets uploaded anywhere.',
@@ -29,7 +29,7 @@ const POINTS = [
   },
   {
     icon: Fingerprint,
-    iconClassName: 'text-positive',
+    iconClassName: 'text-accent-2',
     title: 'Safe to import again',
     description:
       "Each transaction is recognized by its own details (time, card, merchant and amount), so a newer export updates what's there instead of doubling it.",
@@ -45,16 +45,16 @@ const POINTS = [
 
 const EXPORT_ROWS = ['w-full', 'w-4/5', 'w-11/12', 'w-3/5', 'w-5/6']
 
-// Gold is the data going in and coming out, green is the browser doing
-// the work in between.
+// Gold is the data going in and coming out, the second accent is the
+// browser doing the work in between.
 const CONNECTOR_STYLE = {
   in: {
-    line: 'from-primary/50 to-positive/50',
-    dot: { '--dot-from': 'var(--color-primary)', '--dot-to': 'var(--color-positive)' },
+    line: 'from-primary/50 to-accent-2/50',
+    dot: { '--dot-from': 'var(--color-primary)', '--dot-to': 'var(--color-accent-2)' },
   },
   out: {
-    line: 'from-positive/50 to-primary/50',
-    dot: { '--dot-from': 'var(--color-positive)', '--dot-to': 'var(--color-primary)' },
+    line: 'from-accent-2/50 to-primary/50',
+    dot: { '--dot-from': 'var(--color-accent-2)', '--dot-to': 'var(--color-primary)' },
   },
 }
 
@@ -94,7 +94,7 @@ function PrivacyFlow() {
       className="relative flex flex-col items-center rounded-2xl border border-[#161a24] bg-[#090c11] px-5 pt-14 pb-6 sm:flex-row sm:justify-center sm:px-5"
     >
       <span className="absolute top-4 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/10 bg-[#0d1016] px-2.5 py-1 text-[11px] font-medium whitespace-nowrap text-text-dim">
-        <CloudOff className="size-3.5 text-positive" />
+        <CloudOff className="size-3.5 text-accent-2" />
         Nothing uploaded
       </span>
 
@@ -114,8 +114,8 @@ function PrivacyFlow() {
 
       <FlowConnector direction="in" delay="0s" />
 
-      <div className="flex shrink-0 flex-col items-center gap-1 rounded-2xl border border-positive/35 bg-positive/10 px-4 py-3 text-center shadow-[0_0_28px_-8px] shadow-positive/50">
-        <Funnel className="size-6 text-positive" />
+      <div className="flex shrink-0 flex-col items-center gap-1 rounded-2xl border border-accent-2/35 bg-accent-2/10 px-4 py-3 text-center shadow-[0_0_28px_-8px] shadow-accent-2/50">
+        <Funnel className="size-6 text-accent-2" />
         <span className="text-xs font-semibold">Your browser</span>
         <span className="text-[10.5px] text-text-faint">on this device</span>
       </div>
@@ -130,7 +130,7 @@ function PrivacyFlow() {
           <span className="block text-[11px] text-text-faint">By category</span>
           <span className="mt-1.5 flex h-1.5 gap-0.5 overflow-hidden rounded-full">
             <span className="w-[38%] bg-primary" />
-            <span className="w-[24%] bg-positive" />
+            <span className="w-[24%] bg-accent-2" />
             <span className="w-[18%] bg-text-dim" />
             <span className="flex-1 bg-white/15" />
           </span>
@@ -147,7 +147,7 @@ function PrivacyFlow() {
           style={{ animationDelay: '0.8s' }}
         >
           <span className="text-[11px] text-text-faint">Eff. cashback</span>
-          <span className="text-xs font-semibold text-positive">2.99%</span>
+          <span className="text-xs font-semibold text-accent-2">2.99%</span>
         </li>
       </ul>
     </div>
@@ -155,19 +155,20 @@ function PrivacyFlow() {
 }
 
 /**
- * What "100% private" actually means, point by point (#43). Leans green,
- * the page's privacy color, but mixed with gold like every other section.
+ * What "100% private" actually means, point by point (#43). Leans on the
+ * second accent, the page's privacy color, but mixed with gold like every
+ * other section.
  */
 function PrivacySection() {
   return (
     <section
       aria-labelledby="privacy"
-      className="rounded-3xl bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-positive)_35%,transparent),transparent_40%,transparent_60%,color-mix(in_oklab,var(--color-primary)_35%,transparent))] p-px"
+      className="rounded-3xl bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent-2)_35%,transparent),transparent_40%,transparent_60%,color-mix(in_oklab,var(--color-primary)_35%,transparent))] p-px"
     >
-      <div className="relative isolate overflow-hidden rounded-[calc(1.5rem-1px)] bg-background bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-positive)_8%,transparent),transparent_50%,color-mix(in_oklab,var(--color-primary)_6%,transparent))] p-6 sm:p-10">
+      <div className="relative isolate overflow-hidden rounded-[calc(1.5rem-1px)] bg-background bg-[linear-gradient(135deg,color-mix(in_oklab,var(--color-accent-2)_8%,transparent),transparent_50%,color-mix(in_oklab,var(--color-primary)_6%,transparent))] p-6 sm:p-10">
         <div
           aria-hidden="true"
-          className="absolute -top-24 -right-16 -z-10 size-72 rounded-full bg-positive/10 blur-3xl"
+          className="absolute -top-24 -right-16 -z-10 size-72 rounded-full bg-accent-2/10 blur-3xl"
         />
         <div
           aria-hidden="true"
@@ -175,7 +176,7 @@ function PrivacySection() {
         />
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1.1fr]">
           <div className="flex flex-col items-start gap-3">
-            <span className="text-xs font-semibold tracking-wide text-positive uppercase">
+            <span className="text-xs font-semibold tracking-wide text-accent-2 uppercase">
               Privacy
             </span>
             <h2 id="privacy" className="font-heading text-2xl font-semibold sm:text-3xl">
@@ -189,7 +190,7 @@ function PrivacySection() {
               href={REPO_URL}
               target="_blank"
               rel="noreferrer"
-              className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-text-dim hover:text-positive"
+              className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-text-dim hover:text-accent-2"
             >
               <GithubLogoIcon className="size-4" />
               Don&apos;t take our word for it, read the code
@@ -204,7 +205,7 @@ function PrivacySection() {
               key={title}
               className="flex flex-col gap-2.5 rounded-2xl border border-white/5 bg-[#0d1016]/80 p-5"
             >
-              <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-positive/15 to-primary/10">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent-2/15 to-primary/10">
                 <Icon className={cn('size-5', iconClassName)} />
               </span>
               <h3 className="font-heading text-base font-semibold">{title}</h3>

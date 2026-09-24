@@ -30,23 +30,23 @@ const STAGES: { title: string; status: StageStatus; description: string }[] = [
 ]
 
 // The line down to the next stage starts in this stage's color and fades
-// out: green from what's live, gold from what's next.
+// out: the second accent from what's live, gold from what's next.
 const LINE_STYLE: Record<StageStatus, string> = {
-  Live: 'from-positive/60',
+  Live: 'from-accent-2/60',
   Next: 'from-primary/50',
   Later: 'from-white/15',
   Exploring: 'from-white/10',
 }
 
 const NUMBER_STYLE: Record<StageStatus, string> = {
-  Live: 'border-positive/40 bg-positive/15 text-positive',
+  Live: 'border-accent-2/40 bg-accent-2/15 text-accent-2',
   Next: 'border-primary/40 bg-primary/10 text-primary',
   Later: 'border-white/10 bg-[#0d1016] text-primary',
   Exploring: 'border-white/10 bg-[#0d1016] text-primary',
 }
 
 const STATUS_STYLE: Record<StageStatus, string> = {
-  Live: 'bg-positive/15 text-positive',
+  Live: 'bg-accent-2/15 text-accent-2',
   Next: 'bg-primary/15 text-primary',
   Later: 'border border-white/15 text-text-dim',
   Exploring: 'border border-dashed border-white/20 text-text-faint',
@@ -54,8 +54,8 @@ const STATUS_STYLE: Record<StageStatus, string> = {
 
 /**
  * Where the app is headed: numbered stages on a timeline, each with a
- * status tag. Live gets green, what's next gets gold, and the line between
- * them blends one into the other.
+ * status tag. Live gets the second accent, what's next gets gold, and the
+ * line between them blends one into the other.
  */
 function RoadmapSection() {
   return (
