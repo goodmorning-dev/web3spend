@@ -22,8 +22,9 @@ interface DemoSeedRow {
   amountMinor: number
   cashbackMinor: number
   status: ParsedTransactionRow['status']
-  /** Defaults to Direct Pay. A few purchases use Borrow Mode, so the demo
-   * shows both. */
+  /** Defaults to Direct Pay. The bigger purchases (travel, electronics,
+   * furniture, sports gear) use Borrow Mode, as people tend to, spread so
+   * each month of the demo has some of both. */
   spendingMode?: SpendingMode
 }
 
@@ -68,6 +69,17 @@ const SEEDS: DemoSeedRow[] = [
     status: 'CLEARED',
   },
   {
+    daysAgo: 4,
+    last4: '4821',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
+    description: 'MediaMarkt',
+    categoryRaw: '5732 - Electronics Stores',
+    amountMinor: 24900,
+    cashbackMinor: 623,
+    status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
+  },
+  {
     daysAgo: 5,
     last4: '1090',
     cardHolderKey: DEMO_CARD_HOLDER_KEY,
@@ -106,6 +118,17 @@ const SEEDS: DemoSeedRow[] = [
     amountMinor: 980,
     cashbackMinor: 24,
     status: 'CANCELLED',
+  },
+  {
+    daysAgo: 11,
+    last4: '1090',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
+    description: 'IKEA',
+    categoryRaw: '5712 - Furniture, Home Furnishings, and Equipment Stores',
+    amountMinor: 18950,
+    cashbackMinor: 474,
+    status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
   },
   {
     daysAgo: 12,
@@ -217,6 +240,17 @@ const SEEDS: DemoSeedRow[] = [
     amountMinor: 4780,
     cashbackMinor: 120,
     status: 'CLEARED',
+  },
+  {
+    daysAgo: 29,
+    last4: '4821',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
+    description: 'Ryanair',
+    categoryRaw: '4511 - Airlines, Air Carriers',
+    amountMinor: 16480,
+    cashbackMinor: 412,
+    status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
   },
   {
     daysAgo: 31,
@@ -338,6 +372,17 @@ const SEEDS: DemoSeedRow[] = [
     amountMinor: 1180,
     cashbackMinor: 30,
     status: 'CLEARED',
+  },
+  {
+    daysAgo: 59,
+    last4: '1090',
+    cardHolderKey: DEMO_CARD_HOLDER_KEY,
+    description: 'Decathlon',
+    categoryRaw: '5941 - Sporting Goods Stores',
+    amountMinor: 11990,
+    cashbackMinor: 300,
+    status: 'CLEARED',
+    spendingMode: 'Borrow Mode',
   },
   {
     daysAgo: 61,

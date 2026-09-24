@@ -51,4 +51,19 @@ describe('buildDemoRows', () => {
 
     expect(disney?.occurrences.at(-1)?.monthKey).toBe('2026-06')
   })
+
+  it('has Borrow Mode purchases next to Direct Pay ones in each of the last three months', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+
+    const modesByMonth = new Map<string, Set<string>>()
+    for (const row of buildDemoRows()) {
+      const month = row.timestampUtc.slice(0, 7)
+      modesByMonth.set(month, (modesByMonth.get(month) ?? new Set()).add(row.spendingMode))
+    }
+
+    for (const month of ['2026-07', '2026-08', '2026-09']) {
+      expect(modesByMonth.get(month)).toEqual(new Set(['Direct Pay', 'Borrow Mode']))
+    }
+  })
 })
