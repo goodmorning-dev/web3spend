@@ -19,25 +19,33 @@ import xRightImage from '@/assets/x-right.webp'
 import { Button } from '@/components/ui/button'
 import { XLogoIcon } from '@/components/home/BrandIcons'
 import HeroCard from '@/components/home/HeroCard'
+import PrivacySection from '@/components/home/PrivacySection'
+import RoadmapSection from '@/components/home/RoadmapSection'
+import UseAnywhereSection from '@/components/home/UseAnywhereSection'
 import SiteFooter from '@/components/SiteFooter'
 import { useDemoData } from '@/hooks/useDemoData'
 import { usePageTitle } from '@/hooks/usePageTitle'
 
+// Privacy gets the page's second accent color, green, as it does in the
+// privacy section further down; everything else stays gold.
 const PROMISES = [
   {
     icon: ShieldCheck,
     title: '100% private',
     description: 'Stays on your device',
+    iconClassName: 'text-positive',
   },
   {
     icon: WifiOff,
     title: 'Works offline',
     description: 'After install',
+    iconClassName: 'text-primary',
   },
   {
     icon: Code2,
     title: 'Open source',
     description: 'Community driven',
+    iconClassName: 'text-primary',
   },
 ]
 
@@ -120,9 +128,9 @@ function Home() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <ul className="mt-3 flex flex-wrap items-start gap-6">
-              {PROMISES.map(({ icon: Icon, title, description }) => (
+              {PROMISES.map(({ icon: Icon, title, description, iconClassName }) => (
                 <li key={title} className="flex items-center gap-2.5">
-                  <Icon className="size-7 shrink-0 text-primary" />
+                  <Icon className={`size-7 shrink-0 ${iconClassName}`} />
                   <span className="flex flex-col">
                     <span className="text-sm font-semibold">{title}</span>
                     <span className="text-xs text-text-faint">{description}</span>
@@ -161,7 +169,7 @@ function Home() {
                   className="absolute inset-0 bg-gradient-to-r from-[#0d1016] from-45% via-[#0d1016]/95 to-transparent"
                 />
                 <div className="relative z-10 flex flex-col gap-2.5">
-                  <div className="flex size-11 items-center justify-center rounded-xl border border-primary bg-secondary text-primary">
+                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary text-primary">
                     <Icon className="size-5" />
                   </div>
                   <span className="text-[11px] font-semibold tracking-wide text-foreground/80 uppercase [text-shadow:0_1px_4px_rgb(0_0_0/0.7)]">
@@ -178,6 +186,12 @@ function Home() {
             ))}
           </ol>
         </section>
+
+        <PrivacySection />
+
+        <UseAnywhereSection />
+
+        <RoadmapSection />
 
         <section className="relative isolate flex flex-col items-center gap-5 overflow-hidden rounded-2xl border border-[#161a24] bg-[#0d1016] p-6 sm:flex-row sm:justify-between sm:gap-8 sm:p-8">
           <div

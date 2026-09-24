@@ -167,3 +167,45 @@
     transition: none;
   }
 }
+
+/* The home page's privacy illustration (PrivacySection): a dot running
+   along each connector, the export's rows lighting up in turn, and the
+   results glowing in sequence. Only used behind motion-safe:. */
+@keyframes flow-across {
+  from {
+    left: 0%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+@keyframes flow-down {
+  from {
+    top: 0%;
+  }
+  to {
+    top: 100%;
+  }
+}
+
+@keyframes flow-row {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes flow-result {
+  0%,
+  100% {
+    border-color: rgb(255 255 255 / 0.1);
+  }
+  40%,
+  60% {
+    border-color: color-mix(in oklab, var(--color-positive) 45%, transparent);
+  }
+}

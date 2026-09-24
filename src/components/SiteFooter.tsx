@@ -1,9 +1,7 @@
 import logoImage from '@/assets/logo.webp'
 import { GithubLogoIcon } from '@/components/home/BrandIcons'
+import { GOODMORNING_URL, REPO_URL } from '@/lib/links'
 import { cn } from '@/lib/utils'
-
-const REPO_URL = 'https://github.com/goodmorning-dev/web3spend'
-const GOODMORNING_URL = 'https://goodmorning.dev'
 
 const LINK_CLASS = 'font-medium text-text-dim hover:text-primary'
 

@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { InstallPromptProvider } from '@/hooks/InstallPromptContext'
 import { HOME_TITLE } from '@/hooks/usePageTitle'
 import { commitImport } from '@/matching/commitImport'
 import { getDataSource } from '@/storage/dataSource'
@@ -15,9 +16,11 @@ afterEach(async () => {
 
 function renderHome() {
   return render(
-    <MemoryRouter>
-      <Home />
-    </MemoryRouter>,
+    <InstallPromptProvider>
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>
+    </InstallPromptProvider>,
   )
 }
 
@@ -123,5 +126,64 @@ describe('Home', () => {
     expect(screen.queryByRole('link', { name: /^features$/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /^privacy$/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /^faq$/i })).not.toBeInTheDocument()
+  })
+
+  it('explains what private means, point by point, with a link to the code', () => {
+    renderHome()
+    const section = screen.getByRole('region', { name: /private by design/i })
+
+    for (const point of [
+      'Read in your browser',
+      'Saved on this device',
+      'Safe to import again',
+      'No account, no tracking',
+    ]) {
+      expect(within(section).getByRole('heading', { name: point })).toBeInTheDocument()
+    }
+    expect(within(section).getByRole('img', { name: /nothing is uploaded/i })).toBeInTheDocument()
+    expect(within(section).getByRole('link', { name: /read the code/i })).toHaveAttribute(
+      'href',
+      'https://github.com/goodmorning-dev/web3spend',
+    )
+  })
+
+  it('says how to install the app on desktop, iPhone and Android', () => {
+    renderHome()
+    const section = screen.getByRole('region', { name: /as an app/i })
+
+    expect(within(section).getByText('Desktop')).toBeInTheDocument()
+    expect(within(section).getByText(/tap share, then add to home screen/i)).toBeInTheDocument()
+    expect(within(section).getByText(/tap install app/i)).toBeInTheDocument()
+    expect(within(section).queryByRole('button', { name: /install/i })).not.toBeInTheDocument()
+  })
+
+  it('offers to install right away where the browser allows it', async () => {
+    renderHome()
+    const prompt = vi.fn().mockResolvedValue(undefined)
+    const event = new Event('beforeinstallprompt', { cancelable: true })
+    Object.assign(event, { preventDefault: () => {}, prompt, userChoice: new Promise(() => {}) })
+
+    act(() => {
+      window.dispatchEvent(event)
+    })
+    await userEvent.click(await screen.findByRole('button', { name: 'Install Web3Spend' }))
+
+    expect(prompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('lays out the roadmap stages in order, each with its status', () => {
+    renderHome()
+    const stages = within(screen.getByRole('region', { name: /where we're headed/i })).getAllByRole(
+      'listitem',
+    )
+
+    expect(stages.map((stage) => within(stage).getByRole('heading').textContent)).toEqual([
+      'Foundation',
+      'Your own categories',
+      'Backup and restore',
+      'More card providers',
+    ])
+    expect(within(stages[0]).getByText('Live')).toBeInTheDocument()
+    expect(within(stages[1]).getByText('Next')).toBeInTheDocument()
   })
 })
