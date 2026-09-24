@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import SiteFooter from '@/components/SiteFooter'
 import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
 import DemoBanner from './DemoBanner'
 import MobileTabBar from './MobileTabBar'
@@ -8,7 +9,8 @@ import Topbar from './Topbar'
 /**
  * The layout for everything under /app: sidebar navigation (a floating tab
  * bar on phones), the shared currency/card/period filters (MVP-PLAN §5),
- * the topbar, and a banner while the demo is on screen. Individual pages render into the Outlet below; on phones
+ * the topbar, a banner while the demo is on screen, and the same footer
+ * as the home page. Individual pages render into the Outlet below; on phones
  * their bottom padding leaves room to scroll the last content clear of the
  * tab bar.
  */
@@ -25,6 +27,10 @@ function AppShell() {
           <DemoBanner />
           <Topbar />
           <Outlet />
+          {/* mt-auto keeps it at the bottom of the screen on a short page. */}
+          <div className="mt-auto pt-4">
+            <SiteFooter className="pt-4" />
+          </div>
         </div>
         <MobileTabBar />
       </div>
