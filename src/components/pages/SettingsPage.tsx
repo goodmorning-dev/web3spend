@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
+import { useDataSource, useHasRealData } from '@/hooks/useDataSource'
 import { isIosDevice, useInstallPrompt } from '@/hooks/InstallPromptContext'
 import { deleteAllData } from '@/storage/deleteAllData'
 
@@ -71,6 +72,8 @@ function InstallSection() {
  */
 function SettingsPage() {
   const { resetFilters } = useDashboardFilters()
+  const source = useDataSource()
+  const hasRealData = useHasRealData()
   const [deleted, setDeleted] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -105,6 +108,12 @@ function SettingsPage() {
           browser or device you've used this app on, including a separate install on your phone.
           Re-importing your ether.fi export afterward rebuilds your data from scratch.
         </p>
+        {source === 'demo' && hasRealData && !deleted && (
+          <p className="max-w-prose text-sm text-text-dim">
+            The demo is on screen right now, but this deletes your own imported data too. To just
+            leave the demo, use &quot;Back to your data&quot; at the top.
+          </p>
+        )}
 
         {deleted ? (
           <p className="flex items-center gap-2 text-sm font-medium text-positive">

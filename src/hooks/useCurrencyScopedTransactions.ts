@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/storage/db'
 import type { StandardTransaction } from '@/types/transaction'
 import type { SelectedFilters } from './DashboardFiltersContext'
+import { useDataSource } from './useDataSource'
 
 /**
  * The spend-trend line chart's "last month" and "average monthly" series are
@@ -12,6 +13,7 @@ import type { SelectedFilters } from './DashboardFiltersContext'
 export function useCurrencyScopedTransactions(
   filters: SelectedFilters | null,
 ): StandardTransaction[] | undefined {
+  const source = useDataSource()
   return useLiveQuery(async () => {
     if (!filters) {
       return undefined
@@ -22,5 +24,5 @@ export function useCurrencyScopedTransactions(
         transaction.currency === filters.currency &&
         (filters.cardId === undefined || transaction.cardId === filters.cardId),
     )
-  }, [filters?.currency, filters?.cardId])
+  }, [filters?.currency, filters?.cardId, source])
 }

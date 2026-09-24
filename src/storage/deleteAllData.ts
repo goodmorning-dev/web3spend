@@ -1,21 +1,41 @@
-import { db } from './db'
+import { setDataSource } from './dataSource'
+import { demoDb, realDb, type Web3SpendDB } from './db'
+
+/**
+ * Empties every table of one database in a single Dexie transaction, so a
+ * failure partway through (a quota error, a browser killing the connection
+ * mid-clear) leaves every table exactly as it was rather than only some of
+ * them emptied.
+ */
+export async function clearDatabase(database: Web3SpendDB): Promise<void> {
+  await database.transaction(
+    'rw',
+    database.cards,
+    database.transactions,
+    database.imports,
+    database.settings,
+    async () => {
+      await database.cards.clear()
+      await database.transactions.clear()
+      await database.imports.clear()
+      await database.settings.clear()
+    },
+  )
+}
 
 /**
  * MVP-PLAN §5: "Delete all local financial data after confirmation. This is
  * the only data-management control in the MVP." There's nothing else
- * stored locally worth preserving, so every table is cleared.
+ * stored locally worth preserving, so every table is cleared, in the
+ * person's own database and the demo's alike, and the app goes back to
+ * showing their (now empty) data.
  *
- * All four clears run in one Dexie transaction, so a failure partway
- * through (a quota error, a browser killing the connection mid-clear)
- * leaves every table exactly as it was rather than only some of them
- * emptied; a caller sees either a clean success or a rejected promise with
- * nothing changed, never a mix of the two.
+ * Their own data is cleared first. If that fails, nothing has changed and
+ * the caller gets a rejected promise; a transaction can't span two
+ * databases, so the demo is cleared separately afterward.
  */
 export async function deleteAllData(): Promise<void> {
-  await db.transaction('rw', db.cards, db.transactions, db.imports, db.settings, async () => {
-    await db.cards.clear()
-    await db.transactions.clear()
-    await db.imports.clear()
-    await db.settings.clear()
-  })
+  await clearDatabase(realDb)
+  await clearDatabase(demoDb)
+  setDataSource('real')
 }

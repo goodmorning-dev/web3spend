@@ -4,7 +4,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import { HOME_TITLE } from '@/hooks/usePageTitle'
 import { commitImport } from '@/matching/commitImport'
-import { db } from '@/storage/db'
+import { getDataSource } from '@/storage/dataSource'
+import { db, demoDb, realDb } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import Home from './Home'
 
@@ -59,7 +60,7 @@ describe('Home', () => {
     expect(cards.length).toBeGreaterThan(0)
   })
 
-  it('refuses to load the demo on top of real transactions', async () => {
+  it('opens the demo even with real transactions imported, leaving them untouched', async () => {
     await commitImport(
       [
         {
@@ -85,8 +86,9 @@ describe('Home', () => {
     renderHome()
     await userEvent.click(screen.getByRole('button', { name: /try a demo/i }))
 
-    expect(await screen.findByText(/already have real transactions imported/i)).toBeInTheDocument()
-    expect(await db.transactions.count()).toBe(1)
+    await waitFor(() => expect(getDataSource()).toBe('demo'))
+    await waitFor(async () => expect(await demoDb.transactions.count()).toBeGreaterThan(1))
+    expect(await realDb.transactions.count()).toBe(1)
   })
 
   it('links the top-right action to /app', () => {

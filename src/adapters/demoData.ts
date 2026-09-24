@@ -3,16 +3,11 @@ import type { SpendingMode } from '@/types/transaction'
 
 /**
  * MVP-PLAN §5: "Optional demo uses completely synthetic transactions in a
- * separate, disposable dataset." The fixed fileHash and card holder key
- * below are what make the demo separate and disposable in practice:
- * `useDemoData` refuses to load this dataset once any real import exists,
- * and `ImportFlow` clears it automatically the moment a real import
- * commits, via `src/storage/demoData.ts`'s `hasRealData`/`clearDemoData`.
- * Reusing commitImport's fixed-fileHash short-circuit: loading the demo
- * twice is a no-op the second time, same as re-uploading an unchanged
- * export, and deleting all local data (Settings) clears the demo's import
- * record along with everything else, so a later "Try a demo" click is a
- * normal fresh import again.
+ * separate, disposable dataset." The demo is committed into a database of
+ * its own (see src/storage/demoData.ts's `openDemo`), rebuilt from these
+ * rows every time it's opened. The fixed fileHash and card holder key also
+ * let `removeLegacyDemoData` find demo rows that older versions of the app
+ * left in the person's own database.
  */
 export const DEMO_FILE_HASH = 'demo-dataset-v1'
 export const DEMO_PARSER_VERSION = 'demo-1'
@@ -510,11 +505,9 @@ function toRow(seed: Omit<DemoSeedRow, 'daysAgo'>, timestamp: Date): ParsedTrans
 }
 
 /** Builds fresh rows each call so every one's `timestampUtc` stays relative
- * to "now" rather than baked in at module-load time. A second "Try a demo"
- * click never reaches these rows at all, though: commitImport's fileHash
- * short-circuit (DEMO_FILE_HASH is fixed) returns the original import
- * record immediately, before recomputing anything that a day's drift in
- * "now" could otherwise turn into duplicate rows. */
+ * to "now" rather than baked in at module-load time. `openDemo` empties the
+ * demo database before committing them, so opening the demo on a later day
+ * moves the dates along instead of adding a second copy. */
 export function buildDemoRows(): ParsedTransactionRow[] {
   const now = new Date()
 

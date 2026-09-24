@@ -3,7 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DashboardFiltersProvider, useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { InstallPromptProvider } from '@/hooks/InstallPromptContext'
-import { db } from '@/storage/db'
+import { getDataSource } from '@/storage/dataSource'
+import { db, demoDb, realDb } from '@/storage/db'
+import { openDemo } from '@/storage/demoData'
 import * as deleteAllDataModule from '@/storage/deleteAllData'
 import { resetDatabase } from '@/storage/test-helpers'
 import SettingsPage from './SettingsPage'
@@ -179,6 +181,23 @@ describe('SettingsPage', () => {
     expect(await db.cards.count()).toBe(0)
     expect(await db.transactions.count()).toBe(0)
     expect(await db.imports.count()).toBe(0)
+  })
+
+  it('warns that deleting from the demo deletes real data too, then clears both', async () => {
+    const user = userEvent.setup()
+    await seedSomeData()
+    await openDemo()
+    renderSettingsPage()
+
+    expect(await screen.findByText(/deletes your own imported data too/i)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /delete all data/i }))
+    await user.click(await screen.findByRole('button', { name: /delete everything/i }))
+
+    expect(await screen.findByText(/all local data has been deleted/i)).toBeInTheDocument()
+    expect(getDataSource()).toBe('real')
+    expect(await realDb.transactions.count()).toBe(0)
+    expect(await demoDb.transactions.count()).toBe(0)
   })
 
   it('resets a selected card filter after deleting, so a later re-import is not silently hidden', async () => {
