@@ -1,6 +1,6 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import Sidebar from './Sidebar'
 
 function renderAt(path: string) {
@@ -61,5 +61,17 @@ describe('Sidebar', () => {
     renderAt('/app/settings')
 
     expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('scrolls back to the top when the page already open is clicked again', () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    renderAt('/app/transactions')
+
+    fireEvent.click(screen.getByRole('link', { name: /dashboard/i }))
+    expect(scrollTo).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('link', { name: /dashboard/i }))
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' })
+    scrollTo.mockRestore()
   })
 })

@@ -1,14 +1,18 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import logoImage from '@/assets/logo.webp'
+import { scrollToTop } from '@/lib/scrollToTop'
 import { cn } from '@/lib/utils'
-import { NAV_ITEMS } from './navItems'
+import { isNavItemActive, NAV_ITEMS } from './navItems'
 
 /**
  * The left sidebar from Tailwind's `sm` breakpoint up; phones get
  * MobileTabBar instead. The logo takes you back to the home page, as it
- * does in most apps.
+ * does in most apps. Clicking the page you're already on scrolls back to
+ * the top, same as the phone tab bar.
  */
 function Sidebar() {
+  const { pathname } = useLocation()
+
   return (
     <aside className="sticky top-0 z-20 hidden h-screen w-56 shrink-0 flex-col gap-6 border-r border-sidebar-border bg-sidebar p-4 sm:flex">
       <Link
@@ -23,11 +27,16 @@ function Sidebar() {
       </Link>
 
       <nav aria-label="Sidebar" className="flex flex-col gap-0.5">
-        {NAV_ITEMS.map(({ to, end, label, icon: Icon }) => (
+        {NAV_ITEMS.map((item) => (
           <NavLink
-            key={to}
-            to={to}
-            end={end}
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            onClick={() => {
+              if (isNavItemActive(item, pathname)) {
+                scrollToTop({ smooth: true })
+              }
+            }}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
@@ -37,8 +46,8 @@ function Sidebar() {
               )
             }
           >
-            <Icon className="size-[17px] shrink-0" />
-            <span>{label}</span>
+            <item.icon className="size-[17px] shrink-0" />
+            <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>

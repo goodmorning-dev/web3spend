@@ -1,14 +1,11 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useCollapseOnScroll } from '@/hooks/useCollapseOnScroll'
+import { scrollToTop } from '@/lib/scrollToTop'
 import { cn } from '@/lib/utils'
-import { NAV_ITEMS } from './navItems'
+import { isNavItemActive, NAV_ITEMS } from './navItems'
 
 // iOS-style ease-out: quick to respond, gentle to settle.
 const EASE = 'duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none'
-
-function isTabActive(tab: (typeof NAV_ITEMS)[number], pathname: string): boolean {
-  return tab.end ? pathname === tab.to : pathname === tab.to || pathname.startsWith(`${tab.to}/`)
-}
 
 /**
  * The phone navigation (below Tailwind's `sm`), modelled on Revolut's tab
@@ -17,11 +14,13 @@ function isTabActive(tab: (typeof NAV_ITEMS)[number], pathname: string): boolean
  * away, leaving every icon tappable; scrolling up brings the labels back
  * (see useCollapseOnScroll). Tabs split the pill's width equally, and the
  * pill never grows past the viewport, so it fits down to a 320px screen.
+ * Tapping the tab you're already on glides back to the top, as in native
+ * apps; opening another tab starts it at the top (ScrollToTopOnNavigate).
  */
 function MobileTabBar() {
   const { pathname } = useLocation()
   const collapsed = useCollapseOnScroll(pathname)
-  const activeIndex = NAV_ITEMS.findIndex((tab) => isTabActive(tab, pathname))
+  const activeIndex = NAV_ITEMS.findIndex((tab) => isNavItemActive(tab, pathname))
 
   return (
     <div className="sm:hidden">
@@ -52,11 +51,16 @@ function MobileTabBar() {
               style={{ transform: `translateX(${activeIndex * 100}%)` }}
             />
           )}
-          {NAV_ITEMS.map(({ to, end, label, icon: Icon }) => (
+          {NAV_ITEMS.map((tab, index) => (
             <NavLink
-              key={to}
-              to={to}
-              end={end}
+              key={tab.to}
+              to={tab.to}
+              end={tab.end}
+              onClick={() => {
+                if (index === activeIndex) {
+                  scrollToTop({ smooth: true })
+                }
+              }}
               className={({ isActive }) =>
                 cn(
                   'relative flex flex-col items-center justify-center rounded-full transition-[padding,color] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
@@ -68,7 +72,7 @@ function MobileTabBar() {
                 )
               }
             >
-              <Icon className="size-5 shrink-0" />
+              <tab.icon className="size-5 shrink-0" />
               {/* A 1fr/0fr grid row animates the label's height away
                   smoothly; it stays in the DOM so each tab keeps its
                   accessible name while collapsed. */}
@@ -81,7 +85,7 @@ function MobileTabBar() {
               >
                 <span className="overflow-hidden">
                   <span className="block pt-1 text-[10px] leading-3 font-semibold tracking-[-0.02em] whitespace-nowrap max-[359px]:text-[9.5px]">
-                    {label}
+                    {tab.label}
                   </span>
                 </span>
               </span>
