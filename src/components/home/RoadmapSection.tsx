@@ -18,15 +18,15 @@ const STAGES: { title: string; status: StageStatus; description: string }[] = [
       'Your own categories, backup and moving your data between your devices, and more themes.',
   },
   {
-    title: 'ether.fi, leveled up',
+    title: 'Level Up',
     status: 'Later',
     description:
-      'Top-ups, swaps and Borrow Mode insights, so you see everything your ether.fi account does, not just the card purchases.',
+      'Top-ups, swaps and Borrow Mode insights, so you see everything your account does, not just the card purchases.',
   },
   {
     title: 'More card providers',
     status: 'Exploring',
-    description: 'Other cards than ether.fi, if enough people ask for them.',
+    description: 'Other cards if enough people ask for them.',
   },
 ]
 

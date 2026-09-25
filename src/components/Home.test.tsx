@@ -206,7 +206,7 @@ describe('Home', () => {
     expect(stages.map((stage) => within(stage).getByRole('heading').textContent)).toEqual([
       'Foundation',
       'Make it yours',
-      'ether.fi, leveled up',
+      'Level Up',
       'More card providers',
     ])
     expect(within(stages[0]).getByText('Live')).toBeInTheDocument()
