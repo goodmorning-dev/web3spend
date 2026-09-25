@@ -8,25 +8,22 @@ const STAGES: { title: string; status: StageStatus; description: string }[] = [
   {
     title: 'Foundation',
     status: 'Live',
-    description:
-      'Import your ether.fi export and see spending, categories, cashback and subscriptions. Nothing is uploaded, and it works offline as an installed app.',
+    description: 'Import, spending insights, categories, cashback, subscriptions.',
   },
   {
-    title: 'Make it yours',
+    title: 'Make It Yours',
     status: 'Next',
-    description:
-      'Your own categories, backup and moving your data between your devices, and more themes.',
+    description: 'Custom categories, backup/device sync, more themes.',
   },
   {
     title: 'Level Up',
     status: 'Later',
-    description:
-      'Top-ups, swaps and Borrow Mode insights, so you see everything your account does, not just the card purchases.',
+    description: 'Top-ups, swaps, Borrow Mode insights.',
   },
   {
-    title: 'More card providers',
+    title: 'More Cards',
     status: 'Exploring',
-    description: 'Other cards if enough people ask for them.',
+    description: 'More card providers.',
   },
 ]
 
