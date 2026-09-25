@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatMoney, formatPercent } from './format'
+import { formatMoney, formatPercent, formatSignedCashback } from './format'
 
 describe('formatMoney', () => {
   it('converts minor units back to a localized currency string', () => {
@@ -32,5 +32,18 @@ describe('formatPercent', () => {
 
   it('renders null as "Unavailable" rather than a misleading 0%', () => {
     expect(formatPercent(null)).toBe('Unavailable')
+  })
+})
+
+describe('formatSignedCashback', () => {
+  // formatMoney's own output, whitespace and all, so this doesn't depend on
+  // the locale's spacing around the currency symbol
+  it('puts a plus in front of cashback earned', () => {
+    expect(formatSignedCashback(31, 'EUR')).toBe(`+${formatMoney(31, 'EUR')}`)
+  })
+
+  it('shows cashback taken back by a refund with only its minus sign', () => {
+    expect(formatSignedCashback(-270, 'EUR')).toBe(formatMoney(-270, 'EUR'))
+    expect(formatSignedCashback(-270, 'EUR')).not.toContain('+')
   })
 })
