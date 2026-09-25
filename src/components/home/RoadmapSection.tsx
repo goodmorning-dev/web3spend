@@ -2,8 +2,8 @@ import { cn } from '@/lib/utils'
 
 type StageStatus = 'Live' | 'Next' | 'Later' | 'Exploring'
 
-// Placeholder stages until the team settles the roadmap. Statuses only, no
-// progress bars or dates: a percentage here would be a made-up number.
+// Statuses only, no progress bars or dates: a percentage here would be a
+// made-up number.
 const STAGES: { title: string; status: StageStatus; description: string }[] = [
   {
     title: 'Foundation',
@@ -12,15 +12,16 @@ const STAGES: { title: string; status: StageStatus; description: string }[] = [
       'Import your ether.fi export and see spending, categories, cashback and subscriptions. Nothing is uploaded, and it works offline as an installed app.',
   },
   {
-    title: 'Your own categories',
+    title: 'Borrow Mode insights',
     status: 'Next',
     description:
-      'A cleaner set of categories, changing the category of a single transaction, and rules for a whole merchant.',
+      'Your Borrow Mode purchases next to your repayments, so you can see what you still owe.',
   },
   {
-    title: 'Backup and restore',
+    title: 'Top-ups and swaps',
     status: 'Later',
-    description: 'Save your data to a file and bring it back on a new device or browser.',
+    description:
+      "See your top-ups, swaps and deposits into ether.fi's Liquid vaults, staking and Frax next to your card spending.",
   },
   {
     title: 'More card providers',
