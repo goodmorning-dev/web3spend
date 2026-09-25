@@ -48,11 +48,39 @@ export function categoryIdentity(bucket: Pick<CategoryBucket, 'category' | 'key'
 }
 
 /**
+ * A category's color in a transaction list, given the donut's colors for
+ * the same filters (categoryColorMap): a category the donut names gets the
+ * same color there, and any other one keeps its own preferred color, unless
+ * a named category is already showing that color, in which case it takes
+ * one of the colors the donut isn't using. That way a color the donut uses
+ * for a category never shows up on a different one in the list.
+ */
+export function listCategoryColor(
+  label: string,
+  key: string,
+  namedColors: Map<string, string>,
+): string {
+  const named = namedColors.get(key)
+  if (named) {
+    return named
+  }
+  const used = new Set(namedColors.values())
+  const preferred = preferredCategoryColor(label)
+  if (!used.has(preferred)) {
+    return preferred
+  }
+  const free = CATEGORY_COLORS.filter((color) => !used.has(color))
+  return free.length > 0 ? free[hashString(label) % free.length] : preferred
+}
+
+/**
  * Colors for the categories the donut names, from buckets sorted biggest
  * first (aggregateByCategory): each takes its preferred color unless a
  * bigger category already has it, and then the first one still free, so no
  * two named slices ever match. Keyed by categoryIdentity. Anything not in
- * the map is part of "Other" and shown gray (OTHER_CATEGORY_COLOR).
+ * the map is part of the donut's "Other", which the donut shows gray
+ * (OTHER_CATEGORY_COLOR); transaction lists color those categories with
+ * listCategoryColor instead.
  */
 export function categoryColorMap(buckets: CategoryBucket[]): Map<string, string> {
   const colors = new Map<string, string>()

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { CategoryBucket } from '@/analyzers'
 import {
   categoryColorMap,
+  listCategoryColor,
   MAX_NAMED_CATEGORIES,
   OTHER_CATEGORY_COLOR,
   preferredCategoryColor,
@@ -65,5 +66,28 @@ describe('categoryColorMap', () => {
 
     expect(colors.get(bigger.toLowerCase())).toBe(preferredCategoryColor(bigger))
     expect(colors.get(smaller.toLowerCase())).not.toBe(preferredCategoryColor(bigger))
+  })
+})
+
+describe('listCategoryColor', () => {
+  it("gives a category the donut names the donut's color", () => {
+    const named = new Map([['groceries', 'var(--color-chart-4)']])
+    expect(listCategoryColor('Groceries', 'groceries', named)).toBe('var(--color-chart-4)')
+  })
+
+  it("gives any other category a color of its own, never gray and never a named one's", () => {
+    const [taken, other] = collidingNames()
+    const named = new Map([[taken.toLowerCase(), preferredCategoryColor(taken)]])
+
+    const color = listCategoryColor(other, other.toLowerCase(), named)
+
+    expect(color).not.toBe(OTHER_CATEGORY_COLOR)
+    expect(color).not.toBe(preferredCategoryColor(taken))
+  })
+
+  it('keeps its preferred color when no named category is showing it', () => {
+    expect(listCategoryColor('Book Stores', 'book stores', new Map())).toBe(
+      preferredCategoryColor('Book Stores'),
+    )
   })
 })

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { transactionCashbackPct } from '@/analyzers'
 import type { SpendingMode, StandardTransaction, TransactionStatus } from '@/types/transaction'
-import { OTHER_CATEGORY_COLOR, preferredCategoryColor } from '@/utils/categoryColors'
+import { listCategoryColor, preferredCategoryColor } from '@/utils/categoryColors'
 import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
 import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
 import { formatMoney, formatPercent, formatSignedCashback, formatSignedSpend } from '@/utils/format'
@@ -11,9 +11,10 @@ interface TransactionsTableProps {
   /** cardId -> last4, for the design reference's "•••• 1234" card display. */
   cardLastFourById: Map<string, string>
   /** The dashboard donut's colors for the same filters (categoryColorMap),
-   * keyed by category merge key, so a category's dot matches its slice.
-   * Categories not in it are part of the donut's "Other" and shown gray.
-   * Without it, each category shows its own preferred color. */
+   * keyed by category merge key, so a category's dot matches its slice;
+   * other categories get a color the donut isn't using for anything else
+   * (listCategoryColor). Without it, each category shows its own preferred
+   * color. */
   categoryColors?: Map<string, string>
 }
 
@@ -101,9 +102,10 @@ function CategoryDot({
   categoryRaw: string
   categoryColors?: Map<string, string>
 }) {
+  const label = displayCategoryLabel(categoryRaw)
   const color = categoryColors
-    ? (categoryColors.get(categoryMergeKey(categoryRaw)) ?? OTHER_CATEGORY_COLOR)
-    : preferredCategoryColor(displayCategoryLabel(categoryRaw))
+    ? listCategoryColor(label, categoryMergeKey(categoryRaw), categoryColors)
+    : preferredCategoryColor(label)
   return (
     <span
       aria-hidden="true"

@@ -250,7 +250,7 @@ describe('TransactionsTable', () => {
     }
   })
 
-  it("colors each category's dot like the donut, and anything in its Other gray", () => {
+  it("colors each category's dot like the donut, and others in a color of their own", () => {
     const { container } = render(
       <TransactionsTable
         transactions={[
@@ -265,6 +265,8 @@ describe('TransactionsTable', () => {
     const dotColors = [
       ...container.querySelectorAll('tbody span[aria-hidden="true"][style*="background-color"]'),
     ].map((dot) => (dot as HTMLElement).style.backgroundColor)
-    expect(dotColors).toEqual(['var(--color-chart-6)', 'var(--color-chart-5)'])
+    expect(dotColors[0]).toBe('var(--color-chart-6)')
+    expect(dotColors[1]).not.toBe('var(--color-chart-5)')
+    expect(dotColors[1]).not.toBe('var(--color-chart-6)')
   })
 })
