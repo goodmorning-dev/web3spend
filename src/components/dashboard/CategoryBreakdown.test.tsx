@@ -128,6 +128,32 @@ describe('CategoryBreakdown', () => {
     expect(otherColor).not.toBe(colors[colors.length - 1])
   })
 
+  it('gives each named category its own color and "Other" gray', () => {
+    const buckets: CategoryBucket[] = [
+      'Food',
+      'Shopping',
+      'Transport',
+      'Health',
+      'Utilities',
+      'Entertainment',
+    ].map((category, index) => ({
+      category,
+      key: category.toLowerCase(),
+      spendMinor: 600 - index * 50,
+      share: 0,
+    }))
+
+    render(<CategoryBreakdown buckets={buckets} currency="EUR" onViewAll={() => {}} />)
+
+    const swatchColorFor = (category: string) =>
+      (screen.getByText(category).previousElementSibling as HTMLElement).style.backgroundColor
+    const named = ['Food', 'Shopping', 'Transport', 'Health', 'Utilities'].map(swatchColorFor)
+
+    expect(new Set(named).size).toBe(5)
+    expect(swatchColorFor('Other')).toBe('var(--color-chart-5)')
+    expect(named).not.toContain('var(--color-chart-5)')
+  })
+
   it('shows the full category name on hover via a title attribute, even when truncated', () => {
     const longCategory = 'Service Stations (with or without Ancillary Services)'
     const buckets: CategoryBucket[] = [{ category: longCategory, spendMinor: 100, share: 1 }]

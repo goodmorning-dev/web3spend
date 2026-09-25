@@ -21,6 +21,9 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-chart-8: var(--chart-8);
+  --color-chart-7: var(--chart-7);
+  --color-chart-6: var(--chart-6);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -81,6 +84,9 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+  --chart-6: oklch(0.62 0 0);
+  --chart-7: oklch(0.5 0 0);
+  --chart-8: oklch(0.4 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -125,6 +131,10 @@
   --chart-3: #34d399;
   --chart-4: #d97706;
   --chart-5: #5b6577;
+  /* More category colors (categoryColors.ts): coral, sky and pink. */
+  --chart-6: #f16565;
+  --chart-7: #38bdf8;
+  --chart-8: #f472b6;
   --sidebar: rgba(13, 17, 25, 0.68);
   --sidebar-foreground: #eef1f6;
   --sidebar-primary: #f0b429;

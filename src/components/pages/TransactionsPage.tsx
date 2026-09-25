@@ -4,11 +4,13 @@ import { useSearchParams } from 'react-router-dom'
 import type { FilterSelectOption } from '@/components/shell/FilterSelect'
 import TransactionsTable from '@/components/transactions/TransactionsTable'
 import TransactionsToolbar from '@/components/transactions/TransactionsToolbar'
+import { aggregateByCategory } from '@/analyzers'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import type { StandardTransaction } from '@/types/transaction'
 import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
+import { categoryColorMap } from '@/utils/categoryColors'
 import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
 const ALL_STATUSES = 'all'
@@ -76,6 +78,14 @@ function TransactionsPage() {
     period?.kind === 'month' && period.day !== undefined
       ? formatUtcDateKey(period.year, period.month, period.day)
       : null
+
+  // The colors the dashboard's donut gives each category for these same
+  // filters (before search and the dropdowns below narrow the list), so a
+  // category's dot here matches its slice there.
+  const categoryColors = useMemo(
+    () => categoryColorMap(aggregateByCategory(transactions ?? [])),
+    [transactions],
+  )
 
   const cardLastFourById = useMemo(() => {
     const map = new Map<string, string>()
@@ -195,7 +205,11 @@ function TransactionsPage() {
             {visibleTransactions.length === 1 ? 'transaction' : 'transactions'} found
           </p>
         </div>
-        <TransactionsTable transactions={visibleTransactions} cardLastFourById={cardLastFourById} />
+        <TransactionsTable
+          transactions={visibleTransactions}
+          cardLastFourById={cardLastFourById}
+          categoryColors={categoryColors}
+        />
       </section>
     </div>
   )

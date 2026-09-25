@@ -20,6 +20,7 @@ import { useCurrencyScopedTransactions } from '@/hooks/useCurrencyScopedTransact
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import type { StandardTransaction } from '@/types/transaction'
+import { categoryColorMap } from '@/utils/categoryColors'
 import { formatUtcDate, formatUtcDateKey, getUtcYear } from '@/utils/dates'
 
 const RECENT_TRANSACTIONS_LIMIT = 6
@@ -94,6 +95,10 @@ function DashboardPage() {
     period?.kind === 'month' && period.day !== undefined
       ? formatUtcDateKey(period.year, period.month, period.day)
       : null
+  // The donut's buckets, and its colors for the recent transactions below,
+  // so a category looks the same in both.
+  const categoryBuckets = filteredTransactions ? aggregateByCategory(filteredTransactions) : []
+  const categoryColors = categoryColorMap(categoryBuckets)
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,7 +133,7 @@ function DashboardPage() {
                 />
               )}
               <CategoryBreakdown
-                buckets={aggregateByCategory(filteredTransactions)}
+                buckets={categoryBuckets}
                 currency={filters.currency}
                 onViewAll={goToTransactions}
                 onSelectCategory={(key) => {
@@ -172,6 +177,7 @@ function DashboardPage() {
               <TransactionsTable
                 transactions={recentTransactions}
                 cardLastFourById={cardLastFourById}
+                categoryColors={categoryColors}
               />
             </section>
             {overallSummary.latestImportedAt && (
