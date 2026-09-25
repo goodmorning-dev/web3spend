@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { HOME_TITLE } from '@/hooks/usePageTitle'
 import { commitImport } from '@/matching/commitImport'
 import { getDataSource } from '@/storage/dataSource'
@@ -109,6 +109,23 @@ describe('Home', () => {
     const link = screen.getByRole('link', { name: 'goodmorning.dev' })
     expect(link).toHaveAttribute('href', 'https://goodmorning.dev')
     expect(link).toHaveAttribute('target', '_blank')
+  })
+
+  it('scrolls back to the top when the footer logo is clicked on the home page', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    render(
+      <MemoryRouter initialEntries={['/home']}>
+        <Home />
+      </MemoryRouter>,
+    )
+    const logo = within(screen.getByRole('contentinfo')).getByRole('link', {
+      name: 'Web3Spend home',
+    })
+
+    expect(logo).toHaveAttribute('href', '/home')
+    await userEvent.click(logo)
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' })
+    scrollTo.mockRestore()
   })
 
   it('links to the GitHub repo in the footer, opening in a new tab', () => {
