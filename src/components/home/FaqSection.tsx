@@ -134,9 +134,12 @@ const QUESTIONS: { question: string; answer: ReactNode }[] = [
 function FaqSection() {
   return (
     <section aria-labelledby="faq" className="mx-auto flex w-full max-w-3xl flex-col gap-10">
-      <h2 id="faq" className="text-center font-heading text-2xl font-semibold sm:text-3xl">
-        Frequently asked questions
-      </h2>
+      <div className="flex flex-col items-center gap-2 text-center">
+        <span className="text-xs font-semibold tracking-wide text-text-dim uppercase">FAQ</span>
+        <h2 id="faq" className="font-heading text-2xl font-semibold sm:text-3xl">
+          Questions, <span className="text-primary">answered</span>.
+        </h2>
+      </div>
 
       <div className="border-t border-white/10">
         {QUESTIONS.map(({ question, answer }) => (

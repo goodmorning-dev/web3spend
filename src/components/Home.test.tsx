@@ -215,7 +215,7 @@ describe('Home', () => {
 
   it('answers the common questions, each opening on click', async () => {
     renderHome()
-    const section = screen.getByRole('region', { name: 'Frequently asked questions' })
+    const section = screen.getByRole('region', { name: /questions, answered/i })
     const questions = within(section)
       .getAllByRole('group')
       .map((item) => item.querySelector('summary')?.textContent)
@@ -237,7 +237,7 @@ describe('Home', () => {
 
   it('gives three ways to check nothing is sent, and the steps to the export', () => {
     renderHome()
-    const section = screen.getByRole('region', { name: 'Frequently asked questions' })
+    const section = screen.getByRole('region', { name: /questions, answered/i })
 
     expect(within(section).getByText('Read the code.')).toBeInTheDocument()
     expect(within(section).getByText('Watch the network.')).toBeInTheDocument()
