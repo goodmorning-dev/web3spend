@@ -12,16 +12,16 @@ const STAGES: { title: string; status: StageStatus; description: string }[] = [
       'Import your ether.fi export and see spending, categories, cashback and subscriptions. Nothing is uploaded, and it works offline as an installed app.',
   },
   {
-    title: 'Top-ups and swaps',
+    title: 'Account activity',
     status: 'Next',
     description:
-      "See your top-ups, swaps and deposits into ether.fi's Liquid vaults, staking and Frax next to your card spending.",
+      'See your top-ups, swaps and deposits next to your card spending, not just the purchases.',
   },
   {
-    title: 'Borrow Mode insights',
+    title: 'Borrowing and repayments',
     status: 'Later',
     description:
-      'Your Borrow Mode purchases next to your repayments, so you can see what you still owe.',
+      "See what you've spent on credit next to what you've paid back, so you know what you still owe.",
   },
   {
     title: 'More card providers',

@@ -205,8 +205,8 @@ describe('Home', () => {
 
     expect(stages.map((stage) => within(stage).getByRole('heading').textContent)).toEqual([
       'Foundation',
-      'Top-ups and swaps',
-      'Borrow Mode insights',
+      'Account activity',
+      'Borrowing and repayments',
       'More card providers',
     ])
     expect(within(stages[0]).getByText('Live')).toBeInTheDocument()
