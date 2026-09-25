@@ -29,8 +29,8 @@ import { usePageTitle } from '@/hooks/usePageTitle'
 import { CARD_REQUEST_URL, ETHERFI_EXPORT_GUIDE_URL } from '@/lib/links'
 
 // Gold and the second accent (accent-2) run through the whole page. The
-// promises under the hero's buttons, and the whole "How it works" section,
-// use the second accent, so the gold buttons stand out on their own.
+// promises under the hero's buttons use the second accent, so the gold
+// buttons stand out on their own.
 const PROMISES = [
   {
     icon: ShieldCheck,
@@ -168,7 +168,7 @@ function Home() {
               How it works
             </span>
             <h2 id="how-it-works" className="font-heading text-2xl font-semibold sm:text-3xl">
-              From export to insights in <span className="text-accent-2">3 simple steps</span>.
+              From export to insights in <span className="text-primary">3 simple steps</span>.
             </h2>
           </div>
           <ol className="grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -188,8 +188,8 @@ function Home() {
                   className="absolute inset-0 bg-gradient-to-r from-[#0d1016] from-45% via-[#0d1016]/95 to-transparent"
                 />
                 <div className="relative z-10 flex flex-col gap-2.5">
-                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary bg-gradient-to-br from-accent-2/20 to-accent-2/5">
-                    <Icon className="size-5 text-accent-2" />
+                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary bg-gradient-to-br from-primary/20 to-primary/5">
+                    <Icon className="size-5 text-primary" />
                   </div>
                   <span className="text-[11px] font-semibold tracking-wide text-foreground/80 uppercase [text-shadow:0_1px_4px_rgb(0_0_0/0.7)]">
                     {tag}
