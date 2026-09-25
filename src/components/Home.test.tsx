@@ -213,9 +213,9 @@ describe('Home', () => {
     expect(within(stages[1]).getByText('Next')).toBeInTheDocument()
   })
 
-  it('answers the common questions, each opening on click, with a way to ask more', async () => {
+  it('answers the common questions, each opening on click', async () => {
     renderHome()
-    const section = screen.getByRole('region', { name: /questions, answered/i })
+    const section = screen.getByRole('region', { name: 'Frequently asked questions' })
     const questions = within(section)
       .getAllByRole('group')
       .map((item) => item.querySelector('summary')?.textContent)
@@ -231,12 +231,24 @@ describe('Home', () => {
     expect(affiliation.closest('details')).not.toHaveAttribute('open')
     await userEvent.click(affiliation)
     expect(affiliation.closest('details')).toHaveAttribute('open')
-    expect(
-      within(section).getByText(/isn't affiliated with or endorsed by ether\.fi/i),
-    ).toBeVisible()
-    expect(within(section).getByRole('link', { name: /ask us on x/i })).toHaveAttribute(
+    expect(within(section).getByText(/isn't endorsed by or connected to ether\.fi/i)).toBeVisible()
+    expect(within(section).queryByRole('link', { name: /ask us on x/i })).not.toBeInTheDocument()
+  })
+
+  it('gives three ways to check nothing is sent, and the steps to the export', () => {
+    renderHome()
+    const section = screen.getByRole('region', { name: 'Frequently asked questions' })
+
+    expect(within(section).getByText('Read the code.')).toBeInTheDocument()
+    expect(within(section).getByText('Watch the network.')).toBeInTheDocument()
+    expect(within(section).getByText('Go offline.')).toBeInTheDocument()
+    expect(within(section).getByRole('link', { name: 'See it on GitHub' })).toHaveAttribute(
       'href',
-      'https://x.com/goodmorningdevs',
+      'https://github.com/goodmorning-dev/web3spend',
+    )
+    expect(within(section).getByRole('link', { name: 'Transaction History page' })).toHaveAttribute(
+      'href',
+      'https://www.ether.fi/app/cash/transaction-history',
     )
   })
 })
