@@ -219,12 +219,6 @@ function Home() {
           </p>
         </section>
 
-        <UseAnywhereSection />
-
-        <RoadmapSection />
-
-        <FaqSection />
-
         <section className="relative isolate flex flex-col items-center gap-5 overflow-hidden rounded-2xl border border-[#161a24] bg-[#0d1016] p-6 sm:flex-row sm:justify-between sm:gap-8 sm:p-8">
           <div
             aria-hidden="true"
@@ -272,6 +266,12 @@ function Home() {
             </Button>
           </div>
         </section>
+
+        <UseAnywhereSection />
+
+        <RoadmapSection />
+
+        <FaqSection />
       </div>
 
       <SiteFooter className="mx-auto max-w-6xl px-6 py-6" />
