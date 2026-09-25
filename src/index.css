@@ -154,7 +154,8 @@
 
 /* Opens and closes a <details> smoothly instead of snapping. Browsers
    without ::details-content support just keep the instant toggle. */
-.subscription-details::details-content {
+.subscription-details::details-content,
+.faq-details::details-content {
   block-size: 0;
   overflow-y: clip;
   transition:
@@ -162,12 +163,14 @@
     content-visibility 220ms allow-discrete;
 }
 
-.subscription-details[open]::details-content {
+.subscription-details[open]::details-content,
+.faq-details[open]::details-content {
   block-size: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .subscription-details::details-content {
+  .subscription-details::details-content,
+  .faq-details::details-content {
     transition: none;
   }
 }

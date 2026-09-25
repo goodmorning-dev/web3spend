@@ -194,20 +194,24 @@ describe('Home', () => {
     expect(within(stages[1]).getByText('Next')).toBeInTheDocument()
   })
 
-  it('answers the common questions, all on show, with a way to ask more', () => {
+  it('answers the common questions, each opening on click, with a way to ask more', async () => {
     renderHome()
     const section = screen.getByRole('region', { name: /questions, answered/i })
+    const questions = within(section)
+      .getAllByRole('group')
+      .map((item) => item.querySelector('summary')?.textContent)
 
-    expect(
-      within(section)
-        .getAllByRole('term')
-        .map((term) => term.textContent),
-    ).toEqual([
-      "01How do I know my data isn't sent anywhere?",
-      '02Where do I get my export?',
-      '03Is this affiliated with ether.fi?',
-      '04What does it show me?',
+    expect(questions).toEqual([
+      "How do I know my data isn't sent anywhere?",
+      'Where do I get my export?',
+      'Is this affiliated with ether.fi?',
+      'What does it show me?',
     ])
+
+    const affiliation = within(section).getByText('Is this affiliated with ether.fi?')
+    expect(affiliation.closest('details')).not.toHaveAttribute('open')
+    await userEvent.click(affiliation)
+    expect(affiliation.closest('details')).toHaveAttribute('open')
     expect(
       within(section).getByText(/isn't affiliated with or endorsed by ether\.fi/i),
     ).toBeVisible()

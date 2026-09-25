@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { XLogoIcon } from '@/components/home/BrandIcons'
 import { Button } from '@/components/ui/button'
@@ -47,37 +48,32 @@ const QUESTIONS: { question: string; answer: ReactNode }[] = [
 ]
 
 /**
- * The questions people ask first, with every answer on show: four short
- * cards in a grid (one column on phones), nothing to open or close, and a
- * way to ask something else underneath.
+ * The questions people ask first, as a plain list: large questions split
+ * by thin lines, each opening its answer below it. Native <details>, so
+ * each one opens with a click or the keyboard and needs no script; they
+ * open and close smoothly where the browser supports it (index.css).
  */
 function FaqSection() {
   return (
-    <section aria-labelledby="faq" className="flex flex-col items-center gap-8">
-      <div className="flex max-w-2xl flex-col items-center gap-2 text-center">
+    <section aria-labelledby="faq" className="mx-auto flex w-full max-w-3xl flex-col gap-10">
+      <div className="flex flex-col items-center gap-2 text-center">
         <span className="text-xs font-semibold tracking-wide text-text-dim uppercase">FAQ</span>
         <h2 id="faq" className="font-heading text-2xl font-semibold sm:text-3xl">
           Questions, <span className="text-primary">answered</span>.
         </h2>
-        <p className="text-base text-text-dim">The short answers to what people ask first.</p>
       </div>
 
-      <dl className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
-        {QUESTIONS.map(({ question, answer }, index) => (
-          <div
-            key={question}
-            className="flex flex-col gap-3 rounded-2xl border border-[#161a24] bg-[#0d1016] p-6 transition-colors hover:border-accent-2/30"
-          >
-            <dt className="flex flex-col gap-2">
-              <span className="font-heading text-sm font-semibold text-accent-2">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <span className="font-heading text-lg font-semibold">{question}</span>
-            </dt>
-            <dd className="text-sm leading-relaxed text-text-dim">{answer}</dd>
-          </div>
+      <div className="border-t border-white/10">
+        {QUESTIONS.map(({ question, answer }) => (
+          <details key={question} className="group faq-details border-b border-white/10">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 font-heading text-lg font-semibold transition-colors hover:text-accent-2 sm:text-xl [&::-webkit-details-marker]:hidden">
+              {question}
+              <Plus className="size-5 shrink-0 text-accent-2 transition-transform duration-200 group-open:rotate-45 motion-reduce:transition-none" />
+            </summary>
+            <p className="max-w-2xl pb-6 text-base leading-relaxed text-text-dim">{answer}</p>
+          </details>
         ))}
-      </dl>
+      </div>
 
       <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-text-dim">
         Still have a question?
