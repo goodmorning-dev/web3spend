@@ -38,9 +38,18 @@ describe('isEligiblePurchase', () => {
     expect(isEligiblePurchase(makeTransaction({ amountMinor: -400 }))).toBe(false)
   })
 
-  it('rejects a non-CLEARED row regardless of amount sign', () => {
-    expect(isEligiblePurchase(makeTransaction({ status: 'PENDING', amountMinor: 100 }))).toBe(false)
+  it('counts a pending purchase the same as a cleared one', () => {
+    expect(isEligiblePurchase(makeTransaction({ status: 'PENDING', amountMinor: 100 }))).toBe(true)
+  })
+
+  it('rejects a cancelled row regardless of amount sign', () => {
     expect(isEligiblePurchase(makeTransaction({ status: 'CANCELLED', amountMinor: 100 }))).toBe(
+      false,
+    )
+  })
+
+  it('rejects a refund-like pending row too', () => {
+    expect(isEligiblePurchase(makeTransaction({ status: 'PENDING', amountMinor: -100 }))).toBe(
       false,
     )
   })

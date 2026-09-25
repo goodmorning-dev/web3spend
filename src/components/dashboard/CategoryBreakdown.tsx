@@ -56,7 +56,8 @@ function ViewAllButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-/** MVP-PLAN §5: sorted spend by category, from cleared purchases only.
+/** MVP-PLAN §5: sorted spend by category, from cleared and pending
+ * purchases.
  * Each real category's row and donut slice open its transactions. */
 function CategoryBreakdown({
   buckets,
@@ -107,7 +108,7 @@ function CategoryBreakdown({
           <ViewAllButton onClick={onViewAll} />
         </div>
         <p className="flex flex-1 items-center text-sm text-text-faint">
-          No cleared purchases in this period yet.
+          No purchases in this period yet.
         </p>
       </div>
     )

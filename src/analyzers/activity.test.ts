@@ -46,12 +46,26 @@ describe('computeYearActivity', () => {
     expect(day?.spendMinor).toBe(500)
   })
 
-  it('excludes non-cleared rows', () => {
+  it('counts a pending purchase and leaves out a cancelled one', () => {
     const result = computeYearActivity(
-      [makeTransaction({ status: 'PENDING', amountMinor: 999 })],
+      [
+        makeTransaction({
+          id: '1',
+          timestampUtc: '2026-06-01T10:00:00.000Z',
+          status: 'PENDING',
+          amountMinor: 999,
+        }),
+        makeTransaction({
+          id: '2',
+          timestampUtc: '2026-06-02T10:00:00.000Z',
+          status: 'CANCELLED',
+          amountMinor: 999,
+        }),
+      ],
       2026,
     )
-    expect(result.every((day) => day.spendMinor === 0 && day.level === 0)).toBe(true)
+    expect(result.find((day) => day.key === '2026-06-01')?.spendMinor).toBe(999)
+    expect(result.find((day) => day.key === '2026-06-02')?.spendMinor).toBe(0)
   })
 
   it('gives the single spending day in the year a non-zero level', () => {
@@ -128,7 +142,7 @@ describe('computeYearActivity', () => {
     expect(day?.spendMinor).toBe(1000)
   })
 
-  it('counts the same cleared purchases per day that it adds up for spend', () => {
+  it('counts the same purchases per day that it adds up for spend', () => {
     const result = computeYearActivity(
       [
         makeTransaction({ id: '1', timestampUtc: '2026-06-01T08:00:00.000Z', amountMinor: 1000 }),
@@ -141,7 +155,9 @@ describe('computeYearActivity', () => {
     )
 
     const day = result.find((entry) => entry.key === '2026-06-01')
-    expect(day).toMatchObject({ spendMinor: 1250, purchaseCount: 2 })
+    // the pending purchase counts (makeTransaction's default amount); the
+    // cancelled and refund-like ones don't
+    expect(day).toMatchObject({ purchaseCount: 3 })
     expect(result.filter((entry) => entry.purchaseCount > 0)).toHaveLength(1)
   })
 

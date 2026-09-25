@@ -8,29 +8,31 @@ interface KpiRowProps {
   currency: string
 }
 
-/** MVP-PLAN §5: cleared purchase spend, recorded cashback on those purchases,
- * and effective cashback percentage when valid. */
+/** MVP-PLAN §5: spend on cleared and pending purchases, recorded cashback
+ * on those purchases, and effective cashback percentage when valid. The
+ * spend hint says how many of the purchases are still pending. */
 function KpiRow({ summary, currency }: KpiRowProps) {
+  const purchases = `${summary.purchaseCount} purchase${summary.purchaseCount === 1 ? '' : 's'}`
+  const pending = summary.pendingCount > 0 ? `, ${summary.pendingCount} pending` : ''
+
   return (
     <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
       <KpiCard
         icon={<ShoppingBag className="size-5" />}
         label="Total spent"
-        value={formatMoney(summary.clearedSpendMinor, currency)}
-        hint={`across ${summary.clearedCount} cleared purchase${summary.clearedCount === 1 ? '' : 's'}`}
+        value={formatMoney(summary.spendMinor, currency)}
+        hint={`across ${purchases}${pending}`}
       />
       <KpiCard
         icon={<TrendingUp className="size-5" />}
         label="Cashback earned"
         value={
-          summary.cashbackComplete
-            ? formatMoney(summary.clearedCashbackMinor, currency)
-            : 'Unavailable'
+          summary.cashbackComplete ? formatMoney(summary.cashbackMinor, currency) : 'Unavailable'
         }
         hint={
           summary.cashbackComplete
-            ? 'recorded on cleared purchases'
-            : 'unavailable: some cleared purchases recorded cashback in another currency'
+            ? 'recorded on these purchases'
+            : 'unavailable: some purchases recorded cashback in another currency'
         }
         tone="positive"
       />
@@ -38,7 +40,7 @@ function KpiRow({ summary, currency }: KpiRowProps) {
         icon={<Percent className="size-5" />}
         label="Effective cashback"
         value={formatPercent(summary.effectiveCashbackPct)}
-        hint="on cleared purchases"
+        hint="on these purchases"
       />
     </div>
   )

@@ -13,7 +13,7 @@ interface KpiCardProps {
 }
 
 /**
- * The hint (e.g. "across 12 cleared purchases") is the traceability MVP-PLAN's
+ * The hint (e.g. "across 12 purchases, 1 pending") is the traceability MVP-PLAN's
  * Milestone 2 "every displayed total can be traced to included rows" done-when
  * calls for; shown on hover/focus rather than always visible, to keep the card
  * itself uncluttered.

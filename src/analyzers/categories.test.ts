@@ -47,19 +47,21 @@ describe('aggregateByCategory', () => {
     expect(result.map((bucket) => bucket.category)).toEqual(['Big', 'Small'])
   })
 
-  it('excludes non-cleared rows from both the category totals and the shares', () => {
+  it('counts pending purchases in the category totals and shares, and leaves cancelled ones out', () => {
     const result = aggregateByCategory([
       makeTransaction({ id: '1', categoryRaw: 'Groceries', amountMinor: 1000, status: 'CLEARED' }),
-      makeTransaction({ id: '2', categoryRaw: 'Travel', amountMinor: 5000, status: 'PENDING' }),
+      makeTransaction({ id: '2', categoryRaw: 'Travel', amountMinor: 3000, status: 'PENDING' }),
+      makeTransaction({ id: '3', categoryRaw: 'Hotels', amountMinor: 9000, status: 'CANCELLED' }),
     ])
 
     expect(result).toEqual([
-      { category: 'Groceries', key: 'groceries', spendMinor: 1000, share: 1 },
+      { category: 'Travel', key: 'travel', spendMinor: 3000, share: 0.75 },
+      { category: 'Groceries', key: 'groceries', spendMinor: 1000, share: 0.25 },
     ])
   })
 
-  it('returns an empty list, not a division-by-zero share, when nothing is cleared', () => {
-    const result = aggregateByCategory([makeTransaction({ status: 'PENDING' })])
+  it('returns an empty list, not a division-by-zero share, when nothing counts', () => {
+    const result = aggregateByCategory([makeTransaction({ status: 'CANCELLED' })])
     expect(result).toEqual([])
   })
 

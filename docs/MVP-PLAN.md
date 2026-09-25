@@ -32,7 +32,7 @@ Agreed direction:
 
 Proposed defaults, awaiting discussion:
 - Use a static TypeScript web application with IndexedDB and offline asset caching.
-- Default analytics to cleared purchases; show pending separately and exclude cancelled payments.
+- Default analytics to cleared and pending purchases; exclude cancelled payments.
 - Include a transaction table in the MVP. Category correction and backup/restore are deferred
   to v2 (see §5, §13) now that ether.fi's export already covers the full transaction history
   each time, making a full versioned-backup story much less urgent for a first release.
@@ -126,8 +126,8 @@ No account, wallet connection, remote transaction upload, or financial-data back
 ### Dashboard
 - Global period, currency, and card controls apply consistently to every summary, chart, and transaction list.
 - Default to All cards, combining spending across cards within the selected currency; allow filtering to one card.
-- Summary: cleared purchase spend, recorded cashback on those purchases, and effective cashback percentage when valid.
-- Separate pending amount and count; cancelled rows remain inspectable but excluded from spending.
+- Summary: spend on cleared and pending purchases, recorded cashback on those purchases, and effective cashback percentage when valid.
+- Show how many of those purchases are still pending; cancelled rows remain inspectable but excluded from spending.
 - Spending bars: daily totals within a selected month; monthly totals within a selected year.
 - Categories: sorted horizontal bars with amounts and shares; a pie/donut is optional.
 - Cashback: period totals; defer a cumulative toggle unless it proves useful.
@@ -169,8 +169,8 @@ No account, wallet connection, remote transaction upload, or financial-data back
 
 - Use decimal-safe arithmetic, with precision appropriate to the currency; avoid floating-point summation for money.
 - Preserve source timestamps and their explicit UTC timezone. Default monthly grouping to UTC for reproducibility in version 1, labeled in the interface.
-- Use CLEARED card_spend rows for the default purchase total.
-- PENDING and CANCELLED are excluded from cleared spending and its cashback calculation.
+- Use CLEARED and PENDING card_spend rows for the purchase total and its cashback calculation. A pending purchase is money already spent; if it's later cancelled, importing a newer export updates its status and it drops out.
+- CANCELLED rows are excluded from spending and its cashback calculation.
 - Unknown types, statuses, or payment modes must be reported. Never silently count them as ordinary spending or assume Direct Pay.
 - Account activity that isn't card spending (top-ups, swaps, Borrow Mode repayments, and moves into or out of ether.fi's Liquid vaults, staking and Frax) is recognized and left out of the import without being reported as unsupported. The MVP doesn't show it.
 - Normalize category whitespace and mojibake only; retain the original category text as-is (MCC prefix included where present) and use it directly everywhere a category is shown, grouped, or filtered.
@@ -181,10 +181,10 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Compute yearly cashback rates from yearly sums, never by averaging monthly percentages.
 - Do not hard-code advertised reward tiers or predict reward entitlement.
 - Refunds are out of scope for the MVP (resolved, see §14). Refund-like rows (e.g. a negative
-  card_spend amount) are detected and flagged the same way PENDING/CANCELLED rows are (visible
-  in the transaction list with a clear label, excluded from cleared-spend and cashback totals),
-  rather than silently distorting them or being misread as ordinary spending. Totals are
-  labeled as cleared purchases, not complete net expenditure. Full refund/net-spend semantics
+  card_spend amount) are detected and flagged the same way CANCELLED rows are (visible in the
+  transaction list with a clear label, excluded from spend and cashback totals), rather than
+  silently distorting them or being misread as ordinary spending. Totals are labeled as
+  purchases, not complete net expenditure. Full refund/net-spend semantics
   are a v2 decision once a real example is available.
 
 ## 7. Import identity and re-import handling (simplified for MVP)
@@ -285,7 +285,7 @@ Continue when several users independently return and describe concrete value. If
   columns, with "Borrow Mode" as the spending mode), so basic Borrow transaction import is in
   the MVP (see §2).
 - Scope stays XLSX-only; license (PolyForm Noncommercial 1.0.0) and core accounting
-  definitions (dashboard, UTC grouping, cleared-purchase default) are confirmed.
+  definitions (dashboard, UTC grouping, cleared and pending purchases counting) are confirmed.
 - Build entirely synthetic repository fixtures reflecting the observed workbook structure.
 Done when: supported cases and explicit unsupported cases are documented, the Borrow-mode fit
 question is answered, and the simplified import approach (§7) can be tested.

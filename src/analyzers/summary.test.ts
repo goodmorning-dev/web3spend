@@ -31,14 +31,14 @@ describe('summarizeTransactions', () => {
       makeTransaction({ id: '2', amountMinor: 2000, cashbackMinor: 20 }),
     ])
 
-    expect(summary.clearedSpendMinor).toBe(3000)
-    expect(summary.clearedCount).toBe(2)
-    expect(summary.clearedCashbackMinor).toBe(50)
+    expect(summary.spendMinor).toBe(3000)
+    expect(summary.purchaseCount).toBe(2)
+    expect(summary.cashbackMinor).toBe(50)
     // 50/3000 * 100, not an average of each row's own rate (3% and 1%)
     expect(summary.effectiveCashbackPct).toBeCloseTo((50 / 3000) * 100)
   })
 
-  it('does not count a refund-like row, a pending row, or a cancelled row toward clearedCount', () => {
+  it('counts cleared and pending purchases, but not a refund-like or cancelled row', () => {
     const summary = summarizeTransactions([
       makeTransaction({ id: '1', status: 'CLEARED', amountMinor: 1000 }),
       makeTransaction({ id: '2', status: 'CLEARED', amountMinor: -400 }),
@@ -46,29 +46,28 @@ describe('summarizeTransactions', () => {
       makeTransaction({ id: '4', status: 'CANCELLED' }),
     ])
 
-    expect(summary.clearedCount).toBe(1)
+    expect(summary.purchaseCount).toBe(2)
   })
 
-  it('reports unavailable (null), not 0%, when there is no cleared spend', () => {
-    const summary = summarizeTransactions([
-      makeTransaction({ status: 'PENDING' }),
-      makeTransaction({ status: 'CANCELLED' }),
-    ])
+  it('reports unavailable (null), not 0%, when there is no spend', () => {
+    const summary = summarizeTransactions([makeTransaction({ status: 'CANCELLED' })])
 
-    expect(summary.clearedSpendMinor).toBe(0)
+    expect(summary.spendMinor).toBe(0)
     expect(summary.effectiveCashbackPct).toBeNull()
   })
 
-  it('tracks pending amount and count separately, never folded into cleared totals', () => {
+  it('folds pending purchases into spend and cashback, and says how many are pending', () => {
     const summary = summarizeTransactions([
-      makeTransaction({ id: '1', status: 'CLEARED', amountMinor: 1000 }),
-      makeTransaction({ id: '2', status: 'PENDING', amountMinor: 500 }),
-      makeTransaction({ id: '3', status: 'PENDING', amountMinor: 300 }),
+      makeTransaction({ id: '1', status: 'CLEARED', amountMinor: 1000, cashbackMinor: 30 }),
+      makeTransaction({ id: '2', status: 'PENDING', amountMinor: 500, cashbackMinor: 15 }),
+      makeTransaction({ id: '3', status: 'PENDING', amountMinor: 300, cashbackMinor: 9 }),
     ])
 
-    expect(summary.clearedSpendMinor).toBe(1000)
-    expect(summary.pendingSpendMinor).toBe(800)
+    expect(summary.spendMinor).toBe(1800)
+    expect(summary.cashbackMinor).toBe(54)
+    expect(summary.purchaseCount).toBe(3)
     expect(summary.pendingCount).toBe(2)
+    expect(summary.effectiveCashbackPct).toBeCloseTo(3)
   })
 
   it('counts cancelled rows without including their amount anywhere', () => {
@@ -78,8 +77,8 @@ describe('summarizeTransactions', () => {
     ])
 
     expect(summary.cancelledCount).toBe(1)
-    expect(summary.clearedSpendMinor).toBe(1000)
-    expect(summary.pendingSpendMinor).toBe(0)
+    expect(summary.spendMinor).toBe(1000)
+    expect(summary.pendingCount).toBe(0)
   })
 
   it('throws if given transactions in more than one currency', () => {
@@ -91,13 +90,13 @@ describe('summarizeTransactions', () => {
     ).toThrow()
   })
 
-  it('excludes a refund-like row (negative amount) from cleared spend instead of subtracting it', () => {
+  it('excludes a refund-like row (negative amount) from spend instead of subtracting it', () => {
     const summary = summarizeTransactions([
       makeTransaction({ id: '1', amountMinor: 1000, cashbackMinor: 0 }),
       makeTransaction({ id: '2', amountMinor: -400, cashbackMinor: 0 }),
     ])
 
-    expect(summary.clearedSpendMinor).toBe(1000)
+    expect(summary.spendMinor).toBe(1000)
   })
 
   it("excludes a refund-like row's cashback too, even if it reports some", () => {
@@ -106,7 +105,7 @@ describe('summarizeTransactions', () => {
       makeTransaction({ id: '2', amountMinor: -400, cashbackMinor: 5 }),
     ])
 
-    expect(summary.clearedCashbackMinor).toBe(30)
+    expect(summary.cashbackMinor).toBe(30)
   })
 
   it('reports unavailable, not a mixed-currency figure, when cashback currencies differ', () => {
@@ -124,10 +123,10 @@ describe('summarizeTransactions', () => {
       makeTransaction({ id: '2', currency: 'EUR', cashbackCurrency: 'USD', cashbackMinor: 30 }),
     ])
 
-    expect(summary.clearedCashbackMinor).toBe(20)
+    expect(summary.cashbackMinor).toBe(20)
   })
 
-  it('marks cashback incomplete when any cleared purchase has a mismatched cashback currency', () => {
+  it('marks cashback incomplete when any purchase has a mismatched cashback currency', () => {
     const summary = summarizeTransactions([
       makeTransaction({ id: '1', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 20 }),
       makeTransaction({ id: '2', currency: 'EUR', cashbackCurrency: 'USD', cashbackMinor: 30 }),
@@ -136,7 +135,7 @@ describe('summarizeTransactions', () => {
     expect(summary.cashbackComplete).toBe(false)
   })
 
-  it('marks cashback complete when every cleared purchase has a matching cashback currency', () => {
+  it('marks cashback complete when every purchase has a matching cashback currency', () => {
     const summary = summarizeTransactions([
       makeTransaction({ id: '1', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 20 }),
       makeTransaction({ id: '2', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 30 }),
@@ -145,11 +144,8 @@ describe('summarizeTransactions', () => {
     expect(summary.cashbackComplete).toBe(true)
   })
 
-  it('marks cashback complete when there is no cleared spend at all, unlike effectiveCashbackPct', () => {
-    const summary = summarizeTransactions([
-      makeTransaction({ status: 'PENDING' }),
-      makeTransaction({ status: 'CANCELLED' }),
-    ])
+  it('marks cashback complete when there is no spend at all, unlike effectiveCashbackPct', () => {
+    const summary = summarizeTransactions([makeTransaction({ status: 'CANCELLED' })])
 
     expect(summary.effectiveCashbackPct).toBeNull()
     expect(summary.cashbackComplete).toBe(true)

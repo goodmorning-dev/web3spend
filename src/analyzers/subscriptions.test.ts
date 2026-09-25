@@ -80,13 +80,22 @@ describe('detectSubscriptions', () => {
     expect(result).toEqual([])
   })
 
-  it('excludes a PENDING or CANCELLED row from forming or completing a match', () => {
+  it('excludes a CANCELLED row from forming or completing a match', () => {
+    const result = detectSubscriptions([
+      makeTransaction({ id: '1', timestampUtc: '2026-01-15T10:00:00.000Z', status: 'CLEARED' }),
+      makeTransaction({ id: '2', timestampUtc: '2026-02-15T10:00:00.000Z', status: 'CANCELLED' }),
+    ])
+
+    expect(result).toEqual([])
+  })
+
+  it("lets this month's still-pending charge complete a match", () => {
     const result = detectSubscriptions([
       makeTransaction({ id: '1', timestampUtc: '2026-01-15T10:00:00.000Z', status: 'CLEARED' }),
       makeTransaction({ id: '2', timestampUtc: '2026-02-15T10:00:00.000Z', status: 'PENDING' }),
     ])
 
-    expect(result).toEqual([])
+    expect(result).toHaveLength(1)
   })
 
   it('excludes a refund-like (negative-amount) row', () => {
