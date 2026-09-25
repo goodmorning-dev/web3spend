@@ -21,7 +21,6 @@ import { Button } from '@/components/ui/button'
 import { XLogoIcon } from '@/components/home/BrandIcons'
 import FaqSection from '@/components/home/FaqSection'
 import HeroCard from '@/components/home/HeroCard'
-import PrivacySection from '@/components/home/PrivacySection'
 import RoadmapSection from '@/components/home/RoadmapSection'
 import UseAnywhereSection from '@/components/home/UseAnywhereSection'
 import SiteFooter from '@/components/SiteFooter'
@@ -212,8 +211,6 @@ function Home() {
             </a>
           </p>
         </section>
-
-        <PrivacySection />
 
         <UseAnywhereSection />
 

@@ -154,25 +154,6 @@ describe('Home', () => {
     expect(screen.queryByRole('link', { name: /^faq$/i })).not.toBeInTheDocument()
   })
 
-  it('explains what private means, point by point, with a link to the code', () => {
-    renderHome()
-    const section = screen.getByRole('region', { name: /private by design/i })
-
-    for (const point of [
-      'Read in your browser',
-      'Saved on this device',
-      'Safe to import again',
-      'No account, no tracking',
-    ]) {
-      expect(within(section).getByRole('heading', { name: point })).toBeInTheDocument()
-    }
-    expect(within(section).getByRole('img', { name: /nothing is uploaded/i })).toBeInTheDocument()
-    expect(within(section).getByRole('link', { name: /read the code/i })).toHaveAttribute(
-      'href',
-      'https://github.com/goodmorning-dev/web3spend',
-    )
-  })
-
   it('says how to install the app on desktop, iPhone and Android', () => {
     renderHome()
     const section = screen.getByRole('region', { name: /as an app/i })
