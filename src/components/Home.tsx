@@ -181,7 +181,7 @@ function Home() {
                   src={image}
                   alt=""
                   aria-hidden="true"
-                  className="absolute inset-y-0 right-0 h-full w-3/4 object-cover object-left opacity-90"
+                  className="absolute inset-y-0 right-0 h-full w-3/4 object-cover object-left opacity-60"
                 />
                 <div
                   aria-hidden="true"
