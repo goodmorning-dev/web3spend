@@ -87,10 +87,9 @@ function Home() {
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
-      {/* Background glows at the page's edges: gold on the left and the
-          second accent on the right, both high enough to show on a 1080px
-          tall screen without scrolling, then gold on the left again
-          further down. */}
+      {/* Background glows at the page's edges, alternating down the page:
+          gold on the left and the second accent on the right, the first two
+          high enough to show on a 1080px tall screen without scrolling. */}
       <div
         aria-hidden="true"
         className="absolute top-[140px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:block sm:size-[28rem]"
@@ -102,6 +101,14 @@ function Home() {
       <div
         aria-hidden="true"
         className="absolute top-[1050px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl sm:block sm:size-[28rem]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-[1550px] right-0 -z-10 hidden size-96 translate-x-1/2 rounded-full bg-accent-2/20 blur-3xl sm:block sm:size-[28rem]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-[2050px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl sm:block sm:size-[28rem]"
       />
       <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-8 sm:gap-20 sm:py-10">
         <header className="flex items-center justify-between">
