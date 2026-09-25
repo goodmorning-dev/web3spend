@@ -9,10 +9,7 @@ import heroCardImage from '@/assets/hero-card.webp'
 function HeroCard() {
   return (
     <div className="relative mx-auto flex w-full min-w-0 items-center justify-center">
-      <div
-        aria-hidden="true"
-        className="absolute size-3/4 rounded-full bg-primary/40 blur-3xl"
-      />
+      <div aria-hidden="true" className="absolute size-3/4 rounded-full bg-accent-2/35 blur-3xl" />
       <img
         src={heroCardImage}
         alt="A Web3Spend card, surrounded by callouts for spending insights, recorded cashback, on-device privacy, and support for all currencies"
