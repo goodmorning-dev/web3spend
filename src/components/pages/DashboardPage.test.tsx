@@ -331,4 +331,41 @@ describe('DashboardPage', () => {
 
     expect(screen.getByTestId('location')).toHaveTextContent('/app/transactions?category=cat')
   })
+
+  it('gives a category the same color in the donut as in the recent transactions', async () => {
+    const categories = [
+      '5732 - Electronics Stores',
+      'Grocery Stores and Supermarkets',
+      'Travel Agencies',
+      'Fast Food Restaurants',
+      'Service Stations',
+      'Taxicabs and Limousines',
+      'Book Stores',
+    ]
+    await db.transactions.bulkPut(
+      categories.map((categoryRaw, index) => ({
+        ...spend(`t${index}`, `2026-02-${20 - index}T10:00:00.000Z`, 7000 - index * 500),
+        categoryRaw,
+      })),
+    )
+
+    renderDashboardPage()
+    const donutSwatch = await screen.findByTitle('Electronics Stores')
+    const donutColor = (donutSwatch.previousElementSibling as HTMLElement).style.backgroundColor
+
+    const tableDots = screen
+      .getAllByText('Electronics Stores')
+      .filter((label) => !label.hasAttribute('title'))
+      .map(
+        (label) =>
+          (label.querySelector('span[aria-hidden="true"]') ??
+            label.previousElementSibling) as HTMLElement,
+      )
+
+    expect(donutColor).toBe('var(--color-chart-6)')
+    expect(tableDots.length).toBeGreaterThan(0)
+    for (const dot of tableDots) {
+      expect(dot.style.backgroundColor).toBe(donutColor)
+    }
+  })
 })

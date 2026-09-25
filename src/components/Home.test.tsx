@@ -140,6 +140,25 @@ describe('Home', () => {
     expect(link).toHaveAttribute('target', '_blank')
   })
 
+  it('scrolls back to the top when the footer logo is clicked on the home page', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    render(
+      <InstallPromptProvider>
+        <MemoryRouter initialEntries={['/home']}>
+          <Home />
+        </MemoryRouter>
+      </InstallPromptProvider>,
+    )
+    const logo = within(screen.getByRole('contentinfo')).getByRole('link', {
+      name: 'Web3Spend home',
+    })
+
+    expect(logo).toHaveAttribute('href', '/home')
+    await userEvent.click(logo)
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' })
+    scrollTo.mockRestore()
+  })
+
   it('links to the GitHub repo in the footer, opening in a new tab', () => {
     renderHome()
     const link = screen.getByRole('link', { name: /source on github/i })

@@ -77,10 +77,14 @@ describe('TransactionsPage', () => {
     expect(screen.getAllByText('Grocery Run')).toHaveLength(2)
 
     const user = userEvent.setup()
-    await user.type(screen.getByRole('textbox', { name: /search by merchant/i }), 'coffee')
+    const search = screen.getByRole('textbox', { name: /search by merchant/i })
+    await user.type(search, 'coffee')
 
     expect(screen.getAllByText('Coffee Shop')).toHaveLength(2)
     expect(screen.queryByText('Grocery Run')).not.toBeInTheDocument()
+    // leaving this focused confuses a Select in a later test's focus
+    // handling once this input is unmounted (see src/test/setup.ts)
+    search.blur()
   })
 
   it('opens with the category from the URL already filtered, as the Dashboard links to it', async () => {
@@ -96,5 +100,42 @@ describe('TransactionsPage', () => {
     for (const select of screen.getAllByRole('combobox', { name: /category/i })) {
       expect(select).toHaveTextContent('Taxicabs')
     }
+  })
+
+  it('narrows the list to Borrow Mode or Direct Pay purchases', async () => {
+    await db.transactions.bulkPut([
+      makeTransaction({ id: 'txn-1', description: 'Coffee Shop' }),
+      makeTransaction({ id: 'txn-2', description: 'Flight', spendingMode: 'Borrow Mode' }),
+    ])
+    const user = userEvent.setup()
+
+    renderTransactionsPage()
+    expect(await screen.findAllByText('Coffee Shop')).toHaveLength(2)
+
+    const [modeSelect] = screen.getAllByRole('combobox', { name: 'Spending mode' })
+    await user.click(modeSelect)
+    await user.click(await screen.findByRole('option', { name: 'Borrow' }))
+
+    expect(screen.getAllByText('Flight')).toHaveLength(2)
+    expect(screen.queryByText('Coffee Shop')).not.toBeInTheDocument()
+    expect(screen.getByText('1 transaction found')).toBeInTheDocument()
+    // the Select hands focus back to its trigger; see the search test above
+    modeSelect.blur()
+  })
+
+  it('offers only the spending modes that are actually there', async () => {
+    await db.transactions.bulkPut([makeTransaction({ id: 'txn-1', description: 'Coffee Shop' })])
+    const user = userEvent.setup()
+
+    renderTransactionsPage()
+    await screen.findAllByText('Coffee Shop')
+
+    const [modeSelect] = screen.getAllByRole('combobox', { name: 'Spending mode' })
+    await user.click(modeSelect)
+
+    expect(await screen.findByRole('option', { name: 'Direct' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Borrow' })).not.toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    modeSelect.blur()
   })
 })

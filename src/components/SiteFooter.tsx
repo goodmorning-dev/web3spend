@@ -1,17 +1,23 @@
+import { Link, useLocation } from 'react-router-dom'
 import logoImage from '@/assets/logo.webp'
 import { GithubLogoIcon } from '@/components/home/BrandIcons'
 import { GOODMORNING_URL, REPO_URL } from '@/lib/links'
+import { scrollToTop } from '@/lib/scrollToTop'
 import { cn } from '@/lib/utils'
 
 const LINK_CLASS = 'font-medium text-text-dim hover:text-primary'
 
 /**
  * The same footer on the home page and under every page of the app: who
- * made it on the left, the source on the right. `className` sizes the
- * inner row to fit where it sits (the home page centers it at the page's
- * width; the app lets it span the content column).
+ * made it on the left, the source on the right. The logo goes to the home
+ * page, as the sidebar's does; on the home page itself it glides back to
+ * the top. `className` sizes the inner row to fit where it sits (the home
+ * page centers it at the page's width; the app lets it span the content
+ * column).
  */
 function SiteFooter({ className }: { className?: string }) {
+  const { pathname } = useLocation()
+
   return (
     <footer className="border-t border-border">
       <div
@@ -21,8 +27,19 @@ function SiteFooter({ className }: { className?: string }) {
         )}
       >
         <div className="flex items-center gap-2">
-          <img src={logoImage} alt="" className="size-6 shrink-0" />
-          <span className="font-heading text-sm font-semibold text-foreground">Web3Spend</span>
+          <Link
+            to="/home"
+            aria-label="Web3Spend home"
+            onClick={() => {
+              if (pathname === '/home') {
+                scrollToTop({ smooth: true })
+              }
+            }}
+            className="flex items-center gap-2 rounded-lg transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <img src={logoImage} alt="" className="size-6 shrink-0" />
+            <span className="font-heading text-sm font-semibold text-foreground">Web3Spend</span>
+          </Link>
           <span>
             Made by{' '}
             <a href={GOODMORNING_URL} target="_blank" rel="noreferrer" className={LINK_CLASS}>

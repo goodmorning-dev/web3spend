@@ -4,6 +4,12 @@ import { Cell, Pie, PieChart } from 'recharts'
 import type { CategoryBucket } from '@/analyzers'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import { cn } from '@/lib/utils'
+import {
+  categoryColorMap,
+  categoryIdentity,
+  MAX_NAMED_CATEGORIES,
+  OTHER_CATEGORY_COLOR,
+} from '@/utils/categoryColors'
 import { formatMoney, formatPercent } from '@/utils/format'
 
 interface CategoryBreakdownProps {
@@ -16,43 +22,17 @@ interface CategoryBreakdownProps {
   onSelectCategory?: (key: string) => void
 }
 
-// Reserved for a real category so it's never reused for "Other" too: with
-// a 5-color palette and up to 5 real categories + 1 "Other" slice (6 total),
-// naively cycling `index % 5` would give the 6th slice (Other, last) the
-// same color as the 1st, and a pie's last and first slices sit next to each
-// other. "Other" always gets OTHER_COLOR instead; real categories cycle
-// through the remaining 4 colors when Other is present, or all 5 when it
-// isn't (in which case 5 slices exactly fill the palette with no repeats).
-const REAL_CATEGORY_PALETTE = [
-  'var(--color-chart-1)',
-  'var(--color-chart-2)',
-  'var(--color-chart-3)',
-  'var(--color-chart-4)',
-]
-const FULL_PALETTE = [...REAL_CATEGORY_PALETTE, 'var(--color-chart-5)']
-const OTHER_COLOR = 'var(--color-chart-5)'
-
-const MAX_VISIBLE_CATEGORIES = 5
-
-function colorForVisibleIndex(index: number, total: number, hasOther: boolean): string {
-  if (hasOther && index === total - 1) {
-    return OTHER_COLOR
-  }
-  const palette = hasOther ? REAL_CATEGORY_PALETTE : FULL_PALETTE
-  return palette[index % palette.length]
-}
-
 /** The donut and list only ever show a handful of slices legibly; beyond
- * `MAX_VISIBLE_CATEGORIES`, the remainder rolls up into a synthetic "Other"
+ * `MAX_NAMED_CATEGORIES`, the remainder rolls up into a synthetic "Other"
  * bucket. This is a presentation-only grouping, not a real category
  * taxonomy (MVP-PLAN §5 still shows ether.fi's raw category text as-is
  * everywhere else, e.g. the transaction table). */
 function rollupTopCategories(buckets: CategoryBucket[]): CategoryBucket[] {
-  if (buckets.length <= MAX_VISIBLE_CATEGORIES) {
+  if (buckets.length <= MAX_NAMED_CATEGORIES) {
     return buckets
   }
-  const visible = buckets.slice(0, MAX_VISIBLE_CATEGORIES)
-  const rest = buckets.slice(MAX_VISIBLE_CATEGORIES)
+  const visible = buckets.slice(0, MAX_NAMED_CATEGORIES)
+  const rest = buckets.slice(MAX_NAMED_CATEGORIES)
   return [
     ...visible,
     {
@@ -135,7 +115,14 @@ function CategoryBreakdown({
 
   const totalSpendMinor = buckets.reduce((sum, bucket) => sum + bucket.spendMinor, 0)
   const visibleBuckets = rollupTopCategories(buckets)
-  const hasOther = buckets.length > MAX_VISIBLE_CATEGORIES
+  // Each named category keeps the color it has in every transaction list
+  // (see categoryColors.ts); "Other" is gray.
+  const colors = categoryColorMap(buckets)
+  const hasOther = buckets.length > MAX_NAMED_CATEGORIES
+  const colorOf = (bucket: CategoryBucket, index: number) =>
+    hasOther && index === visibleBuckets.length - 1
+      ? OTHER_CATEGORY_COLOR
+      : (colors.get(categoryIdentity(bucket)) ?? OTHER_CATEGORY_COLOR)
 
   // ether.fi's raw category text is untrusted and shown as-is (MVP-PLAN §5);
   // it must never become a ChartConfig key, since shadcn's ChartContainer
@@ -148,7 +135,7 @@ function CategoryBreakdown({
       `category-${index}`,
       {
         label: bucket.category,
-        color: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
+        color: colorOf(bucket, index),
       },
     ]),
   ) satisfies ChartConfig
@@ -156,7 +143,7 @@ function CategoryBreakdown({
   const data = visibleBuckets.map((bucket, index) => ({
     categoryKey: `category-${index}`,
     spendMinor: bucket.spendMinor / 100,
-    fill: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
+    fill: colorOf(bucket, index),
   }))
 
   const hoveredBucket = hoveredIndex !== null ? visibleBuckets[hoveredIndex] : undefined
@@ -228,9 +215,7 @@ function CategoryBreakdown({
               <>
                 <span
                   className="size-2.5 shrink-0 rounded-[2px]"
-                  style={{
-                    backgroundColor: colorForVisibleIndex(index, visibleBuckets.length, hasOther),
-                  }}
+                  style={{ backgroundColor: colorOf(bucket, index) }}
                   aria-hidden="true"
                 />
                 <span className="min-w-0 flex-1 truncate text-text-dim" title={bucket.category}>

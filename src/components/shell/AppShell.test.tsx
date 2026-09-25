@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import { resetDatabase } from '@/storage/test-helpers'
@@ -27,6 +27,10 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: /source on github/i })).toHaveAttribute(
       'href',
       'https://github.com/goodmorning-dev/web3spend',
+    )
+    expect(within(footer).getByRole('link', { name: 'Web3Spend home' })).toHaveAttribute(
+      'href',
+      '/home',
     )
   })
 })
