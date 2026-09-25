@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { transactionCashbackPct } from '@/analyzers'
 import type { SpendingMode, StandardTransaction, TransactionStatus } from '@/types/transaction'
-import { categoryColorFor } from '@/utils/avatar'
-import { displayCategoryLabel } from '@/utils/category'
+import { listCategoryColor, preferredCategoryColor } from '@/utils/categoryColors'
+import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
 import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
 import { formatMoney, formatPercent, formatSignedCashback, formatSignedSpend } from '@/utils/format'
 
@@ -10,6 +10,12 @@ interface TransactionsTableProps {
   transactions: StandardTransaction[]
   /** cardId -> last4, for the design reference's "•••• 1234" card display. */
   cardLastFourById: Map<string, string>
+  /** The dashboard donut's colors for the same filters (categoryColorMap),
+   * keyed by category merge key, so a category's dot matches its slice;
+   * other categories get a color the donut isn't using for anything else
+   * (listCategoryColor). Without it, each category shows its own preferred
+   * color. */
+  categoryColors?: Map<string, string>
 }
 
 const STATUS_LABELS: Record<TransactionStatus, string> = {
@@ -89,12 +95,22 @@ function ModePill({ mode, compact = false }: { mode: SpendingMode; compact?: boo
   )
 }
 
-function CategoryDot({ category }: { category: string }) {
+function CategoryDot({
+  categoryRaw,
+  categoryColors,
+}: {
+  categoryRaw: string
+  categoryColors?: Map<string, string>
+}) {
+  const label = displayCategoryLabel(categoryRaw)
+  const color = categoryColors
+    ? listCategoryColor(label, categoryMergeKey(categoryRaw), categoryColors)
+    : preferredCategoryColor(label)
   return (
     <span
       aria-hidden="true"
       className="inline-block size-[7px] shrink-0 rounded-[2px]"
-      style={{ backgroundColor: categoryColorFor(category) }}
+      style={{ backgroundColor: color }}
     />
   )
 }
@@ -234,7 +250,11 @@ function OriginalAmountDetails({ transaction }: { transaction: StandardTransacti
 
 /** A plain table on wider screens, a stacked receipt-style list on phone
  * widths where an 8-column table would no longer be legible. */
-function TransactionsTable({ transactions, cardLastFourById }: TransactionsTableProps) {
+function TransactionsTable({
+  transactions,
+  cardLastFourById,
+  categoryColors,
+}: TransactionsTableProps) {
   const { hovered, showDate, scheduleHideDate } = useDateHover()
 
   if (transactions.length === 0) {
@@ -274,7 +294,10 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
             </div>
             <div className="flex items-center justify-between gap-1.5">
               <p className="flex min-w-0 items-center gap-1 text-xs text-text-faint">
-                <CategoryDot category={displayCategoryLabel(transaction.categoryRaw)} />
+                <CategoryDot
+                  categoryRaw={transaction.categoryRaw}
+                  categoryColors={categoryColors}
+                />
                 <span className="min-w-0 truncate">
                   {displayCategoryLabel(transaction.categoryRaw)}
                 </span>
@@ -333,7 +356,10 @@ function TransactionsTable({ transactions, cardLastFourById }: TransactionsTable
                 <td className="py-2 pr-3">{transaction.description}</td>
                 <td className="py-2 pr-3 text-text-dim">
                   <span className="inline-flex items-center gap-1.5">
-                    <CategoryDot category={displayCategoryLabel(transaction.categoryRaw)} />
+                    <CategoryDot
+                      categoryRaw={transaction.categoryRaw}
+                      categoryColors={categoryColors}
+                    />
                     {displayCategoryLabel(transaction.categoryRaw)}
                   </span>
                 </td>

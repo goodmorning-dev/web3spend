@@ -249,4 +249,24 @@ describe('TransactionsTable', () => {
       expect(tag).toHaveAttribute('title', 'Borrow Mode')
     }
   })
+
+  it("colors each category's dot like the donut, and others in a color of their own", () => {
+    const { container } = render(
+      <TransactionsTable
+        transactions={[
+          makeTransaction({ id: 'txn-1', categoryRaw: '5732 - Electronics Stores' }),
+          makeTransaction({ id: 'txn-2', categoryRaw: 'Fast Food Restaurants' }),
+        ]}
+        cardLastFourById={new Map()}
+        categoryColors={new Map([['electronics stores', 'var(--color-chart-6)']])}
+      />,
+    )
+
+    const dotColors = [
+      ...container.querySelectorAll('tbody span[aria-hidden="true"][style*="background-color"]'),
+    ].map((dot) => (dot as HTMLElement).style.backgroundColor)
+    expect(dotColors[0]).toBe('var(--color-chart-6)')
+    expect(dotColors[1]).not.toBe('var(--color-chart-5)')
+    expect(dotColors[1]).not.toBe('var(--color-chart-6)')
+  })
 })

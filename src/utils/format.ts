@@ -33,8 +33,11 @@ export function formatSignedSpend(amountMinor: number, currency: string): string
     : `-${formatMoney(amountMinor, currency)}`
 }
 
-/** Cashback always reads as an inflow ("+€0.31"); it's never negative in
- * this app's data model. */
+/** Cashback reads as an inflow ("+€0.31"). A refund can take cashback back,
+ * so a negative amount keeps its own minus sign ("-€2.70") rather than
+ * getting a plus in front of it too. */
 export function formatSignedCashback(cashbackMinor: number, currency: string): string {
-  return `+${formatMoney(cashbackMinor, currency)}`
+  return cashbackMinor < 0
+    ? formatMoney(cashbackMinor, currency)
+    : `+${formatMoney(cashbackMinor, currency)}`
 }
