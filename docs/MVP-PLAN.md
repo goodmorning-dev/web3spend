@@ -104,8 +104,9 @@ No account, wallet connection, remote transaction upload, or financial-data back
   shortcut (per §4 step 7) lives in `/app`, not here.
 - Two clear actions from Home: go to the app to import an ether.fi export, or open the
   synthetic demo.
-- Alongside those two actions, a separate "Want a new provider?" card with a CTA asking
-  visitors to DM [@goodmorningdevs](https://x.com/goodmorningdevs) on X. This adds no
+- Alongside those two actions, a separate "Want to see your card here?" card with a
+  "Request a card" CTA pointing to [@goodmorningdevs](https://x.com/goodmorningdevs) on X
+  (after launch, to a post collecting card requests in its replies). This adds no
   functionality; it is a low-effort way to gauge interest in supporting other card providers
   before investing in a second adapter, and it lives on Home (not buried in the import screen)
   so it's visible to everyone who opens the app, imported or not.

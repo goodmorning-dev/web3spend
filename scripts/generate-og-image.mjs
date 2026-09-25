@@ -74,7 +74,7 @@ const html = `<!doctype html>
     <img class="hero" src="${heroCard}" alt="" />
     <div class="content">
       <div class="brand"><img src="${logo}" alt="" />Web3Spend</div>
-      <h1>Your spending.<br /><span class="gold">Your data.</span> Your control.</h1>
+      <h1>Your crypto card spending, <span class="gold">finally clear.</span></h1>
       <p>Private spending and cashback insights for your ether.fi card. Everything stays on your device.</p>
     </div>
   </body>

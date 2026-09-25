@@ -12,6 +12,7 @@
   --color-text-dim: var(--text-dim);
   --color-text-faint: var(--text-faint);
   --color-positive: var(--positive);
+  --color-accent-2: var(--accent-2);
   --color-warning: var(--warning);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -72,6 +73,7 @@
   --text-dim: oklch(0.556 0 0);
   --text-faint: oklch(0.708 0 0);
   --positive: #158a4a;
+  --accent-2: #5b6cf0;
   --warning: #b0730f;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
@@ -119,6 +121,8 @@
   --text-dim: #96a0b3;
   --text-faint: #5c6579;
   --positive: #34d399;
+  /* The home page's second accent, next to gold (--primary). */
+  --accent-2: #7c8cf8;
   --warning: #f5a623;
   --accent: #1e2431;
   --accent-foreground: #eef1f6;
@@ -160,7 +164,8 @@
 
 /* Opens and closes a <details> smoothly instead of snapping. Browsers
    without ::details-content support just keep the instant toggle. */
-.subscription-details::details-content {
+.subscription-details::details-content,
+.faq-details::details-content {
   block-size: 0;
   overflow-y: clip;
   transition:
@@ -168,12 +173,14 @@
     content-visibility 220ms allow-discrete;
 }
 
-.subscription-details[open]::details-content {
+.subscription-details[open]::details-content,
+.faq-details[open]::details-content {
   block-size: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .subscription-details::details-content {
+  .subscription-details::details-content,
+  .faq-details::details-content {
     transition: none;
   }
 }

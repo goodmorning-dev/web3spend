@@ -2,6 +2,7 @@ import {
   ArrowRight,
   BarChart3,
   ChevronRight,
+  CircleHelp,
   Code2,
   FileDown,
   ShieldCheck,
@@ -18,11 +19,18 @@ import xLeftImage from '@/assets/x-left.webp'
 import xRightImage from '@/assets/x-right.webp'
 import { Button } from '@/components/ui/button'
 import { XLogoIcon } from '@/components/home/BrandIcons'
+import FaqSection from '@/components/home/FaqSection'
 import HeroCard from '@/components/home/HeroCard'
+import RoadmapSection from '@/components/home/RoadmapSection'
+import UseAnywhereSection from '@/components/home/UseAnywhereSection'
 import SiteFooter from '@/components/SiteFooter'
 import { useDemoData } from '@/hooks/useDemoData'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import { CARD_REQUEST_URL, ETHERFI_EXPORT_GUIDE_URL } from '@/lib/links'
 
+// Gold and the second accent (accent-2) run through the whole page. The
+// promises under the hero's buttons use the second accent, so the gold
+// buttons stand out on their own.
 const PROMISES = [
   {
     icon: ShieldCheck,
@@ -32,7 +40,9 @@ const PROMISES = [
   {
     icon: WifiOff,
     title: 'Works offline',
-    description: 'After install',
+    // Not "after install": that read as if something had to be installed.
+    // Once the page has loaded, it keeps working offline, installed or not.
+    description: 'Once loaded',
   },
   {
     icon: Code2,
@@ -59,15 +69,15 @@ const STEPS: {
     icon: Upload,
     image: step2Image,
     tag: 'Step 02',
-    title: 'Import here',
-    description: "Drop the file in. It's read and parsed locally; nothing is uploaded anywhere.",
+    title: 'Drop it in',
+    description: "Import the file. It's read and parsed locally; nothing is uploaded anywhere.",
   },
   {
     icon: BarChart3,
     image: step3Image,
     tag: 'Step 03',
     title: 'See your spending',
-    description: 'Spending, categories, and recorded cashback by currency, ready in seconds.',
+    description: 'Get a clear view of spending, categories, and cashback by currency.',
   },
 ]
 
@@ -77,9 +87,28 @@ function Home() {
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
+      {/* Background glows at the page's edges, alternating down the page:
+          gold on the left and the second accent on the right, the first two
+          high enough to show on a 1080px tall screen without scrolling. */}
       <div
         aria-hidden="true"
-        className="absolute top-1/4 left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:block sm:size-[28rem]"
+        className="absolute top-[140px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/35 blur-3xl sm:block sm:size-[28rem]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-[400px] right-0 -z-10 hidden size-96 translate-x-1/2 rounded-full bg-accent-2/20 blur-3xl sm:block sm:size-[28rem]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-[1050px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl sm:block sm:size-[28rem]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-[1550px] right-0 -z-10 hidden size-96 translate-x-1/2 rounded-full bg-accent-2/20 blur-3xl sm:block sm:size-[28rem]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-[2050px] left-0 -z-10 hidden size-96 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl sm:block sm:size-[28rem]"
       />
       <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-8 sm:gap-20 sm:py-10">
         <header className="flex items-center justify-between">
@@ -98,9 +127,7 @@ function Home() {
         <section className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[520px_1fr] lg:gap-8">
           <div className="flex flex-col items-start gap-5">
             <h1 className="font-heading text-4xl leading-[1.1] font-semibold sm:text-5xl">
-              Your spending.
-              <br />
-              <span className="text-primary">Your data.</span> Your control.
+              Your crypto card spending, <span className="text-primary">finally clear.</span>
             </h1>
             <p className="max-w-md text-base text-text-dim">
               Import your ether.fi transaction export and get clear insights into your spending and
@@ -122,7 +149,7 @@ function Home() {
             <ul className="mt-3 flex flex-wrap items-start gap-6">
               {PROMISES.map(({ icon: Icon, title, description }) => (
                 <li key={title} className="flex items-center gap-2.5">
-                  <Icon className="size-7 shrink-0 text-primary" />
+                  <Icon className="size-7 shrink-0 text-accent-2" />
                   <span className="flex flex-col">
                     <span className="text-sm font-semibold">{title}</span>
                     <span className="text-xs text-text-faint">{description}</span>
@@ -154,15 +181,15 @@ function Home() {
                   src={image}
                   alt=""
                   aria-hidden="true"
-                  className="absolute inset-y-0 right-0 h-full w-3/4 object-cover object-left opacity-90"
+                  className="absolute inset-y-0 right-0 h-full w-3/4 object-cover object-left opacity-60"
                 />
                 <div
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-r from-[#0d1016] from-45% via-[#0d1016]/95 to-transparent"
                 />
                 <div className="relative z-10 flex flex-col gap-2.5">
-                  <div className="flex size-11 items-center justify-center rounded-xl border border-primary bg-secondary text-primary">
-                    <Icon className="size-5" />
+                  <div className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-secondary bg-gradient-to-br from-primary/20 to-primary/5">
+                    <Icon className="size-5 text-primary" />
                   </div>
                   <span className="text-[11px] font-semibold tracking-wide text-foreground/80 uppercase [text-shadow:0_1px_4px_rgb(0_0_0/0.7)]">
                     {tag}
@@ -177,7 +204,24 @@ function Home() {
               </li>
             ))}
           </ol>
+          <p className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center text-sm text-text-dim">
+            <CircleHelp className="size-4 shrink-0 text-accent-2" />
+            <span className="font-semibold text-foreground">How do I export?</span>
+            On ether.fi, open Transaction history, choose the dates, and click the download button.
+            <a
+              href={ETHERFI_EXPORT_GUIDE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-accent-2 hover:underline"
+            >
+              ether.fi&apos;s guide
+            </a>
+          </p>
         </section>
+
+        <UseAnywhereSection />
+
+        <RoadmapSection />
 
         <section className="relative isolate flex flex-col items-center gap-5 overflow-hidden rounded-2xl border border-[#161a24] bg-[#0d1016] p-6 sm:flex-row sm:justify-between sm:gap-8 sm:p-8">
           <div
@@ -186,7 +230,7 @@ function Home() {
           />
           <div
             aria-hidden="true"
-            className="absolute top-1/2 right-0 -z-10 size-32 translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/20 blur-2xl"
+            className="absolute top-1/2 right-0 -z-10 size-32 translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-2/20 blur-2xl"
           />
 
           <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
@@ -199,10 +243,10 @@ function Home() {
               />
             </div>
             <div className="sm:ml-2">
-              <h3 className="font-heading text-lg font-semibold">Want a new provider?</h3>
+              <h3 className="font-heading text-lg font-semibold">Want to see your card here?</h3>
               <p className="mt-1 max-w-sm text-sm text-text-dim">
-                Web3Spend currently only supports ether.fi. If you use a different web3 card and
-                would find this useful, let us know.
+                Web3Spend currently supports ether.fi. Tell us which Web3 card you&apos;d like us to
+                support next.
               </p>
             </div>
           </div>
@@ -219,13 +263,15 @@ function Home() {
               size="xl"
               className="relative z-10 border border-[#1c212c] bg-[#05070a]/80 text-foreground hover:bg-[#0d1016]/80"
             >
-              <a href="https://x.com/goodmorningdevs" target="_blank" rel="noreferrer">
+              <a href={CARD_REQUEST_URL} target="_blank" rel="noreferrer">
                 <XLogoIcon className="size-4" />
-                Let us know on X
+                Request a card
               </a>
             </Button>
           </div>
         </section>
+
+        <FaqSection />
       </div>
 
       <SiteFooter className="mx-auto max-w-6xl px-6 py-6" />
