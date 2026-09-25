@@ -215,5 +215,8 @@ describe('Home', () => {
     expect(
       within(section).getByText(/isn't affiliated with or endorsed by ether\.fi/i),
     ).toBeVisible()
+    for (const link of within(section).getAllByRole('link', { name: /ask us on x/i })) {
+      expect(link).toHaveAttribute('href', 'https://x.com/goodmorningdevs')
+    }
   })
 })
