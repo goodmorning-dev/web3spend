@@ -17,8 +17,12 @@ export interface PeriodSummary {
   /** null ("unavailable") rather than 0 when there's no spend to divide by, or when
    * cashback couldn't be safely combined across currencies. */
   effectiveCashbackPct: number | null
-  /** How many of `purchaseCount` are still pending. */
+  /** How many of `purchaseCount` are still pending, and the part of
+   * `spendMinor` and `cashbackMinor` they account for, so the dashboard can
+   * show what's settled apart from what's still pending. */
   pendingCount: number
+  pendingSpendMinor: number
+  pendingCashbackMinor: number
   cancelledCount: number
 }
 
@@ -38,6 +42,8 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
   let cashbackMinor = 0
   let cashbackCurrencyMismatch = false
   let pendingCount = 0
+  let pendingSpendMinor = 0
+  let pendingCashbackMinor = 0
   let cancelledCount = 0
 
   for (const transaction of transactions) {
@@ -49,13 +55,18 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
       continue
     }
 
+    const isPending = transaction.status === 'PENDING'
     spendMinor += transaction.amountMinor
     purchaseCount += 1
-    if (transaction.status === 'PENDING') {
+    if (isPending) {
       pendingCount += 1
+      pendingSpendMinor += transaction.amountMinor
     }
     if (hasCompatibleCashbackCurrency(transaction)) {
       cashbackMinor += transaction.cashbackMinor
+      if (isPending) {
+        pendingCashbackMinor += transaction.cashbackMinor
+      }
     } else {
       cashbackCurrencyMismatch = true
     }
@@ -69,6 +80,8 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
     effectiveCashbackPct:
       !cashbackCurrencyMismatch && spendMinor > 0 ? (cashbackMinor / spendMinor) * 100 : null,
     pendingCount,
+    pendingSpendMinor,
+    pendingCashbackMinor,
     cancelledCount,
   }
 }

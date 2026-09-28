@@ -67,6 +67,8 @@ describe('summarizeTransactions', () => {
     expect(summary.cashbackMinor).toBe(54)
     expect(summary.purchaseCount).toBe(3)
     expect(summary.pendingCount).toBe(2)
+    expect(summary.pendingSpendMinor).toBe(800)
+    expect(summary.pendingCashbackMinor).toBe(24)
     expect(summary.effectiveCashbackPct).toBeCloseTo(3)
   })
 

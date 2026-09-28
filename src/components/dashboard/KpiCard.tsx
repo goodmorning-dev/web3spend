@@ -8,7 +8,7 @@ interface KpiCardProps {
   hint: string
   /** An optional always-visible line under the value, for context that's
    * too important to leave to the hover hint. */
-  detail?: string
+  detail?: ReactNode
   tone?: 'default' | 'positive'
 }
 
