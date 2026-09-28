@@ -8,9 +8,6 @@ interface ImportFlowProps {
    * so a parent can react to "an import just happened" without needing to
    * duplicate this component's own result state. */
   onImported?: (result: ImportResult) => void
-  /** Offers the demo as the way in for anyone without a file yet, like
-   * the Import page does. The parent turns it off once there's data. */
-  offerDemo?: boolean
 }
 
 /**
@@ -20,7 +17,7 @@ interface ImportFlowProps {
  * `ImportDropzone` directly instead, so this heading/link pairing is
  * deliberately the plain, minimal version of that same explanation.
  */
-function ImportFlow({ onImported, offerDemo = true }: ImportFlowProps = {}) {
+function ImportFlow({ onImported }: ImportFlowProps = {}) {
   const { loadDemo, isLoading, error } = useDemoData()
 
   return (
@@ -46,25 +43,23 @@ function ImportFlow({ onImported, offerDemo = true }: ImportFlowProps = {}) {
         <ImportDropzone onImported={onImported} />
       </div>
 
-      {offerDemo && (
-        <div className="flex flex-col items-center gap-2 text-sm">
-          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-            <span className="text-text-dim">Don&apos;t have a file handy?</span>
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              onClick={loadDemo}
-              disabled={isLoading}
-              className="h-auto gap-1 p-0"
-            >
-              {isLoading ? 'Loading demo…' : 'Try a demo instead'}
-              {!isLoading && <ArrowRight className="size-3.5" />}
-            </Button>
-          </div>
-          {error && <p className="text-destructive">{error}</p>}
+      <div className="flex flex-col items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <span className="text-text-dim">Don&apos;t have a file handy?</span>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            onClick={loadDemo}
+            disabled={isLoading}
+            className="h-auto gap-1 p-0"
+          >
+            {isLoading ? 'Loading demo…' : 'Try a demo instead'}
+            {!isLoading && <ArrowRight className="size-3.5" />}
+          </Button>
         </div>
-      )}
+        {error && <p className="text-destructive">{error}</p>}
+      </div>
     </div>
   )
 }

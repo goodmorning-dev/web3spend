@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { utils, write, type WorkBook } from 'xlsx'
 import { DashboardFiltersProvider, useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import type { StandardTransaction } from '@/types/transaction'
@@ -271,7 +271,8 @@ describe('DashboardPage', () => {
     expect(document.body.textContent).not.toContain(wrongLocalText)
   })
 
-  it('keeps the import result, including unsupported-row warnings, visible once the first import completes', async () => {
+  it('hides the import prompt once the first import completes, and goes back to the top', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     const user = userEvent.setup()
     renderDashboardPage()
 
@@ -281,27 +282,11 @@ describe('DashboardPage', () => {
     await user.upload(input, toFile(buildWorkbookWithOneUnsupportedRow()))
 
     expect(await screen.findByText('Cashback earned')).toBeInTheDocument()
-    expect(screen.getByText('1 added, 0 updated.')).toBeInTheDocument()
-    expect(screen.getByText(/1 row could not be imported/i)).toBeInTheDocument()
-  })
-
-  it('keeps the import result above the dashboard once the first import completes, and stops offering the demo', async () => {
-    const user = userEvent.setup()
-    renderDashboardPage()
-
-    const heading = await screen.findByRole('heading', { name: /import your ether\.fi data/i })
-    expect(screen.getByRole('button', { name: /try a demo instead/i })).toBeInTheDocument()
-
-    await user.upload(
-      screen.getByLabelText(/choose an xlsx file/i),
-      toFile(buildWorkbookWithOneUnsupportedRow()),
-    )
-
-    const kpi = await screen.findByText('Cashback earned')
-    // Rendered after the dashboard, the result kept the page scrolled to
-    // the bottom once the dashboard appeared above it.
-    expect(heading.compareDocumentPosition(kpi) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /try a demo instead/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: /import your ether\.fi data/i }),
+    ).not.toBeInTheDocument()
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'instant' })
+    scrollTo.mockRestore()
   })
 
   it('opens the demo from the import prompt when there is no local data', async () => {

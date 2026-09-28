@@ -10,10 +10,10 @@ afterEach(async () => {
   await resetDatabase()
 })
 
-function renderImportFlow(props: Parameters<typeof ImportFlow>[0] = {}) {
+function renderImportFlow() {
   return render(
     <MemoryRouter>
-      <ImportFlow {...props} />
+      <ImportFlow />
     </MemoryRouter>,
   )
 }
@@ -45,12 +45,5 @@ describe('ImportFlow', () => {
     await waitFor(async () => {
       expect(await db.transactions.count()).toBeGreaterThan(0)
     })
-  })
-
-  it('leaves the demo out when the parent says not to offer it', () => {
-    renderImportFlow({ offerDemo: false })
-
-    expect(screen.queryByRole('button', { name: /try a demo instead/i })).not.toBeInTheDocument()
-    expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
   })
 })
