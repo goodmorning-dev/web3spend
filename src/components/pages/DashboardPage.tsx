@@ -68,6 +68,13 @@ function DashboardPage() {
   )
 
   const goToTransactions = () => navigate('/app/transactions')
+  // The Transactions page narrowed to one category or merchant. A day picked
+  // on the heatmap would otherwise narrow the list further than what the
+  // viewer just asked for.
+  function openTransactions(params: Record<string, string>) {
+    clearDay()
+    navigate({ pathname: '/app/transactions', search: `?${new URLSearchParams(params)}` })
+  }
 
   if (overallSummary === undefined) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
@@ -136,15 +143,7 @@ function DashboardPage() {
                 buckets={categoryBuckets}
                 currency={filters.currency}
                 onViewAll={goToTransactions}
-                onSelectCategory={(key) => {
-                  // A day picked on the heatmap would otherwise narrow the
-                  // list further than the category the viewer just asked for.
-                  clearDay()
-                  navigate({
-                    pathname: '/app/transactions',
-                    search: `?${new URLSearchParams({ category: key })}`,
-                  })
-                }}
+                onSelectCategory={(key) => openTransactions({ category: key })}
               />
             </div>
             <ActivityHeatmap
@@ -178,6 +177,8 @@ function DashboardPage() {
                 transactions={recentTransactions}
                 cardLastFourById={cardLastFourById}
                 categoryColors={categoryColors}
+                onSelectMerchant={(merchant) => openTransactions({ q: merchant })}
+                onSelectCategory={(key) => openTransactions({ category: key })}
               />
             </section>
             {overallSummary.latestImportedAt && (

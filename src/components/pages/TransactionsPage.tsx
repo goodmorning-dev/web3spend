@@ -10,6 +10,7 @@ import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import type { StandardTransaction } from '@/types/transaction'
 import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
+import { scrollToTop } from '@/lib/scrollToTop'
 import { categoryColorMap } from '@/utils/categoryColors'
 import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
@@ -47,27 +48,34 @@ function TransactionsPage() {
   const overallSummary = useDashboardSummary()
   const { filters, options, clearDay } = useDashboardFilters()
   const transactions = useFilteredTransactions(filters)
-  const [search, setSearch] = useState('')
   const [status, setStatus] = useState(ALL_STATUSES)
   const [mode, setMode] = useState(ALL_MODES)
-  // The category filter lives in the URL (?category=<key>) rather than in
-  // local state, so the Dashboard's category breakdown can link straight to
-  // one category's transactions, and the back button returns there.
+  // The merchant search and the category filter live in the URL
+  // (?q=<text>, ?category=<key>) rather than in local state, so the
+  // Dashboard can link straight to one merchant's or one category's
+  // transactions, and the back button returns there.
   const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? ALL_CATEGORIES
-  function setCategory(value: string) {
+  function setParam(name: string, value: string | null) {
     setSearchParams(
       (previous) => {
         const next = new URLSearchParams(previous)
-        if (value === ALL_CATEGORIES) {
-          next.delete('category')
+        if (value === null) {
+          next.delete(name)
         } else {
-          next.set('category', value)
+          next.set(name, value)
         }
         return next
       },
       { replace: true },
     )
+  }
+  function setSearch(value: string) {
+    setParam('q', value === '' ? null : value)
+  }
+  function setCategory(value: string) {
+    setParam('category', value === ALL_CATEGORIES ? null : value)
   }
 
   // Set by picking a day on the Dashboard's activity heatmap (MVP-PLAN §5);
@@ -205,10 +213,20 @@ function TransactionsPage() {
             {visibleTransactions.length === 1 ? 'transaction' : 'transactions'} found
           </p>
         </div>
+        {/* Clicking a merchant or category in the list filters by it,
+            and goes back up to the filters so the change is in view. */}
         <TransactionsTable
           transactions={visibleTransactions}
           cardLastFourById={cardLastFourById}
           categoryColors={categoryColors}
+          onSelectMerchant={(merchant) => {
+            setSearch(merchant)
+            scrollToTop({ smooth: true })
+          }}
+          onSelectCategory={(key) => {
+            setCategory(key)
+            scrollToTop({ smooth: true })
+          }}
         />
       </section>
     </div>
