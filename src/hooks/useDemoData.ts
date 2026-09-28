@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { scrollToTop } from '@/lib/scrollToTop'
 import { openDemo } from '@/storage/demoData'
 import { useDashboardFiltersOptional } from './DashboardFiltersContext'
 
 /**
  * Opens the synthetic demo (see openDemo) and lands on the dashboard, same
  * destination a real import would reach. Shared by every "Try a demo"
- * entry point (Home, the Import screen) so they can't drift apart.
+ * entry point (Home, the Import screen, the dashboard's import prompt) so
+ * they can't drift apart.
  *
  * The demo lives in its own database, so it opens whether or not the
  * person has real data, and theirs is left exactly as it was. AppShell's
@@ -30,6 +32,9 @@ export function useDemoData() {
       // picked the last time it was open would otherwise hide all of it.
       filters?.resetFilters()
       navigate('/app')
+      // Opened from the dashboard's own import prompt, that's no change of
+      // page, so ScrollToTopOnNavigate leaves the position alone.
+      scrollToTop()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong loading the demo.')
       setIsLoading(false)

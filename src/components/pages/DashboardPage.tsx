@@ -49,6 +49,8 @@ function DashboardPage() {
   // Set once a file finishes processing in this component's lifetime, so a
   // first import's result (including any unsupported-row warnings) stays on
   // screen instead of being unmounted the instant `hasData` flips to true.
+  // It stays above the dashboard that appears: rendered below, the browser
+  // kept it in view and left the page scrolled to the bottom.
   const [justImported, setJustImported] = useState(false)
 
   const cardLastFourById = useMemo(() => {
@@ -102,6 +104,10 @@ function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {(!hasData || justImported) && (
+        <ImportFlow onImported={() => setJustImported(true)} offerDemo={!hasData} />
+      )}
+
       {hasData &&
         periodDataReady &&
         filters &&
@@ -187,8 +193,6 @@ function DashboardPage() {
             )}
           </div>
         )}
-
-      {(!hasData || justImported) && <ImportFlow onImported={() => setJustImported(true)} />}
     </div>
   )
 }

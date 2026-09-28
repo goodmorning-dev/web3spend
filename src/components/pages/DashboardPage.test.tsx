@@ -285,6 +285,37 @@ describe('DashboardPage', () => {
     expect(screen.getByText(/1 row could not be imported/i)).toBeInTheDocument()
   })
 
+  it('keeps the import result above the dashboard once the first import completes, and stops offering the demo', async () => {
+    const user = userEvent.setup()
+    renderDashboardPage()
+
+    const heading = await screen.findByRole('heading', { name: /import your ether\.fi data/i })
+    expect(screen.getByRole('button', { name: /try a demo instead/i })).toBeInTheDocument()
+
+    await user.upload(
+      screen.getByLabelText(/choose an xlsx file/i),
+      toFile(buildWorkbookWithOneUnsupportedRow()),
+    )
+
+    const kpi = await screen.findByText('Cashback earned')
+    // Rendered after the dashboard, the result kept the page scrolled to
+    // the bottom once the dashboard appeared above it.
+    expect(heading.compareDocumentPosition(kpi) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /try a demo instead/i })).not.toBeInTheDocument()
+  })
+
+  it('opens the demo from the import prompt when there is no local data', async () => {
+    const user = userEvent.setup()
+    renderDashboardPage()
+
+    await user.click(await screen.findByRole('button', { name: /try a demo instead/i }))
+
+    expect(await screen.findByText('Cashback earned')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: /import your ether\.fi data/i }),
+    ).not.toBeInTheDocument()
+  })
+
   it('switches to a bar per month and the latest year of activity on "All time"', async () => {
     const user = userEvent.setup()
     await db.transactions.bulkPut([
