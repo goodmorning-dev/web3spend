@@ -1,5 +1,5 @@
 import { ChevronRight } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   aggregateByCategory,
@@ -19,6 +19,7 @@ import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useCurrencyScopedTransactions } from '@/hooks/useCurrencyScopedTransactions'
 import { useDashboardSummary } from '@/hooks/useDashboardSummary'
 import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
+import { scrollToTop } from '@/lib/scrollToTop'
 import type { StandardTransaction } from '@/types/transaction'
 import { categoryColorMap } from '@/utils/categoryColors'
 import { formatUtcDate, formatUtcDateKey, getUtcYear } from '@/utils/dates'
@@ -46,11 +47,6 @@ function DashboardPage() {
   const { filters, options, setDay, clearDay } = useDashboardFilters()
   const filteredTransactions = useFilteredTransactions(filters)
   const currencyScopedTransactions = useCurrencyScopedTransactions(filters)
-  // Set once a file finishes processing in this component's lifetime, so a
-  // first import's result (including any unsupported-row warnings) stays on
-  // screen instead of being unmounted the instant `hasData` flips to true.
-  const [justImported, setJustImported] = useState(false)
-
   const cardLastFourById = useMemo(() => {
     const map = new Map<string, string>()
     for (const card of options?.cards ?? []) {
@@ -86,7 +82,7 @@ function DashboardPage() {
     filteredTransactions !== undefined &&
     currencyScopedTransactions !== undefined
 
-  if (hasData && !justImported && !periodDataReady) {
+  if (hasData && !periodDataReady) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
   }
 
@@ -189,7 +185,9 @@ function DashboardPage() {
           </div>
         )}
 
-      {(!hasData || justImported) && <ImportFlow onImported={() => setJustImported(true)} />}
+      {/* Only while there's nothing to show yet: the first import swaps it
+          for the dashboard, which starts from the top. */}
+      {!hasData && <ImportFlow onImported={() => scrollToTop()} />}
     </div>
   )
 }
