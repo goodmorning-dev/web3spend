@@ -2,7 +2,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, Tooltip, XAxis, YAxi
 import { averageFullMonthSpend, type MonthBucket } from '@/analyzers'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import { formatUtcMonthLabel } from '@/utils/dates'
-import { formatCompactMoney, formatMoney } from '@/utils/format'
+import { formatCashbackTotals, formatCompactMoney, formatMoney } from '@/utils/format'
 
 interface MonthlySpendChartProps {
   /** One per month, oldest first (see bucketByMonthRange). */
@@ -57,7 +57,7 @@ function MonthlyTooltip({
     return null
   }
   const [year, month] = parseMonthKey(datum.key)
-  const { spendMinor, cashbackMinor, effectiveCashbackPct, hasTransactions } = datum.bucket
+  const { spendMinor, cashbackByCurrency, hasTransactions } = datum.bucket
   const note = !hasTransactions
     ? 'No transactions imported for this month'
     : datum.isEdge
@@ -81,10 +81,10 @@ function MonthlyTooltip({
         <div className="flex items-center gap-2">
           <span className="size-[7px] shrink-0 rounded-[2px] bg-positive" />
           <span className="min-w-[64px] text-text-dim">Cashback</span>
+          {/* In the currency it was recorded in, which for purchases in
+              another currency is USD (see cashbackTotals). */}
           <span className="tabular-nums text-foreground">
-            {effectiveCashbackPct === null && spendMinor > 0
-              ? 'Unavailable'
-              : formatMoney(cashbackMinor, currency)}
+            {formatCashbackTotals(cashbackByCurrency, currency)}
           </span>
         </div>
       </div>

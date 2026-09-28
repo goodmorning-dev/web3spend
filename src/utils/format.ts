@@ -4,6 +4,19 @@ export function formatMoney(amountMinor: number, currency: string): string {
 }
 
 /** null ("unavailable") renders as a plain word rather than a misleading 0%. */
+/** Cashback in each currency it was recorded in: "$13.36", or
+ * "€0.81 + $0.41" across more than one. Nothing recorded reads as zero in
+ * `currency`. */
+export function formatCashbackTotals(
+  totals: readonly { currency: string; amountMinor: number }[],
+  currency: string,
+): string {
+  if (totals.length === 0) {
+    return formatMoney(0, currency)
+  }
+  return totals.map((total) => formatMoney(total.amountMinor, total.currency)).join(' + ')
+}
+
 export function formatPercent(value: number | null, fractionDigits = 2): string {
   if (value === null) {
     return 'Unavailable'

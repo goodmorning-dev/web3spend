@@ -11,15 +11,21 @@ const CURRENCY_PATTERN = /^[A-Z]{3}$/
 
 /**
  * Transaction types that move money around the ether.fi account rather than
- * spend it on the card: top-ups, swaps, Borrow Mode repayments, and moves
- * into or out of ether.fi's Liquid vaults, staking and Frax, whose types
+ * spend it on the card: top-ups, swaps, Borrow Mode repayments, referral
+ * rewards, and moves into or out of ether.fi's Liquid vaults, staking and
+ * Frax, whose types
  * share a prefix (liquid_deposit, liquid_execute_withdrawal, stake_deposit,
  * frax_withdraw, ...). They aren't purchases and aren't shown yet, so
  * they're left out without being reported as unsupported. Any other type
  * is still reported, so a new kind of card transaction (a refund, say) is
  * never dropped without anyone noticing.
  */
-const ACCOUNT_ACTIVITY_TYPES: ReadonlySet<string> = new Set(['topup', 'swap', 'repay'])
+const ACCOUNT_ACTIVITY_TYPES: ReadonlySet<string> = new Set([
+  'topup',
+  'swap',
+  'repay',
+  'affiliate_reward',
+])
 const ACCOUNT_ACTIVITY_PREFIXES = ['liquid_', 'stake_', 'frax_']
 
 export function isAccountActivityType(type: unknown): boolean {

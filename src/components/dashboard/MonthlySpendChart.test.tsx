@@ -5,7 +5,14 @@ import { formatMoney } from '@/utils/format'
 import MonthlySpendChart from './MonthlySpendChart'
 
 function bucket(key: string, spendMinor: number, hasTransactions = true): MonthBucket {
-  return { key, spendMinor, cashbackMinor: 0, effectiveCashbackPct: null, hasTransactions }
+  return {
+    key,
+    spendMinor,
+    cashbackMinor: 0,
+    effectiveCashbackPct: null,
+    cashbackByCurrency: [],
+    hasTransactions,
+  }
 }
 
 // Testing Library collapses whitespace, including the non-breaking spaces

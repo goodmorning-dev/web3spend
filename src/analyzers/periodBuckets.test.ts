@@ -39,6 +39,7 @@ describe('bucketByDay', () => {
       spendMinor: 0,
       cashbackMinor: 0,
       effectiveCashbackPct: null,
+      cashbackByCurrency: [],
     })
   })
 
@@ -68,6 +69,7 @@ describe('bucketByDay', () => {
       spendMinor: 3000,
       cashbackMinor: 50,
       effectiveCashbackPct: (50 / 3000) * 100,
+      cashbackByCurrency: [{ currency: 'EUR', amountMinor: 50, pendingMinor: 0 }],
     })
   })
 
@@ -137,6 +139,11 @@ describe('bucketByDay', () => {
     const day5 = result.find((bucket) => bucket.key === '2026-01-05')
     expect(day5?.effectiveCashbackPct).toBeNull()
     expect(day5?.cashbackMinor).toBe(20)
+    // still kept, in its own currency, for showing next to the rest
+    expect(day5?.cashbackByCurrency).toEqual([
+      { currency: 'EUR', amountMinor: 20, pendingMinor: 0 },
+      { currency: 'USD', amountMinor: 30, pendingMinor: 0 },
+    ])
   })
 })
 
@@ -173,6 +180,7 @@ describe('bucketByMonth', () => {
       spendMinor: 3000,
       cashbackMinor: 30,
       effectiveCashbackPct: (30 / 3000) * 100,
+      cashbackByCurrency: [{ currency: 'EUR', amountMinor: 30, pendingMinor: 0 }],
     })
   })
 
@@ -276,7 +284,14 @@ describe('bucketByMonthRange', () => {
 
 describe('averageFullMonthSpend', () => {
   function month(key: string, spendMinor: number, hasTransactions = true): MonthBucket {
-    return { key, spendMinor, cashbackMinor: 0, effectiveCashbackPct: null, hasTransactions }
+    return {
+      key,
+      spendMinor,
+      cashbackMinor: 0,
+      effectiveCashbackPct: null,
+      cashbackByCurrency: [],
+      hasTransactions,
+    }
   }
 
   it('leaves out the first and latest month, which the data may only partly cover', () => {

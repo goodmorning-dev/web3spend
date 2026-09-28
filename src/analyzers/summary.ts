@@ -1,5 +1,6 @@
 import type { StandardTransaction } from '@/types/transaction'
 import { assertSingleCurrency } from './assertSingleCurrency'
+import { addCashback, listCashbackTotals, type CashbackTotal } from './cashbackTotals'
 import { hasCompatibleCashbackCurrency, isEligiblePurchase } from './eligibility'
 
 export interface PeriodSummary {
@@ -14,6 +15,11 @@ export interface PeriodSummary {
    * total. A caller must not infer this from `effectiveCashbackPct` being
    * null, since that also happens with zero spend. */
   cashbackComplete: boolean
+  /** All the cashback on these purchases, per currency it was recorded in
+   * (see cashbackTotals), their own currency first. Unlike `cashbackMinor`,
+   * this includes cashback recorded in another currency, so it can still
+   * be shown when it can't be added to the rest. */
+  cashbackByCurrency: CashbackTotal[]
   /** null ("unavailable") rather than 0 when there's no spend to divide by, or when
    * cashback couldn't be safely combined across currencies. */
   effectiveCashbackPct: number | null
@@ -41,6 +47,7 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
   let purchaseCount = 0
   let cashbackMinor = 0
   let cashbackCurrencyMismatch = false
+  const cashbackTotals = new Map<string, CashbackTotal>()
   let pendingCount = 0
   let pendingSpendMinor = 0
   let pendingCashbackMinor = 0
@@ -62,6 +69,7 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
       pendingCount += 1
       pendingSpendMinor += transaction.amountMinor
     }
+    addCashback(cashbackTotals, transaction)
     if (hasCompatibleCashbackCurrency(transaction)) {
       cashbackMinor += transaction.cashbackMinor
       if (isPending) {
@@ -77,6 +85,7 @@ export function summarizeTransactions(transactions: StandardTransaction[]): Peri
     purchaseCount,
     cashbackMinor,
     cashbackComplete: !cashbackCurrencyMismatch,
+    cashbackByCurrency: listCashbackTotals(cashbackTotals, transactions[0]?.currency),
     effectiveCashbackPct:
       !cashbackCurrencyMismatch && spendMinor > 0 ? (cashbackMinor / spendMinor) * 100 : null,
     pendingCount,

@@ -128,6 +128,24 @@ describe('summarizeTransactions', () => {
     expect(summary.cashbackMinor).toBe(20)
   })
 
+  it("keeps every currency the cashback was recorded in, the purchases' own first", () => {
+    const summary = summarizeTransactions([
+      makeTransaction({ id: '1', currency: 'EUR', cashbackCurrency: 'USD', cashbackMinor: 30 }),
+      makeTransaction({
+        id: '2',
+        currency: 'EUR',
+        cashbackCurrency: 'EUR',
+        cashbackMinor: 20,
+        status: 'PENDING',
+      }),
+    ])
+
+    expect(summary.cashbackByCurrency).toEqual([
+      { currency: 'EUR', amountMinor: 20, pendingMinor: 20 },
+      { currency: 'USD', amountMinor: 30, pendingMinor: 0 },
+    ])
+  })
+
   it('marks cashback incomplete when any purchase has a mismatched cashback currency', () => {
     const summary = summarizeTransactions([
       makeTransaction({ id: '1', currency: 'EUR', cashbackCurrency: 'EUR', cashbackMinor: 20 }),

@@ -1,5 +1,6 @@
 export { computeYearActivity, summarizeYearActivity } from './activity'
 export type { ActivityStreak, DayActivity, WeekdayAverage, YearActivitySummary } from './activity'
+export type { CashbackTotal } from './cashbackTotals'
 export { aggregateByCategory } from './categories'
 export type { CategoryBucket } from './categories'
 export {
