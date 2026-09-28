@@ -13,7 +13,7 @@ export interface PeriodBucket {
   key: string
   spendMinor: number
   cashbackMinor: number
-  /** null ("unavailable") rather than 0 when this bucket has no cleared spend,
+  /** null ("unavailable") rather than 0 when this bucket has no spend,
    * or when its cashback couldn't be safely combined across currencies. */
   effectiveCashbackPct: number | null
 }

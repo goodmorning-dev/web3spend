@@ -201,7 +201,7 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('Cashback earned')).toBeInTheDocument()
     expect(screen.getByText('Effective cashback')).toBeInTheDocument()
-    expect(screen.getByText('across 2 cleared purchases')).toBeInTheDocument()
+    expect(screen.getByText('across 2 purchases')).toBeInTheDocument()
     // "Total spent" appears twice by design: the KPI card label, and again as
     // the donut chart's center caption in the category breakdown below it.
     expect(screen.getAllByText('Total spent')).toHaveLength(2)
@@ -311,7 +311,7 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Spending this month')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Activity 2026' })).toBeInTheDocument()
     // both purchases count toward the total, across the two years
-    expect(screen.getByText(/across 2 cleared purchases/i)).toBeInTheDocument()
+    expect(screen.getByText(/across 2 purchases/i)).toBeInTheDocument()
   })
 
   it("opens a category's transactions when its row in the breakdown is clicked", async () => {

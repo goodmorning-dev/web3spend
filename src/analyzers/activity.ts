@@ -8,7 +8,7 @@ const INTENSITY_LEVELS = 4
 export interface DayActivity {
   key: string
   spendMinor: number
-  /** Cleared purchases that day: the same rows spendMinor adds up. */
+  /** Purchases that day: the same rows spendMinor adds up. */
   purchaseCount: number
   /** 0 = no spend; 1-4 = quantile bucket among this year's spending days. */
   level: number
@@ -18,9 +18,9 @@ export interface DayActivity {
 
 /**
  * TECHNICAL-PLAN §9: a GitHub-contribution-style year grid, one cell per
- * calendar day, shaded by that day's cleared spend (a refund-like negative
- * row is excluded, per MVP-PLAN §6), or by how many cleared purchases it
- * had. Both come from the same rows, so the two views light up the same
+ * calendar day, shaded by that day's spend on cleared and pending
+ * purchases (a refund-like negative row is excluded, per MVP-PLAN §6), or
+ * by how many of those purchases it had. Both come from the same rows, so the two views light up the same
  * days (a zero-amount purchase aside), just at different intensities.
  * Levels are quantile buckets over the observed spending days (not a fixed
  * threshold), so the scale stays meaningful regardless of a user's typical
@@ -82,7 +82,7 @@ export interface WeekdayAverage {
 }
 
 export interface YearActivitySummary {
-  /** Days with at least one cleared purchase. */
+  /** Days with at least one purchase. */
   activeDays: number
   longestStreak: ActivityStreak | null
   biggestSpendDay: DayActivity | null

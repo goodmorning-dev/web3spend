@@ -13,13 +13,13 @@ export interface CategoryBucket {
    * dashboard's "Other" rollup, that stands for several categories. */
   key?: string
   spendMinor: number
-  /** 0-1, this category's share of total cleared spend across all categories. */
+  /** 0-1, this category's share of total spend across all categories. */
   share: number
 }
 
 /**
  * MVP-PLAN §5: sorted (descending) spend by category with amount and share,
- * from cleared purchases only (a refund-like negative-amount row is
+ * from cleared and pending purchases (a refund-like negative-amount row is
  * excluded, per MVP-PLAN §6, not counted as negative spend in its category).
  */
 export function aggregateByCategory(transactions: StandardTransaction[]): CategoryBucket[] {

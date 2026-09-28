@@ -1,14 +1,19 @@
 import type { StandardTransaction } from '@/types/transaction'
 
 /**
- * MVP-PLAN §6: a refund-like row (a negative card_spend amount) is detected
- * and excluded from cleared-spend and cashback totals, the same way
- * PENDING/CANCELLED rows are, rather than silently reducing them. Full
- * refund/net-spend semantics are a v2 decision; for now a negative amount
- * just drops the row out of every aggregate here.
+ * MVP-PLAN §6: which rows count toward spend, cashback and everything built
+ * on them. Cleared and pending purchases both count: a pending purchase is
+ * money already spent, and if it's later cancelled, importing a newer
+ * export updates its status and it drops out. Cancelled purchases never
+ * count. A refund-like row (a negative card_spend amount) is detected and
+ * excluded too, rather than silently reducing the totals; full
+ * refund/net-spend semantics are a v2 decision.
  */
 export function isEligiblePurchase(transaction: StandardTransaction): boolean {
-  return transaction.status === 'CLEARED' && transaction.amountMinor >= 0
+  return (
+    (transaction.status === 'CLEARED' || transaction.status === 'PENDING') &&
+    transaction.amountMinor >= 0
+  )
 }
 
 /**

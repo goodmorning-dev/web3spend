@@ -8,12 +8,12 @@ interface KpiCardProps {
   hint: string
   /** An optional always-visible line under the value, for context that's
    * too important to leave to the hover hint. */
-  detail?: string
+  detail?: ReactNode
   tone?: 'default' | 'positive'
 }
 
 /**
- * The hint (e.g. "across 12 cleared purchases") is the traceability MVP-PLAN's
+ * The hint (e.g. "across 12 purchases, 1 pending") is the traceability MVP-PLAN's
  * Milestone 2 "every displayed total can be traced to included rows" done-when
  * calls for; shown on hover/focus rather than always visible, to keep the card
  * itself uncluttered.

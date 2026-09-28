@@ -23,11 +23,11 @@ describe('CategoryBreakdown', () => {
     expect(screen.getByText(formatMoney(1000, 'EUR').replace(/\s+/g, ' '))).toBeInTheDocument()
   })
 
-  it('shows a fallback message instead of an empty chart when there is no cleared spend', () => {
+  it('shows a fallback message instead of an empty chart when there is no spend', () => {
     render(<CategoryBreakdown buckets={[]} currency="EUR" onViewAll={() => {}} />)
 
     expect(screen.getByText('Spending by category')).toBeInTheDocument()
-    expect(screen.getByText('No cleared purchases in this period yet.')).toBeInTheDocument()
+    expect(screen.getByText('No purchases in this period yet.')).toBeInTheDocument()
   })
 
   it('treats a raw category string as plain text, never as a chart config key that could inject CSS', () => {

@@ -64,7 +64,7 @@ function parseDateKey(key: string): [number, number, number] {
  * Saturday as rows, the same layout convention GitHub itself uses.
  * A switch in the header flips the shading between how much was spent and
  * how many transactions there were each day; both count the same cleared
- * purchases. Selecting a day (click, tap, or keyboard) filters the
+ * and pending purchases. Selecting a day (click, tap, or keyboard) filters the
  * transaction table to it; the grid itself is a single tab stop, with arrow keys moving a
  * virtual focus between cells (the same roving-focus pattern a native grid
  * widget uses), so the page doesn't need 365 individual tab stops.

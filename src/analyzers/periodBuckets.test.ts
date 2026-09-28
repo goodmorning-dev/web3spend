@@ -82,9 +82,16 @@ describe('bucketByDay', () => {
     expect(day31?.spendMinor).toBe(500)
   })
 
-  it('excludes non-cleared rows', () => {
-    const result = bucketByDay([makeTransaction({ status: 'PENDING', amountMinor: 999 })], 2026, 1)
-    expect(result.every((bucket) => bucket.spendMinor === 0)).toBe(true)
+  it('counts a pending purchase and leaves out a cancelled one', () => {
+    const pending = bucketByDay([makeTransaction({ status: 'PENDING', amountMinor: 999 })], 2026, 1)
+    expect(pending.reduce((sum, bucket) => sum + bucket.spendMinor, 0)).toBe(999)
+
+    const cancelled = bucketByDay(
+      [makeTransaction({ status: 'CANCELLED', amountMinor: 999 })],
+      2026,
+      1,
+    )
+    expect(cancelled.every((bucket) => bucket.spendMinor === 0)).toBe(true)
   })
 
   it('excludes a refund-like row (negative amount) from its day instead of subtracting it', () => {
@@ -239,10 +246,10 @@ describe('bucketByMonthRange', () => {
     ])
   })
 
-  it('leaves non-cleared and refund-like rows out of the totals but still lets them set the range', () => {
+  it('leaves cancelled and refund-like rows out of the totals but still lets them set the range', () => {
     const result = bucketByMonthRange([
       makeTransaction({ id: '1', timestampUtc: '2026-01-10T10:00:00.000Z', amountMinor: 400 }),
-      makeTransaction({ id: '2', timestampUtc: '2026-03-10T10:00:00.000Z', status: 'PENDING' }),
+      makeTransaction({ id: '2', timestampUtc: '2026-03-10T10:00:00.000Z', status: 'CANCELLED' }),
       makeTransaction({ id: '3', timestampUtc: '2026-01-11T10:00:00.000Z', amountMinor: -100 }),
     ])
 

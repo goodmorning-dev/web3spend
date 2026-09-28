@@ -14,13 +14,14 @@ function normalizeWhitespace(text: string): string {
 
 function makeSummary(overrides: Partial<PeriodSummary> = {}): PeriodSummary {
   return {
-    clearedSpendMinor: 2840,
-    clearedCount: 12,
-    clearedCashbackMinor: 71,
+    spendMinor: 2840,
+    purchaseCount: 12,
+    cashbackMinor: 71,
     cashbackComplete: true,
     effectiveCashbackPct: 2.5,
-    pendingSpendMinor: 0,
     pendingCount: 0,
+    pendingSpendMinor: 0,
+    pendingCashbackMinor: 0,
     cancelledCount: 0,
     ...overrides,
   }
@@ -32,7 +33,7 @@ describe('KpiRow', () => {
 
     expect(screen.getByText('Total spent')).toBeInTheDocument()
     expect(screen.getByText(normalizeWhitespace(formatMoney(2840, 'EUR')))).toBeInTheDocument()
-    expect(screen.getByText('across 12 cleared purchases')).toBeInTheDocument()
+    expect(screen.getByText('across 12 purchases')).toBeInTheDocument()
 
     expect(screen.getByText('Cashback earned')).toBeInTheDocument()
     expect(screen.getByText(normalizeWhitespace(formatMoney(71, 'EUR')))).toBeInTheDocument()
@@ -46,9 +47,45 @@ describe('KpiRow', () => {
     expect(screen.getByText('Unavailable')).toBeInTheDocument()
   })
 
-  it('uses singular "purchase" for exactly one cleared purchase', () => {
-    render(<KpiRow summary={makeSummary({ clearedCount: 1 })} currency="EUR" />)
-    expect(screen.getByText('across 1 cleared purchase')).toBeInTheDocument()
+  it('uses singular "purchase" for exactly one purchase', () => {
+    render(<KpiRow summary={makeSummary({ purchaseCount: 1 })} currency="EUR" />)
+    expect(screen.getByText('across 1 purchase')).toBeInTheDocument()
+  })
+
+  it('says how many of the purchases are still pending', () => {
+    render(<KpiRow summary={makeSummary({ purchaseCount: 12, pendingCount: 2 })} currency="EUR" />)
+    expect(screen.getByText('across 12 purchases, 2 pending')).toBeInTheDocument()
+  })
+
+  it('splits spend into settled and pending, and cashback into received and pending', () => {
+    render(
+      <KpiRow
+        summary={makeSummary({
+          spendMinor: 2840,
+          cashbackMinor: 71,
+          pendingCount: 1,
+          pendingSpendMinor: 450,
+          pendingCashbackMinor: 11,
+        })}
+        currency="EUR"
+      />,
+    )
+
+    const detailWithText = (text: string) =>
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'SPAN' && normalizeWhitespace(element.textContent ?? '') === text,
+      )
+    const money = (minor: number) => normalizeWhitespace(formatMoney(minor, 'EUR'))
+
+    expect(detailWithText(`${money(2390)} settled · ${money(450)} pending`)).toBeInTheDocument()
+    expect(detailWithText(`${money(60)} received · ${money(11)} pending`)).toBeInTheDocument()
+  })
+
+  it('shows no split when nothing is pending', () => {
+    render(<KpiRow summary={makeSummary()} currency="EUR" />)
+    expect(screen.queryByText(/settled/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/received/)).not.toBeInTheDocument()
   })
 
   it('shows cashback as Unavailable rather than a partial total when it is incomplete', () => {
@@ -56,7 +93,7 @@ describe('KpiRow', () => {
       <KpiRow
         summary={makeSummary({
           cashbackComplete: false,
-          clearedCashbackMinor: 20,
+          cashbackMinor: 20,
           effectiveCashbackPct: null,
         })}
         currency="EUR"
@@ -68,7 +105,7 @@ describe('KpiRow', () => {
     // both the cashback total and the effective rate that depends on it stay unavailable
     expect(screen.getAllByText('Unavailable')).toHaveLength(2)
     expect(
-      screen.getByText(/some cleared purchases recorded cashback in another currency/i),
+      screen.getByText(/some purchases recorded cashback in another currency/i),
     ).toBeInTheDocument()
   })
 })

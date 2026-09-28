@@ -11,7 +11,7 @@ how we build it. Status: Draft for discussion.
 - Domain: web3spend.app — confirmed as the working domain after naming/keyword research
   (available on `.app`, no conflicting US trademarks).
 - Refund handling: RESOLVED. No refund support in the MVP; refund-like rows are flagged and
-  excluded from totals the same way pending/cancelled rows are (MVP-PLAN §6).
+  excluded from totals the same way cancelled rows are (MVP-PLAN §6).
 - Borrow mode: RESOLVED. Borrow Mode rows have the same columns as Direct Pay, with "Borrow
   Mode" as the spending mode, so they go through the same import pipeline and count toward
   totals like any other card purchase. Full Borrow analytics (balances, interest, collateral,
@@ -271,10 +271,11 @@ horizontal bars... pie/donut optional" already reflects this):
   transaction table (same click-to-filter pattern as the reference implementation's category
   chart). Categories are ether.fi's own raw text (section 7), so the list can be longer and
   less tidy than a curated taxonomy; sorting by amount keeps the top spend visible regardless.
-- Column/line: accumulated cashback and effective cashback % (`cashback / cleared spend`) per
+- Column/line: accumulated cashback and effective cashback % (`cashback / spend`, both over
+  cleared and pending purchases) per
   period; "unavailable" (not 0%) when the denominator is zero or data is incomplete.
 - Activity heatmap (MVP-PLAN §5): a GitHub-contribution-style year grid, one cell per day,
-  shaded by that day's cleared spend. Recharts has no built-in calendar-heatmap chart, so this
+  shaded by that day's spend. Recharts has no built-in calendar-heatmap chart, so this
   is a small custom component: a CSS grid of cells is enough; no need for a dedicated charting
   library just for this one view. Color intensity maps from a per-currency spend scale (e.g.
   quantile buckets over the visible period, not a fixed € threshold, so it stays meaningful

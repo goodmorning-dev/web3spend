@@ -92,7 +92,7 @@ export interface MonthlySpendAverage {
 }
 
 /**
- * Average cleared spend per month across the last few full months on record
+ * Average spend per month across the last few full months on record
  * before the one `asOfUtc` falls in (which is usually still in progress).
  * Only months that have any transactions count, so a gap before someone's
  * first import doesn't drag the average down. null when there's no full
