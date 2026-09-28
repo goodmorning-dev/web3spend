@@ -327,7 +327,9 @@ describe('DashboardPage', () => {
       </MemoryRouter>,
     )
 
-    await user.click(await screen.findByRole('button', { name: /^cat/i }))
+    // the breakdown's row, which also names the amount and share; the
+    // recent transactions list below has a "Cat" button of its own
+    await user.click(await screen.findByRole('button', { name: /^cat.*%/i }))
 
     expect(screen.getByTestId('location')).toHaveTextContent('/app/transactions?category=cat')
   })
@@ -355,17 +357,33 @@ describe('DashboardPage', () => {
 
     const tableDots = screen
       .getAllByText('Electronics Stores')
-      .filter((label) => !label.hasAttribute('title'))
-      .map(
-        (label) =>
-          (label.querySelector('span[aria-hidden="true"]') ??
-            label.previousElementSibling) as HTMLElement,
-      )
+      // the donut's own label carries the plain name as its tooltip
+      .filter((label) => label.getAttribute('title') !== 'Electronics Stores')
+      .map((label) => label.previousElementSibling as HTMLElement)
 
     expect(donutColor).toBe('var(--color-chart-6)')
     expect(tableDots.length).toBeGreaterThan(0)
     for (const dot of tableDots) {
       expect(dot.style.backgroundColor).toBe(donutColor)
     }
+  })
+
+  it("opens a merchant's transactions when its name in the recent transactions is clicked", async () => {
+    const user = userEvent.setup()
+    await db.transactions.bulkPut([spend('a', '2026-02-10T10:00:00.000Z', 500)])
+
+    render(
+      <MemoryRouter initialEntries={['/app']}>
+        <DashboardFiltersProvider>
+          <DashboardPage />
+          <LocationProbe />
+        </DashboardFiltersProvider>
+      </MemoryRouter>,
+    )
+
+    const [merchant] = await screen.findAllByRole('button', { name: 'Shop' })
+    await user.click(merchant)
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/app/transactions?q=Shop')
   })
 })

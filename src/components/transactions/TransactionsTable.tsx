@@ -16,6 +16,42 @@ interface TransactionsTableProps {
    * (listCategoryColor). Without it, each category shows its own preferred
    * color. */
   categoryColors?: Map<string, string>
+  /** When given, each merchant name is a button that narrows the list to
+   * that merchant (see FilterButton). */
+  onSelectMerchant?: (merchant: string) => void
+  /** Likewise for each category, called with its merge key. */
+  onSelectCategory?: (categoryKey: string) => void
+}
+
+/**
+ * A merchant or category name that, when the page supports it, filters
+ * the list down to that value on click; otherwise plain text. It still
+ * reads as the name, with an underline on hover as the only hint.
+ */
+function FilterButton({
+  label,
+  title,
+  onSelect,
+  className,
+}: {
+  label: string
+  title: string
+  onSelect?: () => void
+  className?: string
+}) {
+  if (!onSelect) {
+    return <span className={className}>{label}</span>
+  }
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      title={title}
+      className={`cursor-pointer rounded-sm text-left underline-offset-2 transition-colors hover:text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${className ?? ''}`}
+    >
+      {label}
+    </button>
+  )
 }
 
 const STATUS_LABELS: Record<TransactionStatus, string> = {
@@ -254,6 +290,8 @@ function TransactionsTable({
   transactions,
   cardLastFourById,
   categoryColors,
+  onSelectMerchant,
+  onSelectCategory,
 }: TransactionsTableProps) {
   const { hovered, showDate, scheduleHideDate } = useDateHover()
 
@@ -272,7 +310,12 @@ function TransactionsTable({
           >
             <div className="flex items-center gap-2.5">
               <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                {transaction.description}
+                <FilterButton
+                  label={transaction.description}
+                  title={`Show only ${transaction.description}`}
+                  onSelect={onSelectMerchant && (() => onSelectMerchant(transaction.description))}
+                  className="inline-block max-w-full truncate align-bottom"
+                />
               </p>
               <span className="shrink-0 text-sm font-semibold tabular-nums">
                 {formatSignedSpend(transaction.amountMinor, transaction.currency)}
@@ -298,9 +341,15 @@ function TransactionsTable({
                   categoryRaw={transaction.categoryRaw}
                   categoryColors={categoryColors}
                 />
-                <span className="min-w-0 truncate">
-                  {displayCategoryLabel(transaction.categoryRaw)}
-                </span>
+                <FilterButton
+                  label={displayCategoryLabel(transaction.categoryRaw)}
+                  title={`Show only ${displayCategoryLabel(transaction.categoryRaw)}`}
+                  onSelect={
+                    onSelectCategory &&
+                    (() => onSelectCategory(categoryMergeKey(transaction.categoryRaw)))
+                  }
+                  className="min-w-0 truncate"
+                />
               </p>
               <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-text-faint">
                 <ModePill mode={transaction.spendingMode} compact />
@@ -353,14 +402,27 @@ function TransactionsTable({
                     className="whitespace-nowrap"
                   />
                 </td>
-                <td className="py-2 pr-3">{transaction.description}</td>
+                <td className="py-2 pr-3">
+                  <FilterButton
+                    label={transaction.description}
+                    title={`Show only ${transaction.description}`}
+                    onSelect={onSelectMerchant && (() => onSelectMerchant(transaction.description))}
+                  />
+                </td>
                 <td className="py-2 pr-3 text-text-dim">
                   <span className="inline-flex items-center gap-1.5">
                     <CategoryDot
                       categoryRaw={transaction.categoryRaw}
                       categoryColors={categoryColors}
                     />
-                    {displayCategoryLabel(transaction.categoryRaw)}
+                    <FilterButton
+                      label={displayCategoryLabel(transaction.categoryRaw)}
+                      title={`Show only ${displayCategoryLabel(transaction.categoryRaw)}`}
+                      onSelect={
+                        onSelectCategory &&
+                        (() => onSelectCategory(categoryMergeKey(transaction.categoryRaw)))
+                      }
+                    />
                   </span>
                 </td>
                 <td className="py-2 pr-3 text-text-dim">

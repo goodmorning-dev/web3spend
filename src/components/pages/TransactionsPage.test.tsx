@@ -138,4 +138,49 @@ describe('TransactionsPage', () => {
     await user.keyboard('{Escape}')
     modeSelect.blur()
   })
+
+  it('filters to a merchant when its name is clicked, and shows it in the search box', async () => {
+    await db.transactions.bulkPut([
+      makeTransaction({ id: 'txn-1', description: 'Coffee Shop' }),
+      makeTransaction({ id: 'txn-2', description: 'Grocery Run', identityKey: 'key-2' }),
+    ])
+    const user = userEvent.setup()
+
+    renderTransactionsPage()
+    const [merchant] = await screen.findAllByRole('button', { name: 'Grocery Run' })
+    await user.click(merchant)
+
+    expect(screen.queryByText('Coffee Shop')).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /search by merchant/i })).toHaveValue('Grocery Run')
+    merchant.blur()
+  })
+
+  it('filters to a category when it is clicked, and shows it in the Category filter', async () => {
+    await db.transactions.bulkPut([
+      makeTransaction({ id: 'txn-1', description: 'Coffee Shop', categoryRaw: 'Groceries' }),
+      makeTransaction({ id: 'txn-2', description: 'Taxi Ride', categoryRaw: '4121 - Taxicabs' }),
+    ])
+    const user = userEvent.setup()
+
+    renderTransactionsPage()
+    const [category] = await screen.findAllByRole('button', { name: 'Taxicabs' })
+    await user.click(category)
+
+    expect(screen.queryByText('Coffee Shop')).not.toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Category' })).toHaveTextContent('Taxicabs')
+    category.blur()
+  })
+
+  it('opens with the merchant search from the URL already applied', async () => {
+    await db.transactions.bulkPut([
+      makeTransaction({ id: 'txn-1', description: 'Coffee Shop' }),
+      makeTransaction({ id: 'txn-2', description: 'Grocery Run', identityKey: 'key-2' }),
+    ])
+
+    renderTransactionsPage('/app/transactions?q=Coffee%20Shop')
+
+    expect(await screen.findAllByText('Coffee Shop')).not.toHaveLength(0)
+    expect(screen.queryByText('Grocery Run')).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /search by merchant/i })).toHaveValue('Coffee Shop')
+  })
 })

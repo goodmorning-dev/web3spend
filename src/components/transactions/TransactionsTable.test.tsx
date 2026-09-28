@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
 import { formatUtcDate, formatUtcDateTime } from '@/utils/dates'
 import { formatMoney } from '@/utils/format'
@@ -268,5 +269,43 @@ describe('TransactionsTable', () => {
     expect(dotColors[0]).toBe('var(--color-chart-6)')
     expect(dotColors[1]).not.toBe('var(--color-chart-5)')
     expect(dotColors[1]).not.toBe('var(--color-chart-6)')
+  })
+
+  it('lets a merchant or category name narrow the list when the page asks for it', async () => {
+    const user = userEvent.setup()
+    const onSelectMerchant = vi.fn()
+    const onSelectCategory = vi.fn()
+    render(
+      <TransactionsTable
+        transactions={[
+          makeTransaction({ description: 'Carrefour', categoryRaw: '5411 - Grocery Stores' }),
+        ]}
+        cardLastFourById={new Map()}
+        onSelectMerchant={onSelectMerchant}
+        onSelectCategory={onSelectCategory}
+      />,
+    )
+
+    // one button per layout (phone list and desktop table)
+    const [merchant] = screen.getAllByRole('button', { name: 'Carrefour' })
+    await user.click(merchant)
+    expect(onSelectMerchant).toHaveBeenCalledWith('Carrefour')
+
+    const [category] = screen.getAllByRole('button', { name: 'Grocery Stores' })
+    expect(category).toHaveAttribute('title', 'Show only Grocery Stores')
+    await user.click(category)
+    expect(onSelectCategory).toHaveBeenCalledWith('grocery stores')
+  })
+
+  it('keeps merchant and category names as plain text without a handler', () => {
+    render(
+      <TransactionsTable
+        transactions={[makeTransaction({ description: 'Carrefour' })]}
+        cardLastFourById={new Map()}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Carrefour' })).not.toBeInTheDocument()
+    expect(screen.getAllByText('Carrefour').length).toBeGreaterThan(0)
   })
 })
