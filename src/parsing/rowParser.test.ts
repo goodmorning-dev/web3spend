@@ -52,6 +52,7 @@ describe('parseRow', () => {
     'topup',
     'swap',
     'repay',
+    'affiliate_reward',
     'liquid_deposit',
     'liquid_execute_withdrawal',
     'stake_deposit',

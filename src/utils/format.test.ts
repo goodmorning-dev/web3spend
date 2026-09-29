@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatMoney, formatPercent, formatSignedCashback } from './format'
+import { formatCashbackTotals, formatMoney, formatPercent, formatSignedCashback } from './format'
 
 describe('formatMoney', () => {
   it('converts minor units back to a localized currency string', () => {
@@ -18,6 +18,27 @@ describe('formatMoney', () => {
       currency: 'USD',
     }).format(1)
     expect(formatMoney(100, 'USD')).toBe(expected)
+  })
+})
+
+describe('formatCashbackTotals', () => {
+  it('shows each currency in its own, joined with a plus', () => {
+    expect(
+      formatCashbackTotals(
+        [
+          { currency: 'EUR', amountMinor: 81 },
+          { currency: 'USD', amountMinor: 41 },
+        ],
+        'EUR',
+      ),
+    ).toBe(`${formatMoney(81, 'EUR')} + ${formatMoney(41, 'USD')}`)
+    expect(formatCashbackTotals([{ currency: 'USD', amountMinor: 1336 }], 'JPY')).toBe(
+      formatMoney(1336, 'USD'),
+    )
+  })
+
+  it('reads as zero in the given currency when nothing was recorded', () => {
+    expect(formatCashbackTotals([], 'JPY')).toBe(formatMoney(0, 'JPY'))
   })
 })
 

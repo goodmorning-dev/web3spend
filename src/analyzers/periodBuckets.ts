@@ -7,6 +7,7 @@ import {
 } from '@/utils/dates'
 import type { StandardTransaction } from '@/types/transaction'
 import { assertSingleCurrency } from './assertSingleCurrency'
+import { addCashback, listCashbackTotals, type CashbackTotal } from './cashbackTotals'
 import { hasCompatibleCashbackCurrency, isEligiblePurchase } from './eligibility'
 
 export interface PeriodBucket {
@@ -16,20 +17,33 @@ export interface PeriodBucket {
   /** null ("unavailable") rather than 0 when this bucket has no spend,
    * or when its cashback couldn't be safely combined across currencies. */
   effectiveCashbackPct: number | null
+  /** All the cashback in this bucket, per currency it was recorded in (see
+   * cashbackTotals), including any that `cashbackMinor` leaves out. */
+  cashbackByCurrency: CashbackTotal[]
 }
 
 interface BucketAccumulator {
   spendMinor: number
   cashbackMinor: number
   cashbackCurrencyMismatch: boolean
+  cashbackTotals: Map<string, CashbackTotal>
+  spendCurrency: string | undefined
 }
 
 function createAccumulator(): BucketAccumulator {
-  return { spendMinor: 0, cashbackMinor: 0, cashbackCurrencyMismatch: false }
+  return {
+    spendMinor: 0,
+    cashbackMinor: 0,
+    cashbackCurrencyMismatch: false,
+    cashbackTotals: new Map(),
+    spendCurrency: undefined,
+  }
 }
 
 function addToAccumulator(accumulator: BucketAccumulator, transaction: StandardTransaction): void {
   accumulator.spendMinor += transaction.amountMinor
+  accumulator.spendCurrency = transaction.currency
+  addCashback(accumulator.cashbackTotals, transaction)
   if (hasCompatibleCashbackCurrency(transaction)) {
     accumulator.cashbackMinor += transaction.cashbackMinor
   } else {
@@ -45,6 +59,7 @@ function toBucket(key: string, accumulator: BucketAccumulator): PeriodBucket {
     cashbackMinor,
     effectiveCashbackPct:
       !cashbackCurrencyMismatch && spendMinor > 0 ? (cashbackMinor / spendMinor) * 100 : null,
+    cashbackByCurrency: listCashbackTotals(accumulator.cashbackTotals, accumulator.spendCurrency),
   }
 }
 

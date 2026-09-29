@@ -18,6 +18,7 @@ function makeSummary(overrides: Partial<PeriodSummary> = {}): PeriodSummary {
     purchaseCount: 12,
     cashbackMinor: 71,
     cashbackComplete: true,
+    cashbackByCurrency: [{ currency: 'EUR', amountMinor: 71, pendingMinor: 0 }],
     effectiveCashbackPct: 2.5,
     pendingCount: 0,
     pendingSpendMinor: 0,
@@ -88,24 +89,78 @@ describe('KpiRow', () => {
     expect(screen.queryByText(/received/)).not.toBeInTheDocument()
   })
 
-  it('shows cashback as Unavailable rather than a partial total when it is incomplete', () => {
+  it('shows cashback recorded in another currency in that currency, and says why the rate is unavailable', () => {
+    // ether.fi records the cashback on purchases in yen in USD
+    render(
+      <KpiRow
+        summary={makeSummary({
+          spendMinor: 6961900,
+          cashbackComplete: false,
+          cashbackMinor: 0,
+          cashbackByCurrency: [{ currency: 'USD', amountMinor: 1336, pendingMinor: 0 }],
+          effectiveCashbackPct: null,
+        })}
+        currency="JPY"
+      />,
+    )
+
+    expect(screen.getByText(normalizeWhitespace(formatMoney(1336, 'USD')))).toBeInTheDocument()
+    expect(screen.getByText('recorded on these purchases, in USD')).toBeInTheDocument()
+    // only the rate, which would need an exchange rate, stays unavailable
+    expect(screen.getAllByText('Unavailable')).toHaveLength(1)
+    expect(screen.getByText('Cashback is in USD, spending in JPY')).toBeInTheDocument()
+  })
+
+  it('shows cashback in more than one currency side by side rather than a partial total', () => {
     render(
       <KpiRow
         summary={makeSummary({
           cashbackComplete: false,
           cashbackMinor: 20,
+          cashbackByCurrency: [
+            { currency: 'EUR', amountMinor: 20, pendingMinor: 0 },
+            { currency: 'USD', amountMinor: 30, pendingMinor: 0 },
+          ],
           effectiveCashbackPct: null,
         })}
         currency="EUR"
       />,
     )
 
-    // the partial 20 minor units must not be presented as the full total
-    expect(screen.queryByText(normalizeWhitespace(formatMoney(20, 'EUR')))).not.toBeInTheDocument()
-    // both the cashback total and the effective rate that depends on it stay unavailable
-    expect(screen.getAllByText('Unavailable')).toHaveLength(2)
     expect(
-      screen.getByText(/some purchases recorded cashback in another currency/i),
+      screen.getByText(
+        normalizeWhitespace(`${formatMoney(20, 'EUR')} + ${formatMoney(30, 'USD')}`),
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('recorded on these purchases, in EUR and USD')).toBeInTheDocument()
+    expect(screen.getByText('Some cashback is in USD, spending in EUR')).toBeInTheDocument()
+  })
+
+  it('splits cashback recorded in another currency into received and pending in that currency', () => {
+    render(
+      <KpiRow
+        summary={makeSummary({
+          spendMinor: 6961900,
+          pendingCount: 1,
+          pendingSpendMinor: 51000,
+          cashbackComplete: false,
+          cashbackMinor: 0,
+          cashbackByCurrency: [{ currency: 'USD', amountMinor: 1336, pendingMinor: 98 }],
+          effectiveCashbackPct: null,
+        })}
+        currency="JPY"
+      />,
+    )
+
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === 'SPAN' &&
+          normalizeWhitespace(element.textContent ?? '') ===
+            normalizeWhitespace(
+              `${formatMoney(1238, 'USD')} received · ${formatMoney(98, 'USD')} pending`,
+            ),
+      ),
     ).toBeInTheDocument()
   })
 })

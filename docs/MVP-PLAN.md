@@ -49,7 +49,8 @@ Inspected source: a sample ether.fi transaction history export.
 - All sample rows are card_spend and Direct Pay.
 - Multiple transaction statuses appear in the sample, including cleared, pending, and cancelled.
 - The sample is predominantly one currency, with a small number of rows in a second currency.
-- Cashback currency matches spending currency on every sample row.
+- Cashback currency matches spending currency on every sample row. A later export shows it
+  doesn't always: purchases in yen and Turkish lira recorded their cashback in USD.
 - Amount and original amount/currency match throughout this sample.
 - Category values mix labels with and without numeric MCC prefixes and include inconsistent whitespace.
 - No stable transaction ID column is present.
@@ -178,6 +179,7 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Describe cashback as recorded cashback on the selected purchases. The export does not establish when it was claimed or received.
 - Effective cashback = sum of recorded cashback / sum of included purchase spend, multiplied by 100, only when currencies and included populations match and data is complete.
 - Display unavailable rather than 0% when the denominator is zero or required cashback information is missing/incompatible.
+- Show cashback recorded in a different currency than its purchase in the currency it was recorded in, next to the rest when needed ("€0.81 + $0.41"), never converted. The export has no exchange rate, so the effective rate stays unavailable for those purchases.
 - Compute yearly cashback rates from yearly sums, never by averaging monthly percentages.
 - Do not hard-code advertised reward tiers or predict reward entitlement.
 - Refunds are out of scope for the MVP (resolved, see §14). Refund-like rows (e.g. a negative
