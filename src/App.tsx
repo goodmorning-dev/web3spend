@@ -5,6 +5,7 @@ import SettingsPage from '@/components/pages/SettingsPage'
 import SubscriptionsPage from '@/components/pages/SubscriptionsPage'
 import TransactionsPage from '@/components/pages/TransactionsPage'
 import AppShell from '@/components/shell/AppShell'
+import BrandPage from '@/components/BrandPage'
 import Home from '@/components/Home'
 import ScrollToTopOnNavigate from '@/components/ScrollToTopOnNavigate'
 import { InstallPromptProvider } from '@/hooks/InstallPromptContext'
@@ -21,6 +22,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/brand" element={<BrandPage />} />
         <Route path="/app" element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionsPage />} />

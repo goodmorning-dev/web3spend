@@ -27,6 +27,17 @@ describe('App routing', () => {
     expect(screen.getByRole('heading', { name: /finally clear/i, level: 1 })).toBeInTheDocument()
   })
 
+  it('renders the brand page at /brand, outside the app shell', () => {
+    renderAt('/brand')
+    expect(screen.getByRole('heading', { name: 'Logo', level: 2 })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Transactions' })).not.toBeInTheDocument()
+  })
+
+  it('does not link to the brand page from the home page', () => {
+    renderAt('/home')
+    expect(document.querySelector('a[href="/brand"]')).toBeNull()
+  })
+
   it('renders the app shell with the Dashboard at /app', async () => {
     renderAt('/app')
     expect(
