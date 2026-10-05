@@ -47,15 +47,20 @@ function SiteFooter({ className }: { className?: string }) {
             </a>
           </span>
         </div>
-        <a
-          href={REPO_URL}
-          target="_blank"
-          rel="noreferrer"
-          className={cn('flex items-center gap-1.5', LINK_CLASS)}
-        >
-          <GithubLogoIcon className="size-4" />
-          Source on GitHub
-        </a>
+        <div className="flex items-center gap-4">
+          <Link to="/brand" className={LINK_CLASS}>
+            Brand
+          </Link>
+          <a
+            href={REPO_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={cn('flex items-center gap-1.5', LINK_CLASS)}
+          >
+            <GithubLogoIcon className="size-4" />
+            Source on GitHub
+          </a>
+        </div>
       </div>
     </footer>
   )
