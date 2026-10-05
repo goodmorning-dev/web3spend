@@ -21,3 +21,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 *.local
+
+# exported brand page
+dist-brand/
