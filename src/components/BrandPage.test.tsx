@@ -26,6 +26,14 @@ describe('BrandPage', () => {
     }
   })
 
+  it('asks search engines not to index it, and stops once you leave', () => {
+    const { unmount } = renderBrandPage()
+    expect(document.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
+
+    unmount()
+    expect(document.querySelector('meta[name="robots"]')).toBeNull()
+  })
+
   it('sets the tab title', () => {
     renderBrandPage()
     expect(document.title).toBe('Brand · Web3Spend')

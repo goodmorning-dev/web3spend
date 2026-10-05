@@ -33,9 +33,9 @@ describe('App routing', () => {
     expect(screen.queryByRole('link', { name: 'Transactions' })).not.toBeInTheDocument()
   })
 
-  it('links to the brand page from the footer', () => {
+  it('does not link to the brand page from the home page', () => {
     renderAt('/home')
-    expect(screen.getByRole('link', { name: 'Brand' })).toHaveAttribute('href', '/brand')
+    expect(document.querySelector('a[href="/brand"]')).toBeNull()
   })
 
   it('renders the app shell with the Dashboard at /app', async () => {

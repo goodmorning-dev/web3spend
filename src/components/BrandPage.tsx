@@ -1,5 +1,5 @@
 import { ArrowLeft, Check, Download, ExternalLink, X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import logoImage from '@/assets/logo.webp'
 import { GithubLogoIcon } from '@/components/home/BrandIcons'
@@ -107,6 +107,17 @@ const CARD = 'rounded-2xl border border-[#161a24] bg-[#0d1016]'
  */
 function BrandPage() {
   usePageTitle('Brand')
+
+  // A page to share by link, not one to find: nothing in the app links to it,
+  // and this asks search engines to leave it out too. It's removed again on
+  // leaving, so the other pages aren't affected.
+  useEffect(() => {
+    const robots = document.createElement('meta')
+    robots.name = 'robots'
+    robots.content = 'noindex'
+    document.head.appendChild(robots)
+    return () => robots.remove()
+  }, [])
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-background text-foreground">
