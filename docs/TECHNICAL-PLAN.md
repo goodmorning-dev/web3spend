@@ -81,12 +81,13 @@ src/
   components/        feature UI (Home, ImportFlow, Dashboard, TransactionsTable, Settings)
   components/ui/     shadcn primitives
   hooks/             thin React glue over storage + analyzers
-  types/             StandardTransaction, Card, ImportRecord, Settings (CategoryOverride is v2)
+  types/             StandardTransaction, Card, ImportRecord, Settings, CustomCategory, CategoryRule
   utils/             money (minor-units helpers), dates (UTC helpers), text normalization
 ```
 
-A `categorization/` module (the app-category table and its lookup) is added in v2 once the
-taxonomy ships; there's nothing for it to do in v1 (section 7).
+`categorization/` resolves the category each transaction counts under (the person's choice
+for that transaction, then a merchant rule, then an ether.fi-category rule, then ether.fi's own
+category). A curated app-level taxonomy, if one ever ships, belongs there too (section 7).
 
 ## 4. Data model (Dexie schema v1)
 
@@ -151,7 +152,13 @@ db.version(1).stores({
   imports: 'id, fileHash, importedAt',
   settings: 'key'
 })
-// categoryOverrides is added in a v2 migration once overrides ship; not in v1.
+
+// v2 adds the person's own categories and the rules that apply them. Transactions only gain
+// optional fields (source, categoryId, editedFields, importedValues), so nothing is migrated.
+db.version(2).stores({
+  categories: 'id, name',
+  categoryRules: 'id, [kind+matchKey], categoryId'
+})
 ```
 
 ## 5. Import pipeline (step by step)

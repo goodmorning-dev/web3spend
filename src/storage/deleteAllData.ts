@@ -10,15 +10,21 @@ import { demoDb, realDb, type Web3SpendDB } from './db'
 export async function clearDatabase(database: Web3SpendDB): Promise<void> {
   await database.transaction(
     'rw',
-    database.cards,
-    database.transactions,
-    database.imports,
-    database.settings,
+    [
+      database.cards,
+      database.transactions,
+      database.imports,
+      database.settings,
+      database.categories,
+      database.categoryRules,
+    ],
     async () => {
       await database.cards.clear()
       await database.transactions.clear()
       await database.imports.clear()
       await database.settings.clear()
+      await database.categories.clear()
+      await database.categoryRules.clear()
     },
   )
 }

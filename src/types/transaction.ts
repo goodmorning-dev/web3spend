@@ -22,4 +22,35 @@ export interface StandardTransaction {
   spendingMode: SpendingMode
   identityKey: string
   importId: string
+  /** 'manual' for a transaction the person added themselves. Absent on
+   * imported ones, which is every row stored before manual entry existed. */
+  source?: 'manual'
+  /** One of the person's own categories (CustomCategory.id), chosen for
+   * this transaction specifically. Takes priority over any category rule.
+   * ORIGINAL_CATEGORY_ID pins the transaction to categoryRaw even when a
+   * rule would otherwise move it. */
+  categoryId?: string
+  /** Fields of an imported transaction the person has changed. A later
+   * import leaves these alone instead of overwriting them. */
+  editedFields?: EditableField[]
+  /** What the import last reported for each edited field, so the edit can
+   * be undone (and stays current if a newer import reports something new). */
+  importedValues?: Partial<Pick<StandardTransaction, EditableField>>
 }
+
+/** Fields a person can change on an imported transaction. Card and
+ * currency stay fixed: they're part of what identifies the purchase. */
+export const EDITABLE_FIELDS = [
+  'timestampUtc',
+  'description',
+  'amountMinor',
+  'originalAmountMinor',
+  'cashbackMinor',
+  'status',
+  'spendingMode',
+] as const
+
+export type EditableField = (typeof EDITABLE_FIELDS)[number]
+
+/** See StandardTransaction.categoryId. */
+export const ORIGINAL_CATEGORY_ID = 'original'

@@ -1,4 +1,6 @@
 export type { Card } from './card'
+export type { CategoryRule, CustomCategory } from './category'
 export type { ImportRecord, ImportRowCounts } from './import'
 export type { Settings } from './settings'
-export type { StandardTransaction, TransactionStatus } from './transaction'
+export type { EditableField, StandardTransaction, TransactionStatus } from './transaction'
+export { EDITABLE_FIELDS, ORIGINAL_CATEGORY_ID } from './transaction'

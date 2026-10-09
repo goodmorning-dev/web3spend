@@ -78,20 +78,36 @@ export async function commitImport(
       const existing = await db.transactions.where('identityKey').equals(identityKey).first()
 
       if (existing) {
-        const status: TransactionStatus = resolveStatusTransition(existing.status, row.status)
+        // A field the person edited by hand keeps their value; what the
+        // import reports for it goes into importedValues instead, so it's
+        // current if they ever undo the edit (storage/transactions.ts).
+        const edited = new Set(existing.editedFields ?? [])
+        const imported = { ...existing, ...existing.importedValues }
+        const status: TransactionStatus = resolveStatusTransition(imported.status, row.status)
         // If the resolved status differs from what this row actually reported, its
         // status got rejected as stale (statusTransition.ts), so the rest of what
         // it reported, cashback included, is equally untrustworthy and gets rejected
         // too. A report whose status matches (whether unchanged or a real transition
         // the rule allowed) is trusted, so its cashback figures apply as normal.
         const isStaleReport = row.status !== status
-        await db.transactions.put({
+        const cashbackMinor = isStaleReport ? imported.cashbackMinor : row.cashbackMinor
+
+        const next: StandardTransaction = {
           ...existing,
-          status,
-          cashbackMinor: isStaleReport ? existing.cashbackMinor : row.cashbackMinor,
           cashbackCurrency: isStaleReport ? existing.cashbackCurrency : row.cashbackCurrency,
           importId,
-        })
+        }
+        if (edited.has('status')) {
+          next.importedValues = { ...next.importedValues, status }
+        } else {
+          next.status = status
+        }
+        if (edited.has('cashbackMinor')) {
+          next.importedValues = { ...next.importedValues, cashbackMinor }
+        } else {
+          next.cashbackMinor = cashbackMinor
+        }
+        await db.transactions.put(next)
         updated += 1
       } else {
         const transaction: StandardTransaction = {
