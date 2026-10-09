@@ -561,7 +561,7 @@ function NativeSelect({
       onChange={(event) => onChange(event.target.value)}
       className={cn(
         'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30',
-        '[&_option]:bg-popover [&_option]:text-popover-foreground',
+        '[color-scheme:dark] [&_option]:bg-popover [&_option]:text-popover-foreground [&_optgroup]:bg-popover [&_optgroup]:text-text-dim',
       )}
     >
       {children}
