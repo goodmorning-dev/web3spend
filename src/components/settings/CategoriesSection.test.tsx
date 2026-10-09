@@ -65,4 +65,22 @@ describe('CategoriesSection', () => {
     await waitFor(() => expect(screen.queryByText('Gaming')).not.toBeInTheDocument())
     expect(await listCategories()).toEqual([])
   })
+
+  it('picks a color for a category, and puts it back to automatic', async () => {
+    await createCategory('Gaming')
+    const user = userEvent.setup()
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'Change the color of Gaming' }))
+    await user.click(await screen.findByRole('button', { name: 'Teal' }))
+    await waitFor(async () => expect((await listCategories())[0].color).toBe('#2dd4bf'))
+
+    await user.click(screen.getByRole('button', { name: 'Change the color of Gaming' }))
+    expect(await screen.findByRole('button', { name: 'Teal' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await user.click(screen.getByRole('button', { name: 'Back to automatic' }))
+    await waitFor(async () => expect((await listCategories())[0].color).toBeUndefined())
+  })
 })

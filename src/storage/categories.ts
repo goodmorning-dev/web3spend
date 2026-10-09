@@ -6,6 +6,7 @@ import {
 } from '@/categorization/customCategories'
 import type { CategoryRule, CustomCategory } from '@/types/category'
 import { ORIGINAL_CATEGORY_ID } from '@/types/transaction'
+import { isCategoryColor } from '@/utils/categoryColors'
 import { db } from './db'
 
 export function listCategories(): Promise<CustomCategory[]> {
@@ -60,6 +61,24 @@ export async function renameCategory(id: string, name: string): Promise<void> {
     }
     await db.categories.update(id, { name: cleaned })
   })
+}
+
+/** Gives a category its own color, or with null, goes back to the
+ * automatic one. */
+export async function setCategoryColor(id: string, color: string | null): Promise<void> {
+  if (color !== null && !isCategoryColor(color)) {
+    throw new Error("That isn't a color that can be used.")
+  }
+  await db.categories
+    .where('id')
+    .equals(id)
+    .modify((category) => {
+      if (color === null) {
+        delete category.color
+      } else {
+        category.color = color
+      }
+    })
 }
 
 /**

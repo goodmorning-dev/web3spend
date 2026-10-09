@@ -23,7 +23,7 @@ import {
 } from '@/storage/categories'
 import type { CategoryRule, CustomCategory } from '@/types/category'
 import { categoryMergeKey } from '@/utils/category'
-import { preferredCategoryColor } from '@/utils/categoryColors'
+import CategoryColorPicker from './CategoryColorPicker'
 
 type Attempt = (action: () => Promise<unknown>) => Promise<boolean>
 
@@ -132,12 +132,8 @@ function CategoryCard({
 
   return (
     <li className="flex flex-col rounded-xl border border-border bg-background/40">
-      <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-2.5">
-        <span
-          aria-hidden="true"
-          className="size-2.5 shrink-0 rounded-[3px]"
-          style={{ backgroundColor: preferredCategoryColor(category.name) }}
-        />
+      <div className="flex items-center gap-2 px-2.5 pt-3 pb-2.5">
+        <CategoryColorPicker category={category} attempt={attempt} />
         {renaming ? (
           <form onSubmit={handleRename} className="flex min-w-0 flex-1 items-center gap-1">
             <Input

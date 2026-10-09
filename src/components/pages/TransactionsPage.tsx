@@ -14,6 +14,7 @@ import type { StandardTransaction } from '@/types/transaction'
 import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
 import { scrollToTop } from '@/lib/scrollToTop'
 import { categoryColorMap } from '@/utils/categoryColors'
+import { useChosenCategoryColors } from '@/hooks/useChosenCategoryColors'
 import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
 const ALL_STATUSES = 'all'
@@ -50,6 +51,7 @@ function TransactionsPage() {
   const overallSummary = useDashboardSummary()
   const { filters, options, clearDay } = useDashboardFilters()
   const transactions = useFilteredTransactions(filters)
+  const chosenColors = useChosenCategoryColors()
   const [status, setStatus] = useState(ALL_STATUSES)
   const [mode, setMode] = useState(ALL_MODES)
   // Which transaction the add/edit dialog is open for: null to add one.
@@ -95,8 +97,8 @@ function TransactionsPage() {
   // filters (before search and the dropdowns below narrow the list), so a
   // category's dot here matches its slice there.
   const categoryColors = useMemo(
-    () => categoryColorMap(aggregateByCategory(transactions ?? [])),
-    [transactions],
+    () => categoryColorMap(aggregateByCategory(transactions ?? []), chosenColors),
+    [transactions, chosenColors],
   )
 
   const cardLastFourById = useMemo(() => {

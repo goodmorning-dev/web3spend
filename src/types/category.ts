@@ -4,6 +4,9 @@ export interface CustomCategory {
   id: string
   name: string
   createdAt: string
+  /** A color the person picked (see CATEGORY_COLOR_CHOICES). Without one,
+   * the category gets a color from its name like any other. */
+  color?: string
 }
 
 /**

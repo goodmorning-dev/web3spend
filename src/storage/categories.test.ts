@@ -6,6 +6,7 @@ import {
   listCategories,
   listCategoryRules,
   renameCategory,
+  setCategoryColor,
   setEtherfiCategoryRule,
   setMerchantRule,
 } from './categories'
@@ -109,5 +110,18 @@ describe('categories repository', () => {
     const stored = await db.transactions.get('txn-1')
     expect(stored).toBeDefined()
     expect(stored?.categoryId).toBeUndefined()
+  })
+
+  it('stores a picked color, refuses an unsafe one, and can go back to automatic', async () => {
+    const gaming = await createCategory('Gaming')
+
+    await setCategoryColor(gaming.id, '#a3e635')
+    expect((await listCategories())[0].color).toBe('#a3e635')
+
+    await expect(setCategoryColor(gaming.id, 'red; display: none')).rejects.toThrow(/color/)
+    expect((await listCategories())[0].color).toBe('#a3e635')
+
+    await setCategoryColor(gaming.id, null)
+    expect((await listCategories())[0].color).toBeUndefined()
   })
 })
