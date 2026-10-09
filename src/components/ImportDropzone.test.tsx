@@ -89,7 +89,7 @@ describe('ImportDropzone', () => {
     const user = userEvent.setup()
     render(<ImportDropzone />)
 
-    const input = screen.getByLabelText(/choose an xlsx file/i)
+    const input = screen.getByLabelText(/choose an xlsx or csv file/i)
     await user.upload(input, toFile(buildValidWorkbook()))
 
     expect(await screen.findByText('1 added, 0 updated.')).toBeInTheDocument()
@@ -100,25 +100,41 @@ describe('ImportDropzone', () => {
     const user = userEvent.setup()
     render(<ImportDropzone />)
 
-    const input = screen.getByLabelText(/choose an xlsx file/i)
+    const input = screen.getByLabelText(/choose an xlsx or csv file/i)
     await user.upload(input, toFile(buildValidWorkbook()))
 
     expect(await screen.findByText(/1 row could not be imported/i)).toBeInTheDocument()
     expect(screen.getByText(/row 3: unsupported status: reversed/i)).toBeInTheDocument()
   })
 
-  it('rejects a non-XLSX file before attempting to parse it', async () => {
+  it('imports a CSV export the same way as an XLSX one', async () => {
+    const user = userEvent.setup()
+    render(<ImportDropzone />)
+
+    const csv = [
+      'timestamp,type,description,status,amount,currency,card,card holder name,original amount,original currency,cashback earned,cashback currency,category,spending mode',
+      '2026-01-15 10:00:00 UTC,card_spend,Merchant Coffee,CLEARED,4.5,EUR,0123,Jane Doe,4.5,EUR,0.14,EUR,Bakeries,Direct Pay',
+      '',
+    ].join('\n')
+    const input = screen.getByLabelText(/choose an xlsx or csv file/i)
+    await user.upload(input, new File([csv], 'export.csv', { type: 'text/csv' }))
+
+    expect(await screen.findByText('1 added, 0 updated.')).toBeInTheDocument()
+    expect(await db.transactions.count()).toBe(1)
+  })
+
+  it('rejects a file that is neither XLSX nor CSV before attempting to parse it', async () => {
     // applyAccept: false, because this specifically tests our own defensive
     // check, not the browser's native accept="" filtering (which user-event
     // otherwise simulates and would refuse to "select" a mismatched file).
     const user = userEvent.setup({ applyAccept: false })
     render(<ImportDropzone />)
 
-    const input = screen.getByLabelText(/choose an xlsx file/i)
-    const csvFile = new File(['a,b,c'], 'export.csv', { type: 'text/csv' })
-    await user.upload(input, csvFile)
+    const input = screen.getByLabelText(/choose an xlsx or csv file/i)
+    const pdfFile = new File(['%PDF-1.7'], 'export.pdf', { type: 'application/pdf' })
+    await user.upload(input, pdfFile)
 
-    expect(await screen.findByText(/only xlsx files are supported/i)).toBeInTheDocument()
+    expect(await screen.findByText(/only xlsx and csv files are supported/i)).toBeInTheDocument()
     expect(await db.transactions.count()).toBe(0)
   })
 
@@ -126,7 +142,7 @@ describe('ImportDropzone', () => {
     const user = userEvent.setup()
     render(<ImportDropzone />)
 
-    const input = screen.getByLabelText(/choose an xlsx file/i)
+    const input = screen.getByLabelText(/choose an xlsx or csv file/i)
     await user.upload(input, toFile(buildInvalidWorkbook()))
 
     expect(await screen.findByText(/we couldn't import that file/i)).toBeInTheDocument()
@@ -138,7 +154,7 @@ describe('ImportDropzone', () => {
     const user = userEvent.setup()
     render(<ImportDropzone />)
 
-    const input = screen.getByLabelText(/choose an xlsx file/i)
+    const input = screen.getByLabelText(/choose an xlsx or csv file/i)
     const file = toFile(buildValidWorkbook())
 
     await user.upload(input, file)
@@ -156,7 +172,7 @@ describe('ImportDropzone', () => {
     const user = userEvent.setup()
     render(<ImportDropzone />)
 
-    const input = screen.getByLabelText(/choose an xlsx file/i)
+    const input = screen.getByLabelText(/choose an xlsx or csv file/i)
     await user.upload(input, toFile(buildValidWorkbook()))
 
     expect(await screen.findByText('1 added, 0 updated.')).toBeInTheDocument()
@@ -171,7 +187,10 @@ describe('ImportDropzone', () => {
 
     expect(screen.queryByRole('link', { name: 'View your dashboard' })).not.toBeInTheDocument()
 
-    await user.upload(screen.getByLabelText(/choose an xlsx file/i), toFile(buildValidWorkbook()))
+    await user.upload(
+      screen.getByLabelText(/choose an xlsx or csv file/i),
+      toFile(buildValidWorkbook()),
+    )
 
     expect(await screen.findByText('1 added, 0 updated.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'View your dashboard' })).toHaveAttribute(

@@ -48,12 +48,22 @@ export function parseTimestampUtc(raw: string): string | null {
  * cents. Reading the decimal digits directly off the value's own string
  * form doesn't have that problem, since toString() reproduces exactly the
  * digits the value was constructed from.
+ *
+ * The CSV export has no cell types, so its amounts arrive as text ("0.30").
+ * Those are read the same way, straight off the text: a plain decimal string
+ * is just as unambiguous as a number, and anything else ("", "1e3", "1,50")
+ * is still rejected.
  */
 export function toAmountMinorOrNull(value: unknown): number | null {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  let text: string
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    text = value.toString()
+  } else if (typeof value === 'string') {
+    text = value.trim()
+  } else {
     return null
   }
-  const match = PLAIN_DECIMAL_PATTERN.exec(value.toString())
+  const match = PLAIN_DECIMAL_PATTERN.exec(text)
   if (!match) {
     return null
   }
@@ -61,7 +71,7 @@ export function toAmountMinorOrNull(value: unknown): number | null {
   if (fractionDigits > 2) {
     return null
   }
-  const minor = Math.round(value * 100)
+  const minor = Math.round(Number(text) * 100)
   return Number.isSafeInteger(minor) ? minor : null
 }
 

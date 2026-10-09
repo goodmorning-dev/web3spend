@@ -36,11 +36,11 @@ space in your browser, so your own data is never touched.
    app), choose the dates you want and download the file. ether.fi's
    [guide](https://help.ether.fi/en/articles/685844-how-to-download-your-card-transaction-history)
    walks through it.
-2. **Import it.** Drop the XLSX file into Web3Spend. It's read and parsed in your browser.
+2. **Import it.** Drop the XLSX or CSV file into Web3Spend. It's read and parsed in your browser.
 3. **See your spending.** The dashboard fills in straight away. Importing a newer export later
    adds what's new and updates what changed, without duplicating anything.
 
-Only XLSX exports are supported for now. Rows Web3Spend doesn't understand are listed after the
+Both the XLSX and the CSV export work, and they hold the same transactions. Rows Web3Spend doesn't understand are listed after the
 import rather than quietly skipped. Account activity that isn't card spending, such as top-ups,
 swaps and deposits, is left out of the import.
 

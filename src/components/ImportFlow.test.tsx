@@ -23,7 +23,7 @@ describe('ImportFlow', () => {
     renderImportFlow()
 
     expect(screen.getByRole('heading', { name: /import your ether\.fi data/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/choose an xlsx or csv file/i)).toBeInTheDocument()
   })
 
   it("links to ether.fi's own guide on downloading a card transaction export", () => {

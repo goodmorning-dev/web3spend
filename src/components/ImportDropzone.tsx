@@ -52,9 +52,10 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
     setError(null)
     setResult(null)
 
-    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+    const fileName = file.name.toLowerCase()
+    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.csv')) {
       setError(
-        'Only XLSX files are supported. Export your ether.fi transaction history as XLSX, not CSV or another format.',
+        'Only XLSX and CSV files are supported. Export your ether.fi transaction history as XLSX or CSV.',
       )
       return
     }
@@ -141,7 +142,7 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        aria-label="Drop an XLSX file here, or browse for one"
+        aria-label="Drop an XLSX or CSV file here, or browse for one"
         className={cn(
           'flex w-full cursor-pointer flex-col items-center rounded-2xl border-[1.5px] border-dashed border-primary/55 bg-background/40 px-6 py-9 text-center transition-colors hover:border-primary/90 focus-visible:border-primary focus-visible:outline-none',
           isDragOver && 'border-primary bg-primary/10',
@@ -150,8 +151,8 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
         <input
           ref={fileInputRef}
           type="file"
-          accept=".xlsx"
-          aria-label="Choose an XLSX file"
+          accept=".xlsx,.csv"
+          aria-label="Choose an XLSX or CSV file"
           onChange={handleFileChange}
           disabled={status === 'processing'}
           className="hidden"
@@ -161,7 +162,7 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
           <Upload className="size-6" strokeWidth={2} />
         </div>
         <p className="mt-5 text-lg font-semibold text-foreground">
-          Drag &amp; drop your XLSX export here
+          Drag &amp; drop your ether.fi export here
         </p>
         <p className="mt-2 text-[13px] text-text-faint">or</p>
         <Button
@@ -176,9 +177,7 @@ function ImportDropzone({ onImported, resultAction }: ImportDropzoneProps = {}) 
           <Upload strokeWidth={2.2} />
           Browse files
         </Button>
-        <p className="mt-4 text-[13px] text-text-faint">
-          XLSX only · CSV exports aren't supported yet
-        </p>
+        <p className="mt-4 text-[13px] text-text-faint">XLSX or CSV, straight from ether.fi</p>
       </div>
 
       {status === 'processing' && (

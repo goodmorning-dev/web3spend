@@ -63,7 +63,7 @@ const STEPS: {
     image: step1Image,
     tag: 'Step 01',
     title: 'Export from ether.fi',
-    description: 'Download your transaction history as an XLSX file from the ether.fi app.',
+    description: 'Download your transaction history as an XLSX or CSV file from the ether.fi app.',
   },
   {
     icon: Upload,

@@ -76,7 +76,7 @@ describe('App routing', () => {
     expect(
       await screen.findByRole('heading', { name: /import your ether\.fi data/i }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/choose an xlsx or csv file/i)).toBeInTheDocument()
   })
 
   it('renders the Settings page within the shell at /app/settings', async () => {
