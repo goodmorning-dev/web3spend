@@ -1,0 +1,58 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it } from 'vitest'
+import { createCategory, listCategories, setMerchantRule } from '@/storage/categories'
+import { resetDatabase } from '@/storage/test-helpers'
+import CategoriesSection from './CategoriesSection'
+
+afterEach(resetDatabase)
+
+describe('CategoriesSection', () => {
+  it('adds a category', async () => {
+    const user = userEvent.setup()
+    render(<CategoriesSection />)
+
+    await user.type(screen.getByLabelText('New category name'), 'Gaming')
+    await user.click(screen.getByRole('button', { name: 'Add' }))
+
+    expect(await screen.findByText('Gaming')).toBeInTheDocument()
+    expect(screen.getByLabelText('New category name')).toHaveValue('')
+  })
+
+  it('renames a category, and says so when the name is already taken', async () => {
+    await createCategory('Gaming')
+    await createCategory('Treats')
+    const user = userEvent.setup()
+    render(<CategoriesSection />)
+
+    await user.click(await screen.findByRole('button', { name: 'Rename Gaming' }))
+    const input = screen.getByLabelText('New name for Gaming')
+    await user.clear(input)
+    await user.type(input, 'treats')
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/already have a category/i)
+
+    await user.clear(input)
+    await user.type(input, 'Games')
+    await user.click(screen.getByRole('button', { name: 'Save name' }))
+    expect(await screen.findByText('Games')).toBeInTheDocument()
+  })
+
+  it('shows the rules of a category, removes one, and deletes the category after confirming', async () => {
+    const gaming = await createCategory('Gaming')
+    await setMerchantRule('Steam Purchase', gaming.id)
+    const user = userEvent.setup()
+    render(<CategoriesSection />)
+
+    expect(await screen.findByText('Steam Purchase')).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: 'Stop filing Steam Purchase under Gaming' }),
+    )
+    await waitFor(() => expect(screen.queryByText('Steam Purchase')).not.toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Delete Gaming' }))
+    await user.click(await screen.findByRole('button', { name: 'Delete category' }))
+    await waitFor(() => expect(screen.queryByText('Gaming')).not.toBeInTheDocument())
+    expect(await listCategories()).toEqual([])
+  })
+})

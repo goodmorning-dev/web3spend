@@ -15,12 +15,15 @@ transactions.
 - **Monthly trends:** this month's spending against last month and your monthly average, or a
   bar for every month when you look at all time.
 - **Categories:** where your money goes, by merchant category. Click one to see its
-  transactions.
+  transactions. You can also make your own categories and file purchases under them, one at a
+  time or with a rule for a whole merchant or ether.fi category, and rules carry on applying to
+  future imports.
 - **Activity:** a year-long heatmap of your spending or number of purchases, with your active
   days, longest streak, biggest day and top weekday.
 - **Transactions:** every purchase with its card, category, amount, cashback and status, and
   whether it was paid directly or in Borrow Mode. Search by merchant and filter by status,
-  category or spending mode.
+  category or spending mode. Fix anything that looks wrong, or add a purchase the export doesn't
+  have yet; your changes survive the next import and can be undone.
 - **Subscriptions:** recurring charges spotted in your history, including ones that have
   stopped.
 
