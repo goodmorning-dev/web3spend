@@ -11,8 +11,8 @@ const CURRENCY_PATTERN = /^[A-Z]{3}$/
 
 /**
  * Transaction types that move money around the ether.fi account rather than
- * spend it on the card: top-ups, swaps, Borrow Mode repayments, referral
- * rewards, and moves into or out of ether.fi's Liquid vaults, staking and
+ * spend it on the card: top-ups, swaps, bank deposits (due_on_ramp), Borrow
+ * Mode repayments, referral rewards, and moves into or out of ether.fi's Liquid vaults, staking and
  * Frax, whose types
  * share a prefix (liquid_deposit, liquid_execute_withdrawal, stake_deposit,
  * frax_withdraw, ...). They aren't purchases and aren't shown yet, so
@@ -25,6 +25,7 @@ const ACCOUNT_ACTIVITY_TYPES: ReadonlySet<string> = new Set([
   'swap',
   'repay',
   'affiliate_reward',
+  'due_on_ramp',
 ])
 const ACCOUNT_ACTIVITY_PREFIXES = ['liquid_', 'stake_', 'frax_']
 
