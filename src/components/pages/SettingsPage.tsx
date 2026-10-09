@@ -100,7 +100,6 @@ function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <InstallSection />
-      <CategoriesSection />
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 className="font-heading text-sm font-semibold">Delete all data</h2>
         <p className="max-w-prose text-sm text-text-faint">
@@ -157,6 +156,7 @@ function SettingsPage() {
           </p>
         )}
       </section>
+      <CategoriesSection />
     </div>
   )
 }
