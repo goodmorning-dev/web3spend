@@ -1,8 +1,10 @@
-import { X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { FilterSelectOption } from '@/components/shell/FilterSelect'
+import TransactionDialog from '@/components/transactions/TransactionDialog'
 import TransactionsTable from '@/components/transactions/TransactionsTable'
+import { Button } from '@/components/ui/button'
 import TransactionsToolbar from '@/components/transactions/TransactionsToolbar'
 import { aggregateByCategory } from '@/analyzers'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
@@ -12,6 +14,7 @@ import type { StandardTransaction } from '@/types/transaction'
 import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
 import { scrollToTop } from '@/lib/scrollToTop'
 import { categoryColorMap } from '@/utils/categoryColors'
+import { useChosenCategoryColors } from '@/hooks/useChosenCategoryColors'
 import { formatUtcDate, formatUtcDateKey, getUtcDateKey } from '@/utils/dates'
 
 const ALL_STATUSES = 'all'
@@ -48,8 +51,11 @@ function TransactionsPage() {
   const overallSummary = useDashboardSummary()
   const { filters, options, clearDay } = useDashboardFilters()
   const transactions = useFilteredTransactions(filters)
+  const chosenColors = useChosenCategoryColors()
   const [status, setStatus] = useState(ALL_STATUSES)
   const [mode, setMode] = useState(ALL_MODES)
+  // Which transaction the add/edit dialog is open for: null to add one.
+  const [dialog, setDialog] = useState<{ transactionId: string | null } | null>(null)
   // The merchant search and the category filter live in the URL
   // (?q=<text>, ?category=<key>) rather than in local state, so the
   // Dashboard can link straight to one merchant's or one category's
@@ -91,8 +97,8 @@ function TransactionsPage() {
   // filters (before search and the dropdowns below narrow the list), so a
   // category's dot here matches its slice there.
   const categoryColors = useMemo(
-    () => categoryColorMap(aggregateByCategory(transactions ?? [])),
-    [transactions],
+    () => categoryColorMap(aggregateByCategory(transactions ?? []), chosenColors),
+    [transactions, chosenColors],
   )
 
   const cardLastFourById = useMemo(() => {
@@ -206,12 +212,18 @@ function TransactionsPage() {
         onModeChange={setMode}
       />
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
-        <div>
-          <h3 className="font-heading text-sm font-semibold">All transactions</h3>
-          <p className="text-[11.5px] font-medium text-text-faint">
-            {visibleTransactions.length}{' '}
-            {visibleTransactions.length === 1 ? 'transaction' : 'transactions'} found
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-heading text-sm font-semibold">All transactions</h3>
+            <p className="text-[11.5px] font-medium text-text-faint">
+              {visibleTransactions.length}{' '}
+              {visibleTransactions.length === 1 ? 'transaction' : 'transactions'} found
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setDialog({ transactionId: null })}>
+            <Plus className="size-3.5" />
+            Add transaction
+          </Button>
         </div>
         {/* Clicking a merchant or category in the list filters by it,
             and goes back up to the filters so the change is in view. */}
@@ -227,8 +239,22 @@ function TransactionsPage() {
             setCategory(key)
             scrollToTop({ smooth: true })
           }}
+          onEdit={(transaction) => setDialog({ transactionId: transaction.id })}
         />
       </section>
+      <TransactionDialog
+        open={dialog !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDialog(null)
+          }
+        }}
+        transactionId={dialog?.transactionId ?? null}
+        cards={options?.cards ?? []}
+        currencies={options?.currencies ?? [filters.currency]}
+        defaultCurrency={filters.currency}
+        defaultCardId={filters.cardId}
+      />
     </div>
   )
 }

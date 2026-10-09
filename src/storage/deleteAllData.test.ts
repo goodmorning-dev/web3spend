@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createCategory, listCategories, listCategoryRules, setMerchantRule } from './categories'
 import { db } from './db'
 import { deleteAllData } from './deleteAllData'
 import { resetDatabase } from './test-helpers'
@@ -74,5 +75,15 @@ describe('deleteAllData', () => {
     expect(await db.transactions.count()).toBe(1)
 
     clearSpy.mockRestore()
+  })
+
+  it("keeps the person's own categories and rules, which hold no financial data", async () => {
+    const gaming = await createCategory('Gaming')
+    await setMerchantRule('Steam Purchase', gaming.id)
+
+    await deleteAllData()
+
+    expect(await listCategories()).toMatchObject([{ name: 'Gaming' }])
+    expect(await listCategoryRules()).toHaveLength(1)
   })
 })
