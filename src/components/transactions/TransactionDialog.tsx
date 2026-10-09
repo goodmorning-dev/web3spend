@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { RotateCcw, Trash2 } from 'lucide-react'
+import { ChevronDown, RotateCcw, Trash2 } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -554,18 +554,27 @@ function NativeSelect({
   onChange: (value: string) => void
   children: ReactNode
 }) {
+  // The browser's own arrow sits hard against the edge and can't be moved,
+  // so it's hidden and replaced with the same chevron the other dropdowns
+  // in the app use.
   return (
-    <select
-      id={id}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className={cn(
-        'h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30',
-        '[color-scheme:dark] [&_option]:bg-popover [&_option]:text-popover-foreground [&_optgroup]:bg-popover [&_optgroup]:text-text-dim',
-      )}
-    >
-      {children}
-    </select>
+    <div className="relative min-w-0">
+      <select
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={cn(
+          'h-8 w-full min-w-0 appearance-none truncate rounded-lg border border-input bg-transparent py-0 pr-8 pl-2.5 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30',
+          '[color-scheme:dark] [&_option]:bg-popover [&_option]:text-popover-foreground [&_optgroup]:bg-popover [&_optgroup]:text-text-dim',
+        )}
+      >
+        {children}
+      </select>
+      <ChevronDown
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+      />
+    </div>
   )
 }
 
