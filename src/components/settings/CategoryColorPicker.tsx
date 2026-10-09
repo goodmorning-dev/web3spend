@@ -39,9 +39,12 @@ function CategoryColorPicker({
           type="button"
           aria-label={`Change the color of ${category.name}`}
           title="Change color"
-          className="flex size-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          className="flex size-9 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
-          <span className="size-3 rounded-[3px]" style={{ backgroundColor: current }} />
+          <span
+            className="size-6 rounded-md ring-1 ring-white/10"
+            style={{ backgroundColor: current }}
+          />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="flex w-60 flex-col gap-3 p-3">
