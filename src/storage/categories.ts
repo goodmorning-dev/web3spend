@@ -204,14 +204,18 @@ export async function applyCategoryChoice(
     }
     const customId = choice.selection.kind === 'custom' ? choice.selection.categoryId : null
 
+    // A rule is only ever removed by unticking its box, which is only shown
+    // while one of the person's categories is picked. Picking ether.fi's
+    // category instead is about this one transaction: the rule stays for
+    // every other purchase, and this one gets pinned below.
     if (customId && choice.alwaysForMerchant) {
       await setMerchantRule(transaction.description, customId)
-    } else if (choice.hadMerchantRule) {
+    } else if (customId && choice.hadMerchantRule) {
       await setMerchantRule(choice.previousDescription, null)
     }
     if (customId && choice.alwaysForEtherfiCategory) {
       await setEtherfiCategoryRule(transaction.categoryRaw, customId)
-    } else if (choice.hadEtherfiCategoryRule) {
+    } else if (customId && choice.hadEtherfiCategoryRule) {
       await setEtherfiCategoryRule(transaction.categoryRaw, null)
     }
 

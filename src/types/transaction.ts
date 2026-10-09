@@ -34,8 +34,10 @@ export interface StandardTransaction {
    * import leaves these alone instead of overwriting them. */
   editedFields?: EditableField[]
   /** What the import last reported for each edited field, so the edit can
-   * be undone (and stays current if a newer import reports something new). */
-  importedValues?: Partial<Pick<StandardTransaction, EditableField>>
+   * be undone (and stays current if a newer import reports something new).
+   * An edited cashback amount keeps its currency with it, so cashbackCurrency
+   * is recorded here alongside cashbackMinor. */
+  importedValues?: Partial<Pick<StandardTransaction, EditableField | 'cashbackCurrency'>>
 }
 
 /** Fields a person can change on an imported transaction. Card and

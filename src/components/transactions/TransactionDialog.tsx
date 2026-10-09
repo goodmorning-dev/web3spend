@@ -14,13 +14,11 @@ import { Input } from '@/components/ui/input'
 import { merchantKey, resolveCategory } from '@/categorization/customCategories'
 import { useCategories, type CategoriesState } from '@/hooks/useCategories'
 import { cn } from '@/lib/utils'
-import { applyCategoryChoice, createCategory } from '@/storage/categories'
+import { saveTransaction, type SaveTarget } from '@/storage/saveTransaction'
 import {
-  addManualTransaction,
   deleteManualTransaction,
   getTransaction,
   resetTransactionEdits,
-  updateTransaction,
   type TransactionChanges,
 } from '@/storage/transactions'
 import type { Card } from '@/types/card'
@@ -237,31 +235,27 @@ function TransactionForm({
     }
 
     void run(async () => {
-      let customId: string | null = null
-      if (categoryValue === NEW_CATEGORY) {
-        customId = (await createCategory(newCategoryName)).id
-      } else if (categoryValue.startsWith('custom:')) {
-        customId = categoryValue.slice('custom:'.length)
-      }
       const rawLabel = categoryValue.startsWith('raw:')
         ? categoryValue.slice('raw:'.length)
         : (stored?.categoryRaw ?? UNCATEGORIZED)
 
-      let id: string
+      let target: SaveTarget
       if (!stored) {
-        id = await addManualTransaction({
-          cardId,
-          timestampUtc,
-          description,
-          amountMinor,
-          currency,
-          cashbackMinor,
-          status,
-          spendingMode: mode,
-          categoryRaw: rawLabel,
-        })
+        target = {
+          kind: 'add',
+          input: {
+            cardId,
+            timestampUtc,
+            description,
+            amountMinor,
+            currency,
+            cashbackMinor,
+            status,
+            spendingMode: mode,
+            categoryRaw: rawLabel,
+          },
+        }
       } else {
-        id = stored.id
         const changes: TransactionChanges = {
           description,
           amountMinor,
@@ -278,11 +272,16 @@ function TransactionForm({
         if (isManual) {
           Object.assign(changes, { cardId, currency, categoryRaw: rawLabel })
         }
-        await updateTransaction(id, changes)
+        target = { kind: 'edit', id: stored.id, changes }
       }
 
-      await applyCategoryChoice(id, {
-        selection: customId ? { kind: 'custom', categoryId: customId } : { kind: 'original' },
+      await saveTransaction(target, {
+        selection:
+          categoryValue === NEW_CATEGORY
+            ? { kind: 'new', name: newCategoryName }
+            : categoryValue.startsWith('custom:')
+              ? { kind: 'custom', categoryId: categoryValue.slice('custom:'.length) }
+              : { kind: 'original' },
         alwaysForMerchant: picksCustom && alwaysForMerchant,
         alwaysForEtherfiCategory: picksCustom && !isManual && alwaysForEtherfi,
         hadMerchantRule: initialRules.merchant,

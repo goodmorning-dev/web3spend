@@ -156,6 +156,16 @@ export async function updateTransaction(id: string, changes: TransactionChanges)
       }
       setField(next, field, editable[field])
     }
+    // An edited cashback amount means "this much, in this currency": the
+    // currency is kept with it, and an import can't swap it underneath (see
+    // commitImport). Changing the amount back to what the import said takes
+    // the imported currency back too.
+    if (edited.has('cashbackMinor')) {
+      importedValues.cashbackCurrency ??= existing.cashbackCurrency
+    } else if (importedValues.cashbackCurrency !== undefined) {
+      next.cashbackCurrency = importedValues.cashbackCurrency
+      delete importedValues.cashbackCurrency
+    }
 
     if (edited.size > 0) {
       next.editedFields = EDITABLE_FIELDS.filter((field) => edited.has(field))
