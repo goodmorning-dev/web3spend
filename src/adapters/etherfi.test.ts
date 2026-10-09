@@ -368,4 +368,55 @@ describe('etherfiAdapter', () => {
     expect(unsupported).toEqual([])
     expect(rows.map((parsed) => parsed.description)).toEqual(['Merchant 0C229F', 'Merchant 5E5CB9'])
   })
+
+  describe('CSV export', () => {
+    // Shaped like ether.fi's real CSV: the same table as the XLSX's "All
+    // Transactions" sheet, minus the summary block, with every value as text.
+    const CSV_LINES = [
+      HEADER_ROW.join(','),
+      '2026-01-15 10:00:00 UTC,card_spend,Merchant Coffee          ,CLEARED,4.5,EUR,0123,Jane Doe,4.5,EUR,0.14,EUR,"Package Stores--Beer, Wine, and Liquor",Direct Pay',
+      '2026-01-15 09:00:00 UTC,swap,USDC,,3.620681,USD,,,3.620681,USDC,,,,',
+      '2026-01-14 15:20:17 UTC,topup,EURC,,113.787611,USD,,,99.1,EURC,,,,',
+      '2026-01-14 15:17:53 UTC,due_on_ramp,deposit,COMPLETED,,USD,,,100,eur,,,,',
+      '2026-01-14 12:00:00 UTC,card_spend,Café Zürich,CANCELLED,1.11,EUR,0123,Jane Doe,1.11,EUR,0.30,EUR,Eating Places and Restaurants,Direct Pay',
+      '2026-01-13 12:00:00 UTC,card_spend,Merchant Unknown,REVERSED,10,EUR,0123,Jane Doe,10,EUR,0.30,EUR,Miscellaneous,Direct Pay',
+      '',
+    ]
+
+    function toCsvBuffer(text: string): ArrayBuffer {
+      return new TextEncoder().encode(text).buffer as ArrayBuffer
+    }
+
+    it('parses the card spends and leaves account activity out without reporting it', () => {
+      const { rows, unsupported } = etherfiAdapter.parse(toCsvBuffer(CSV_LINES.join('\n')))
+
+      expect(rows.map((row) => row.description)).toEqual(['Merchant Coffee', 'Café Zürich'])
+      expect(unsupported).toEqual([{ rowNumber: 7, reason: 'Unsupported status: REVERSED' }])
+    })
+
+    it('keeps text values exactly as written: card leading zeros, amounts and quoted commas', () => {
+      const { rows } = etherfiAdapter.parse(toCsvBuffer(CSV_LINES.join('\n')))
+
+      expect(rows[0]).toMatchObject({
+        last4: '0123',
+        timestampUtc: '2026-01-15T10:00:00.000Z',
+        amountMinor: 450,
+        originalAmountMinor: 450,
+        cashbackMinor: 14,
+        categoryRaw: 'Package Stores--Beer, Wine, and Liquor',
+      })
+      expect(rows[1].cashbackMinor).toBe(30)
+    })
+
+    it('reads the file as UTF-8, with or without a byte order mark, and with Windows line endings', () => {
+      const withBom = toCsvBuffer('\uFEFF' + CSV_LINES.join('\r\n'))
+      const { rows } = etherfiAdapter.parse(withBom)
+
+      expect(rows.map((row) => row.description)).toEqual(['Merchant Coffee', 'Café Zürich'])
+    })
+
+    it('throws a clear error when the CSV has no transaction header', () => {
+      expect(() => etherfiAdapter.parse(toCsvBuffer('a,b,c\n1,2,3\n'))).toThrow(/header row/)
+    })
+  })
 })

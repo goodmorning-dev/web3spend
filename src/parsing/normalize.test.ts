@@ -65,8 +65,21 @@ describe('toAmountMinorOrNull', () => {
     expect(toAmountMinorOrNull(Number.MAX_SAFE_INTEGER)).toBeNull()
   })
 
+  it('reads a plain decimal string the same way, as the CSV export has no number cells', () => {
+    expect(toAmountMinorOrNull('4.34')).toBe(434)
+    expect(toAmountMinorOrNull('0.30')).toBe(30)
+    expect(toAmountMinorOrNull('5')).toBe(500)
+    expect(toAmountMinorOrNull('4.345')).toBeNull()
+  })
+
+  it('rejects text that is not a plain decimal', () => {
+    expect(toAmountMinorOrNull('')).toBeNull()
+    expect(toAmountMinorOrNull('1e3')).toBeNull()
+    expect(toAmountMinorOrNull('1,50')).toBeNull()
+    expect(toAmountMinorOrNull('EUR 4.34')).toBeNull()
+  })
+
   it('rejects non-numeric or non-finite values', () => {
-    expect(toAmountMinorOrNull('4.34')).toBeNull()
     expect(toAmountMinorOrNull(null)).toBeNull()
     expect(toAmountMinorOrNull(Number.NaN)).toBeNull()
     expect(toAmountMinorOrNull(Number.POSITIVE_INFINITY)).toBeNull()

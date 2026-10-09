@@ -50,7 +50,7 @@ describe('ImportPage', () => {
   it('shows the import heading and the file picker', () => {
     renderImportPage()
     expect(screen.getByRole('heading', { name: /import your ether\.fi data/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/choose an xlsx file/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/choose an xlsx or csv file/i)).toBeInTheDocument()
   })
 
   it('puts the import area before the illustration', () => {

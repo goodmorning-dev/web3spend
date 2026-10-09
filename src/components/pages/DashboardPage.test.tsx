@@ -278,7 +278,7 @@ describe('DashboardPage', () => {
 
     await screen.findByRole('heading', { name: /import your ether\.fi data/i })
 
-    const input = screen.getByLabelText(/choose an xlsx file/i)
+    const input = screen.getByLabelText(/choose an xlsx or csv file/i)
     await user.upload(input, toFile(buildWorkbookWithOneUnsupportedRow()))
 
     expect(await screen.findByText('Cashback earned')).toBeInTheDocument()

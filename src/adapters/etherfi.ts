@@ -1,4 +1,4 @@
-import { read, utils } from 'xlsx'
+import { read, utils, type WorkSheet } from 'xlsx'
 import { resolveHeader, TRANSACTION_SHEET_NAME } from '@/parsing/header'
 import { parseRow } from '@/parsing/rowParser'
 import type { ParseResult, ProviderAdapter, UnsupportedRow } from './providerAdapter'
@@ -15,13 +15,13 @@ export const ETHERFI_PARSER_VERSION = '1'
  * header, and validates/normalizes every data row using that same header's
  * own column names, so a row never gets mapped against different keys than
  * the ones detection actually validated.
+ *
+ * ether.fi's CSV export is that same table on its own (same columns, same
+ * rows, no summary block), so it goes through the exact same path once it's
+ * been read into a sheet.
  */
 function parse(data: ArrayBuffer): ParseResult {
-  const workbook = read(data, { type: 'array' })
-  const sheet = workbook.Sheets[TRANSACTION_SHEET_NAME]
-  if (!sheet) {
-    throw new Error(`Workbook has no "${TRANSACTION_SHEET_NAME}" sheet.`)
-  }
+  const sheet = isZip(data) ? readTransactionSheet(data) : readCsvSheet(data)
 
   const headerResolution = resolveHeader(sheet)
   if (!headerResolution.ok) {
@@ -67,6 +67,40 @@ function parse(data: ArrayBuffer): ParseResult {
   })
 
   return { rows, unsupported }
+}
+
+function readTransactionSheet(data: ArrayBuffer): WorkSheet {
+  const workbook = read(data, { type: 'array' })
+  const sheet = workbook.Sheets[TRANSACTION_SHEET_NAME]
+  if (!sheet) {
+    throw new Error(`Workbook has no "${TRANSACTION_SHEET_NAME}" sheet.`)
+  }
+  return sheet
+}
+
+/**
+ * Decoded as UTF-8 here rather than handed to SheetJS as bytes, which would
+ * read a BOM-less file as Latin-1 and garble any non-ASCII merchant name.
+ * raw: true keeps every cell as the exact text in the file: left to itself,
+ * SheetJS would turn the card's "0520" into 520 and try to read the
+ * timestamps as dates.
+ */
+function readCsvSheet(data: ArrayBuffer): WorkSheet {
+  const text = new TextDecoder('utf-8').decode(data)
+  const workbook = read(text, { type: 'string', raw: true })
+  return workbook.Sheets[workbook.SheetNames[0]]
+}
+
+/** XLSX files are zip archives, which always start with the bytes "PK" 03 04. */
+function isZip(data: ArrayBuffer): boolean {
+  const bytes = new Uint8Array(data, 0, Math.min(4, data.byteLength))
+  return (
+    bytes.length === 4 &&
+    bytes[0] === 0x50 &&
+    bytes[1] === 0x4b &&
+    bytes[2] === 0x03 &&
+    bytes[3] === 0x04
+  )
 }
 
 export const etherfiAdapter: ProviderAdapter = { parse }

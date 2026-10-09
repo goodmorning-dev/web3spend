@@ -53,6 +53,7 @@ describe('parseRow', () => {
     'swap',
     'repay',
     'affiliate_reward',
+    'due_on_ramp',
     'liquid_deposit',
     'liquid_execute_withdrawal',
     'stake_deposit',
