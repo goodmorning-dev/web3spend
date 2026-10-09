@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
 import {
   createCategory,
+  deleteAllCategories,
   deleteCategory,
   listCategories,
   listCategoryRules,
@@ -123,5 +124,18 @@ describe('categories repository', () => {
 
     await setCategoryColor(gaming.id, null)
     expect((await listCategories())[0].color).toBeUndefined()
+  })
+
+  it('deletes every category and rule at once, unfiling their transactions', async () => {
+    const gaming = await createCategory('Gaming')
+    await createCategory('Treats')
+    await setMerchantRule('Steam Purchase', gaming.id)
+    await db.transactions.put(makeTransaction({ categoryId: gaming.id }))
+
+    await deleteAllCategories()
+
+    expect(await listCategories()).toEqual([])
+    expect(await listCategoryRules()).toEqual([])
+    expect((await db.transactions.get('txn-1'))?.categoryId).toBeUndefined()
   })
 })

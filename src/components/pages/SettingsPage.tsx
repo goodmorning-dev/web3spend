@@ -103,12 +103,13 @@ function SettingsPage() {
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 className="font-heading text-sm font-semibold">Delete all data</h2>
         <p className="max-w-prose text-sm text-text-faint">
-          Everything Web3Spend knows, every card, transaction, category, and import record, is
-          stored only in this browser on this device, in its IndexedDB database. Deleting it removes
-          that data permanently; there's no server copy to restore it from, and it has no effect on
-          any other browser or device you've used this app on, including a separate install on your
-          phone. Re-importing your ether.fi export afterward rebuilds your imported data from
-          scratch, but not your own categories, edits or added transactions.
+          Everything Web3Spend knows, every card, transaction, and import record, is stored only in
+          this browser on this device, in its IndexedDB database. Deleting it removes that data
+          permanently; there's no server copy to restore it from, and it has no effect on any other
+          browser or device you've used this app on, including a separate install on your phone.
+          Re-importing your ether.fi export afterward rebuilds your imported data from scratch, but
+          not your edits or added transactions. Your own categories and their rules are kept, so a
+          fresh import is filed the same way again; they can be deleted separately below.
         </p>
         {source === 'demo' && hasRealData && !deleted && (
           <p className="max-w-prose text-sm text-text-dim">
@@ -134,10 +135,10 @@ function SettingsPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete all local data?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes every card, transaction, category, and import record
-                  stored in this browser. It cannot be undone from within the app; you'd need to
-                  re-import your ether.fi export to see your data again, and your own categories,
-                  edits and added transactions would be gone for good.
+                  This permanently removes every card, transaction, and import record stored in
+                  this browser. It cannot be undone from within the app; you'd need to re-import
+                  your ether.fi export to see your data again, and your edits and added
+                  transactions would be gone for good. Your categories and their rules stay.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

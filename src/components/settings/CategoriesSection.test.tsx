@@ -1,8 +1,13 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createCategory, listCategories, setMerchantRule } from '@/storage/categories'
+import {
+  createCategory,
+  listCategories,
+  listCategoryRules,
+  setMerchantRule,
+} from '@/storage/categories'
 import { resetDatabase } from '@/storage/test-helpers'
 import CategoriesSection from './CategoriesSection'
 
@@ -82,5 +87,25 @@ describe('CategoriesSection', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Back to automatic' }))
     await waitFor(async () => expect((await listCategories())[0].color).toBeUndefined())
+  })
+
+  it('deletes every category at once after confirming', async () => {
+    const gaming = await createCategory('Gaming')
+    await createCategory('Treats')
+    await setMerchantRule('Steam Purchase', gaming.id)
+    const user = userEvent.setup()
+    renderSection()
+
+    await user.click(await screen.findByRole('button', { name: 'Delete all categories' }))
+    expect(await screen.findByText(/all 2 categories and their rules go/i)).toBeInTheDocument()
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Delete all categories',
+      }),
+    )
+
+    await waitFor(async () => expect(await listCategories()).toEqual([]))
+    expect(await listCategoryRules()).toEqual([])
+    expect(screen.queryByRole('button', { name: 'Delete all categories' })).not.toBeInTheDocument()
   })
 })

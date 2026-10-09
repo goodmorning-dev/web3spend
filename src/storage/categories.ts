@@ -99,6 +99,23 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 /**
+ * Removes every one of the person's categories and rules at once.
+ * Transactions go back to ether.fi's own categories; nothing else about
+ * them changes.
+ */
+export async function deleteAllCategories(): Promise<void> {
+  await db.transaction('rw', db.categories, db.categoryRules, db.transactions, async () => {
+    await db.categories.clear()
+    await db.categoryRules.clear()
+    await db.transactions
+      .filter((transaction) => transaction.categoryId !== undefined)
+      .modify((transaction) => {
+        delete transaction.categoryId
+      })
+  })
+}
+
+/**
  * Files every purchase from this merchant under a category, or with
  * categoryId null, stops doing so. There's at most one rule per merchant.
  */

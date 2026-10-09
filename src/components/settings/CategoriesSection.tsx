@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { useCategories } from '@/hooks/useCategories'
 import {
   createCategory,
+  deleteAllCategories,
   deleteCategory,
   deleteCategoryRule,
   renameCategory,
@@ -105,6 +106,41 @@ function CategoriesSection() {
             ))}
           </ul>
         ))}
+
+      {state && state.categories.length > 0 && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="self-start text-text-faint hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" />
+              Delete all categories
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete all your categories?</AlertDialogTitle>
+              <AlertDialogDescription>
+                All {state.categories.length}{' '}
+                {state.categories.length === 1 ? 'category' : 'categories'} and their rules go, and
+                every purchase goes back to ether.fi&apos;s own category. Your transactions
+                themselves aren&apos;t touched.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => void attempt(() => deleteAllCategories())}
+              >
+                Delete all categories
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </section>
   )
 }
