@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createCategory, listCategories, setMerchantRule } from '@/storage/categories'
 import { resetDatabase } from '@/storage/test-helpers'
@@ -7,10 +8,18 @@ import CategoriesSection from './CategoriesSection'
 
 afterEach(resetDatabase)
 
+function renderSection() {
+  return render(
+    <MemoryRouter>
+      <CategoriesSection />
+    </MemoryRouter>,
+  )
+}
+
 describe('CategoriesSection', () => {
   it('adds a category', async () => {
     const user = userEvent.setup()
-    render(<CategoriesSection />)
+    renderSection()
 
     await user.type(screen.getByLabelText('New category name'), 'Gaming')
     await user.click(screen.getByRole('button', { name: 'Add' }))
@@ -23,7 +32,7 @@ describe('CategoriesSection', () => {
     await createCategory('Gaming')
     await createCategory('Treats')
     const user = userEvent.setup()
-    render(<CategoriesSection />)
+    renderSection()
 
     await user.click(await screen.findByRole('button', { name: 'Rename Gaming' }))
     const input = screen.getByLabelText('New name for Gaming')
@@ -42,9 +51,10 @@ describe('CategoriesSection', () => {
     const gaming = await createCategory('Gaming')
     await setMerchantRule('Steam Purchase', gaming.id)
     const user = userEvent.setup()
-    render(<CategoriesSection />)
+    renderSection()
 
     expect(await screen.findByText('Steam Purchase')).toBeInTheDocument()
+    expect(screen.getByText('No purchases yet')).toBeInTheDocument()
     await user.click(
       screen.getByRole('button', { name: 'Stop filing Steam Purchase under Gaming' }),
     )
