@@ -211,7 +211,7 @@ describe('Home', () => {
     ])
     expect(within(stages[0]).getByText('Live')).toBeInTheDocument()
     expect(within(stages[1]).getByText('Live')).toBeInTheDocument()
-    expect(within(stages[2]).getByText('Later')).toBeInTheDocument()
+    expect(within(stages[2]).getByText('Next')).toBeInTheDocument()
   })
 
   it('answers the common questions, each opening on click', async () => {

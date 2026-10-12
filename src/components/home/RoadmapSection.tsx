@@ -14,11 +14,11 @@ const STAGES: { title: string; status: StageStatus; description: string }[] = [
     title: 'Make It Yours',
     status: 'Live',
     description:
-      'Your own categories, adding and editing transactions. Next: backup/device sync, more themes.',
+      'Your own categories, adding and editing transactions. Still to come: backup/device sync, more themes.',
   },
   {
     title: 'Level Up',
-    status: 'Later',
+    status: 'Next',
     description: 'Top-ups, swaps, Borrow Mode insights.',
   },
   {
