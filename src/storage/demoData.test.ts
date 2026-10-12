@@ -4,6 +4,7 @@ import { commitImport } from '@/matching/commitImport'
 import { getDataSource } from './dataSource'
 import { db, demoDb, realDb } from './db'
 import { hasRealData, openDemo, removeLegacyDemoData } from './demoData'
+import { getMembershipLevel } from './settings'
 import { resetDatabase } from './test-helpers'
 
 afterEach(resetDatabase)
@@ -50,6 +51,13 @@ describe('openDemo', () => {
     expect(db).toBe(demoDb)
     expect(await demoDb.transactions.count()).toBeGreaterThan(0)
     expect(await realDb.transactions.count()).toBe(0)
+  })
+
+  it("sets the demo's level to the one its cashback follows, so the cashback steps show", async () => {
+    await openDemo()
+
+    expect(await getMembershipLevel()).toBe('core')
+    expect(await realDb.settings.count()).toBe(0)
   })
 
   it('opens alongside real data without touching it', async () => {

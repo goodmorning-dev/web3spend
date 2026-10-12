@@ -120,47 +120,62 @@ describe('applyDemoCashback', () => {
     }
   }
 
-  it('gives 3% up to €1,000 a month and 1% after, splitting the purchase that crosses it', () => {
-    const rows = applyDemoCashback([
-      row('2026-09-02T12:00:00.000Z', 60_000),
-      row('2026-09-10T12:00:00.000Z', 50_000),
-      row('2026-09-20T12:00:00.000Z', 20_000),
-      row('2026-10-01T12:00:00.000Z', 10_000),
-    ])
+  // At $1.25 a euro, Core's euro steps end at $800 = €640 and
+  // $1,500 = €1,200.
+  const eurUsdRate = 1.25
+
+  it("follows Core's euro steps, 3% then 1% then 0.1%, splitting a purchase that crosses one", () => {
+    const rows = applyDemoCashback(
+      [
+        row('2026-09-02T12:00:00.000Z', 60_000),
+        row('2026-09-10T12:00:00.000Z', 20_000),
+        row('2026-09-20T12:00:00.000Z', 50_000),
+        row('2026-10-01T12:00:00.000Z', 10_000),
+      ],
+      { eurUsdRate },
+    )
 
     expect(rows.map((result) => result.cashbackMinor)).toEqual([
       1_800, // €600 at 3%
-      1_300, // €400 at 3% and €100 at 1%
-      200, // €200 at 1%
+      280, // €40 at 3% and €160 at 1%
+      410, // €400 at 1% and €100 at 0.1%
       300, // a new month starts at 3% again
     ])
   })
 
   it('counts purchases in date order, whatever order they come in', () => {
-    const rows = applyDemoCashback([
-      row('2026-09-20T12:00:00.000Z', 20_000),
-      row('2026-09-02T12:00:00.000Z', 100_000),
-    ])
+    const rows = applyDemoCashback(
+      [row('2026-09-20T12:00:00.000Z', 20_000), row('2026-09-02T12:00:00.000Z', 64_000)],
+      { eurUsdRate },
+    )
 
-    expect(rows.map((result) => result.cashbackMinor)).toEqual([200, 3_000])
+    expect(rows.map((result) => result.cashbackMinor)).toEqual([200, 1_920])
   })
 
-  it("gives a cancelled purchase nothing, and doesn't count it toward the €1,000", () => {
-    const rows = applyDemoCashback([
-      row('2026-09-02T12:00:00.000Z', 90_000, 'CANCELLED'),
-      row('2026-09-03T12:00:00.000Z', 100_000),
-    ])
+  it("gives a cancelled purchase nothing, and doesn't count it toward the steps", () => {
+    const rows = applyDemoCashback(
+      [
+        row('2026-09-02T12:00:00.000Z', 90_000, 'CANCELLED'),
+        row('2026-09-03T12:00:00.000Z', 64_000),
+      ],
+      { eurUsdRate },
+    )
 
-    expect(rows.map((result) => result.cashbackMinor)).toEqual([0, 3_000])
+    expect(rows.map((result) => result.cashbackMinor)).toEqual([0, 1_920])
   })
 
-  it("takes a refund's cashback back at 3%, without moving the month's total", () => {
-    const rows = applyDemoCashback([
-      row('2026-09-02T12:00:00.000Z', 100_000),
-      row('2026-09-03T12:00:00.000Z', -8_999),
-      row('2026-09-04T12:00:00.000Z', 10_000),
-    ])
+  it("takes a refund's cashback back at 3%, and its value off the month's count", () => {
+    const rows = applyDemoCashback(
+      [
+        row('2026-09-02T12:00:00.000Z', 64_000),
+        row('2026-09-03T12:00:00.000Z', -10_000),
+        row('2026-09-04T12:00:00.000Z', 10_000),
+      ],
+      { eurUsdRate },
+    )
 
-    expect(rows.map((result) => result.cashbackMinor)).toEqual([3_000, -270, 100])
+    // the refund takes the count back below the end of the 3% step, so the
+    // next €100 earns 3% again
+    expect(rows.map((result) => result.cashbackMinor)).toEqual([1_920, -300, 300])
   })
 })

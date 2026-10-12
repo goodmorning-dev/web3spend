@@ -6,6 +6,7 @@ import { utils, write, type WorkBook } from 'xlsx'
 import { DashboardFiltersProvider, useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import type { StandardTransaction } from '@/types/transaction'
 import { db } from '@/storage/db'
+import { setMembershipLevel } from '@/storage/settings'
 import { resetDatabase } from '@/storage/test-helpers'
 import DashboardPage from './DashboardPage'
 
@@ -401,5 +402,18 @@ describe('DashboardPage', () => {
     await user.click(merchant)
 
     expect(screen.getByTestId('location')).toHaveTextContent('/app/transactions?q=Shop')
+  })
+
+  it("asks for the ether.fi level, then shows this month's cashback steps", async () => {
+    await db.transactions.bulkPut([spend('now', new Date().toISOString(), 10_000)])
+    renderDashboardPage()
+
+    expect(
+      await screen.findByRole('heading', { name: 'How much is left at 3%?' }),
+    ).toBeInTheDocument()
+
+    await setMembershipLevel('core')
+
+    expect(await screen.findByRole('heading', { name: 'Cashback steps' })).toBeInTheDocument()
   })
 })

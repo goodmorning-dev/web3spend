@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { ECB_DAILY_RATES_URL, parseEcbEurUsd } from './src/cashback/ecb.ts'
 
 // GitHub Pages serves this repo at /web3spend/, not the domain root a future
 // production host would use, so the subpath base only applies when the
@@ -39,6 +40,43 @@ function siteUrlPlugin(url: string): Plugin {
   }
 }
 
+// The euro/dollar rate the dashboard's cashback steps convert euro
+// spending with. A build fetches the ECB's latest reference rate and puts
+// it in place of src/cashback/eurUsdReference.ts, so every deploy ships a
+// current one, while the app itself never fetches anything. Without a
+// connection the build keeps the committed rate and says so. Dev and tests
+// always use the committed file.
+const EUR_USD_REFERENCE_FILE = path.resolve(import.meta.dirname, 'src/cashback/eurUsdReference.ts')
+
+function eurUsdReferencePlugin(): Plugin {
+  let latest: { rate: number; date: string } | null = null
+  return {
+    name: 'eur-usd-reference',
+    apply: 'build',
+    async buildStart() {
+      try {
+        const response = await fetch(ECB_DAILY_RATES_URL, { signal: AbortSignal.timeout(10_000) })
+        latest = response.ok ? parseEcbEurUsd(await response.text()) : null
+        if (!latest) {
+          throw new Error(`unexpected response (HTTP ${response.status})`)
+        }
+      } catch (err) {
+        this.warn(
+          `Couldn't get the ECB's euro/dollar rate, so the committed one is used: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        )
+      }
+    },
+    load(id) {
+      if (latest && path.resolve(id.split('?')[0]) === EUR_USD_REFERENCE_FILE) {
+        return `export const EUR_USD_REFERENCE = ${JSON.stringify(latest)}
+`
+      }
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base,
@@ -49,6 +87,7 @@ export default defineConfig({
   },
   plugins: [
     siteUrlPlugin(siteUrl),
+    eurUsdReferencePlugin(),
     react(),
     tailwindcss(),
     VitePWA({

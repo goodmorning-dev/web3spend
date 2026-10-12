@@ -181,7 +181,12 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Display unavailable rather than 0% when the denominator is zero or required cashback information is missing/incompatible.
 - Show cashback recorded in a different currency than its purchase in the currency it was recorded in, next to the rest when needed ("€0.81 + $0.41"), never converted. The export has no exchange rate, so the effective rate stays unavailable for those purchases.
 - Compute yearly cashback rates from yearly sums, never by averaging monthly percentages.
-- Do not hard-code advertised reward tiers or predict reward entitlement.
+- Shipped after the MVP: progress through ether.fi's published cashback steps (3%, then 1%,
+  then a lower last rate as the month's spending grows) for the membership level the person
+  picks in Settings, since the export doesn't say. The steps are kept in one place with their
+  source (`src/cashback/ladders.ts`). Euro spending is converted with the ECB reference rate
+  built in at deploy, so it's labeled an estimate, and the latest purchase whose cashback shows
+  its step pins it down. There's still no auditing of expected against earned cashback.
 - Refunds are out of scope for the MVP (resolved, see §14). Refund-like rows (e.g. a negative
   card_spend amount) are detected and flagged the same way CANCELLED rows are (visible in the
   transaction list with a clear label, excluded from spend and cashback totals), rather than
@@ -357,7 +362,8 @@ Done when: users can complete the flow unaided and the team has a clear feedback
 - Historical FX conversion and token-price valuation.
 - Additional card providers, automatic syncing, accounts, or wallet connections.
 - Budgets, notifications, and recurring payment detection.
-- Automatic membership-tier simulation and expected-versus-earned cashback auditing.
+- Working out the membership level from the data, and auditing expected against earned
+  cashback.
 - Full refund/net-spend semantics (see §6).
 - Complex category rules, custom chart builders, and production usage telemetry.
 - Local data-at-rest protection (e.g. a PIN/passphrase-gated lock screen and/or encrypting the
