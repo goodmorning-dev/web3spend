@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { cashbackOnLadder, ladderCurrency, ladderFor, stepIndexAt } from './ladders'
+import {
+  amountForCashback,
+  cashbackOnLadder,
+  ladderCurrency,
+  ladderFor,
+  stepIndexAt,
+} from './ladders'
 
 describe('cashback ladders', () => {
   it("has ether.fi's published steps for each level, in dollars", () => {
@@ -40,5 +46,23 @@ describe('cashback ladders', () => {
     expect(cashbackOnLadder(steps, 75_000, 10_000)).toBeCloseTo(150 + 50)
     // past the last step's start, only its rate
     expect(cashbackOnLadder(steps, 200_000, 10_000)).toBeCloseTo(10)
+  })
+
+  it('works a cashback amount back to the purchase that earned it, across steps', () => {
+    const steps = ladderFor('core', 'USD')
+    // wholly on 3%: $2.94 is a $98 purchase
+    expect(amountForCashback(steps, 0, 294)).toBeCloseTo(9_800)
+    // from $1,950, $2.00 is $50 at 3% ($1.50) and $50 at 1% ($0.50)
+    expect(amountForCashback(steps, 195_000, 200)).toBeCloseTo(10_000)
+    // and it undoes cashbackOnLadder from anywhere
+    for (const [counter, amount] of [
+      [0, 50_000],
+      [190_000, 12_000],
+      [295_000, 30_000],
+    ]) {
+      expect(
+        amountForCashback(steps, counter, cashbackOnLadder(steps, counter, amount)),
+      ).toBeCloseTo(amount)
+    }
   })
 })

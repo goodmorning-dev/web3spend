@@ -87,3 +87,32 @@ export function cashbackOnLadder(
   }
   return cashback
 }
+
+/**
+ * cashbackOnLadder in reverse: the dollar amount, in cents, that earns
+ * `cashbackUsdMinor` starting at `counterUsdMinor`. Each step's rate
+ * applies to the part of the purchase on it, so cashback that reaches past
+ * a step's end is worked back at the next step's rate.
+ */
+export function amountForCashback(
+  steps: readonly CashbackStep[],
+  counterUsdMinor: number,
+  cashbackUsdMinor: number,
+): number {
+  let position = Math.max(0, counterUsdMinor)
+  let remaining = cashbackUsdMinor
+  let amount = 0
+  for (const step of steps) {
+    if (step.toUsdMinor !== null && position >= step.toUsdMinor) {
+      continue
+    }
+    const room = step.toUsdMinor === null ? Infinity : step.toUsdMinor - position
+    if (remaining <= room * step.rate) {
+      return amount + remaining / step.rate
+    }
+    amount += room
+    remaining -= room * step.rate
+    position += room
+  }
+  return amount
+}

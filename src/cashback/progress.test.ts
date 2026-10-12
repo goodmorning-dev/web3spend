@@ -167,6 +167,116 @@ describe('computeCashbackProgress', () => {
   })
 })
 
+describe('computeCashbackProgress, from review', () => {
+  const dollars = { ...options, currency: 'USD' }
+
+  function usd(overrides: Partial<StandardTransaction>): Partial<StandardTransaction> {
+    return { currency: 'USD', cashbackCurrency: 'USD', ...overrides }
+  }
+
+  it("doesn't take a purchase split across two steps for a 3% one", () => {
+    // After $1,900, a $120 purchase earns $3.00 on its first $100 and $0.20
+    // on the $20 past $2,000. Its 2.67% isn't any one step's rate, so it
+    // can't pull the count back onto 3%.
+    const progress = computeCashbackProgress(
+      month(
+        usd({ amountMinor: 190_000, cashbackMinor: 5_700 }),
+        usd({ amountMinor: 12_000, cashbackMinor: 320 }),
+      ),
+      dollars,
+    )
+
+    expect(progress.countedUsdMinor).toBe(202_000)
+    expect(progress.stepIndex).toBe(1)
+    expect(progress.matchedToCashback).toBe(false)
+  })
+
+  it('values a purchase in another currency that crosses into the next step at its full amount', () => {
+    // At $1,950, a yen purchase worth $100 earns $1.50 at 3% and $0.50 at 1%.
+    const progress = computeCashbackProgress(
+      month(usd({ amountMinor: 195_000, cashbackMinor: 5_850 }), {
+        amountMinor: 1_500_000,
+        currency: 'JPY',
+        cashbackMinor: 200,
+        cashbackCurrency: 'USD',
+      }),
+      dollars,
+    )
+
+    expect(progress.countedUsdMinor).toBe(205_000)
+  })
+
+  it('leaves out a no-cashback merchant whose category comes without its code', () => {
+    const progress = computeCashbackProgress(
+      month(
+        usd({ amountMinor: 50_000, categoryRaw: 'Automated Cash Disbursements', cashbackMinor: 0 }),
+      ),
+      dollars,
+    )
+
+    expect(progress.countedUsdMinor).toBe(0)
+    expect(progress.purchaseCount).toBe(0)
+  })
+
+  it('leaves out a category without its code once another row gives the code away', () => {
+    // €5 is too small for the "earned nothing" rule, so only the code
+    // seen on September's row can tell this one apart.
+    const progress = computeCashbackProgress(
+      month(
+        {
+          amountMinor: 20_000,
+          categoryRaw: '6011 - Automated Cash Disbursements',
+          cashbackMinor: 0,
+          timestampUtc: '2026-09-15T12:00:00.000Z',
+        },
+        { amountMinor: 500, categoryRaw: 'Automated Cash Disbursements', cashbackMinor: 0 },
+        { amountMinor: 8_000 },
+      ),
+      options,
+    )
+
+    expect(progress.countedUsdMinor).toBe(10_000)
+  })
+
+  it("doesn't count a purchase that earned nothing, unless it's too small to tell or not ether.fi's final figures", () => {
+    const progress = computeCashbackProgress(
+      month(
+        // earned nothing on €100: a gift card or blocked merchant
+        { amountMinor: 10_000, cashbackMinor: 0, categoryRaw: 'Gift Card Store' },
+        // €5 at the lowest step would round to nothing anyway
+        { amountMinor: 500, cashbackMinor: 0 },
+        // pending cashback isn't final yet
+        { amountMinor: 4_000, cashbackMinor: 0, status: 'PENDING' },
+        // added by hand, with no cashback typed in
+        { amountMinor: 2_000, cashbackMinor: 0, source: 'manual' },
+        // cashback edited by the person
+        { amountMinor: 1_600, cashbackMinor: 0, editedFields: ['cashbackMinor'] },
+      ),
+      options,
+    )
+
+    // €5 + €40 + €20 + €16 at $1.25
+    expect(progress.countedUsdMinor).toBe(10_125)
+  })
+
+  it("doesn't take its step from a pending, hand-added or edited purchase", () => {
+    for (const override of [
+      { status: 'PENDING' as const },
+      { source: 'manual' as const },
+      { editedFields: ['amountMinor' as const] },
+    ]) {
+      // 1% on €100 would say the month had passed the 3% step, but none of
+      // these is ether.fi's final word, so the estimate stands
+      const progress = computeCashbackProgress(
+        month({ amountMinor: 10_000, cashbackMinor: 100, ...override }),
+        options,
+      )
+      expect(progress.matchedToCashback).toBe(false)
+      expect(progress.stepIndex).toBe(0)
+    }
+  })
+})
+
 describe('stepFromCashback', () => {
   const steps = ladderFor('core', 'EUR')
 
@@ -178,8 +288,14 @@ describe('stepFromCashback', () => {
   })
 
   it("doesn't guess for an amount too small to tell, a split purchase or a boosted rate", () => {
-    expect(stepFromCashback(steps, 40, 0)).toBeNull()
+    // €0.50 earning €0.01 fits 3% (1.5 cents) and 1% (0.5 cents) alike
+    expect(stepFromCashback(steps, 50, 1)).toBeNull()
+    // nothing earned could mean a purchase that earns no cashback at all
+    expect(stepFromCashback(steps, 500, 0)).toBeNull()
     expect(stepFromCashback(steps, 10_000, 220)).toBeNull()
     expect(stepFromCashback(steps, 10_000, 1_000)).toBeNull()
+    // $120 split as $100 at 3% and $20 at 1%: within 15% of 3%, but not a
+    // 3% purchase rounded to the cent
+    expect(stepFromCashback(ladderFor('core', 'USD'), 12_000, 320)).toBeNull()
   })
 })
