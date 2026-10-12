@@ -18,7 +18,8 @@ Agreed direction:
 - Show spending, categories, and cashback by currency.
 - Merge later imports with existing history.
 - Support multiple cards per user, both within one export and across imports.
-- Accept original XLSX exports only in the MVP; CSV support is deferred.
+- Accept ether.fi's original XLSX export. CSV support was deferred at first and shipped after
+  the MVP: the CSV export is the same All Transactions table on its own.
 - Build a responsive PWA for desktop and phone use, installable where the browser supports it.
 - License: PolyForm Noncommercial 1.0.0 — source-available, non-commercial restrictions rather
   than standard open source (see TECHNICAL-PLAN §1).
@@ -33,9 +34,10 @@ Agreed direction:
 Proposed defaults, awaiting discussion:
 - Use a static TypeScript web application with IndexedDB and offline asset caching.
 - Default analytics to cleared and pending purchases; exclude cancelled payments.
-- Include a transaction table in the MVP. Category correction and backup/restore are deferred
-  to v2 (see §5, §13) now that ether.fi's export already covers the full transaction history
-  each time, making a full versioned-backup story much less urgent for a first release.
+- Include a transaction table in the MVP. Category correction was deferred and has since
+  shipped (see §5). Backup/restore is still deferred (see §13): ether.fi's export already
+  covers the full transaction history each time, making a full versioned-backup story much
+  less urgent.
 - Use web3spend.app as the confirmed domain (naming/trademark research done).
 
 ## 3. What the sample actually tells us
@@ -113,12 +115,14 @@ No account, wallet connection, remote transaction upload, or financial-data back
   so it's visible to everyone who opens the app, imported or not.
 
 ### Import (`/app`, no data yet)
-- Clear local-data explanation and XLSX-only file selection; explain that CSV is not supported in this version.
-- Support selecting XLSX files from phone file storage as well as desktop.
+- Clear local-data explanation and file selection for ether.fi's XLSX or CSV export (the MVP
+  took XLSX only; CSV shipped after it).
+- Support selecting XLSX and CSV files from phone file storage as well as desktop.
 - Optional demo uses completely synthetic transactions in a separate, disposable dataset.
 - Friendly errors for malformed files, missing columns, and unsupported exports.
 - Detect headers by names, not a fixed row number.
-- Read All Transactions only; do not concatenate the currency-specific sheets.
+- Read All Transactions only; do not concatenate the currency-specific sheets. The CSV export
+  is that table on its own.
 - If the expected sheet is absent or multiple candidate tables exist, explain the ambiguity rather than silently guessing.
 - No add/update/ambiguous preview screen (see §7): report unsupported rows plainly, then
   commit and go straight to the Dashboard on success.
@@ -155,6 +159,15 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Still deferred: transaction splitting (dividing a single transaction's amount across more
   than one category, e.g. a supermarket run that was part groceries, part household goods).
 
+### Subscriptions
+- Shipped after the MVP: recurring charges spotted in the history with a simple, explainable
+  rule (the same merchant charging the same amount on the same day of the month, at least
+  twice, on the same card). They're presented as patterns spotted, not confirmed
+  subscriptions.
+- Active ones (charged in the last 35 days) show their monthly cost, a yearly figure at the
+  current rate, the next expected charge, and their share of spending. Ones without a recent
+  charge are listed separately, since they may have been cancelled.
+
 ### Local data settings
 - Delete all local financial data after confirmation. This is the only data-management
   control in the MVP.
@@ -163,8 +176,9 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Request persistent storage when appropriate; handle refusal and storage errors.
 - Versioned backup/export and restore are deferred to v2 (see §13): ether.fi's export already
   covers the full transaction history each time, so re-importing the original file rebuilds
-  local data if it's ever cleared. Backup becomes clearly worth building once category
-  overrides (also v2) exist and are worth protecting across a cleared browser or a new device.
+  local data if it's ever cleared. Backup becomes clearly worth building now that the person's
+  own categories, rules and edits exist (see Transactions), which are worth protecting across
+  a cleared browser or a new device.
 
 ## 6. Accounting and categorization rules
 
@@ -198,10 +212,11 @@ No account, wallet connection, remote transaction upload, or financial-data back
 
 No transaction ID exists in the source, but two things simplify this a lot for v1: ether.fi's
 export covers the full transaction history each time (not incremental deltas), and category
-overrides (the main reason a merge needed to be careful about not clobbering local edits) are
-deferred to v2. The elaborate dual-fingerprint/ambiguous-match design originally scoped here is
-no longer needed for the MVP; keep it in mind as a v2 option if real usage proves this
-insufficient.
+overrides (the main reason a merge needed to be careful about not clobbering local edits) were
+deferred to v2. They've since shipped along with editing transactions, and an import leaves the
+person's edits and hand-added transactions alone (see §5). The elaborate
+dual-fingerprint/ambiguous-match design originally scoped here is no longer needed for the MVP;
+keep it in mind as a v2 option if real usage proves this insufficient.
 
 - Composite identity per row: `cardId + timestampUtc + normalizedDescription + amount + currency`.
   This is a reasonable stand-in for a transaction ID given what the sample data shows (all
@@ -292,8 +307,9 @@ Continue when several users independently return and describe concrete value. If
 - Checked Borrow-mode rows against the normalized transaction shape: they fit unchanged (same
   columns, with "Borrow Mode" as the spending mode), so basic Borrow transaction import is in
   the MVP (see §2).
-- Scope stays XLSX-only; license (PolyForm Noncommercial 1.0.0) and core accounting
-  definitions (dashboard, UTC grouping, cleared and pending purchases counting) are confirmed.
+- Scope stayed XLSX-only for the MVP (CSV followed later); license (PolyForm Noncommercial
+  1.0.0) and core accounting definitions (dashboard, UTC grouping, cleared and pending
+  purchases counting) are confirmed.
 - Build entirely synthetic repository fixtures reflecting the observed workbook structure.
 Done when: supported cases and explicit unsupported cases are documented, the Borrow-mode fit
 question is answered, and the simplified import approach (§7) can be tested.
@@ -343,15 +359,15 @@ Done when: users can complete the flow unaided and the team has a clear feedback
 - Import is transactional, including when another app tab is open.
 - Core offline flows work and financial values do not appear in network traffic.
 - PWA installation and offline launch work on supported target browsers; phone layouts and file flows are usable.
-- Unsupported CSV imports show a clear XLSX-only message.
+- A file that isn't an ether.fi XLSX or CSV export gets a clear message saying which files
+  work.
 - Public fixtures and screenshots contain synthetic data only.
 
 ## 13. Deferred work
 
-- CSV import support.
 - A small, curated app-level category taxonomy and the mapping table from ether.fi's raw
   category text into it (see §6). The MVP shows raw category text as-is; the taxonomy is
-  designed once more real exports are seen and ships together with overrides below.
+  designed once more real exports are seen.
 - Transaction splitting (see §5). Category overrides and merchant rules have shipped.
 - Versioned backup/export and restore, and cross-device backup merging (see §5).
 - Full Borrow-mode analytics: balances, interest, repayments, collateral, and liquidation.
@@ -361,7 +377,7 @@ Done when: users can complete the flow unaided and the team has a clear feedback
   resolution UI (see §7): only if the simplified MVP approach proves insufficient.
 - Historical FX conversion and token-price valuation.
 - Additional card providers, automatic syncing, accounts, or wallet connections.
-- Budgets, notifications, and recurring payment detection.
+- Budgets and notifications. Recurring payment detection has shipped (Subscriptions, see §5).
 - Working out the membership level from the data, and auditing expected against earned
   cashback.
 - Full refund/net-spend semantics (see §6).

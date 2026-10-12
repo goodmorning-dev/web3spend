@@ -18,8 +18,9 @@ how we build it. Status: Draft for discussion.
   liquidation) stays v2 (MVP-PLAN §2).
 - Category taxonomy: RESOLVED. The MVP does not map categories at all: ether.fi's own
   category text is normalized for whitespace/mojibake only and used as-is everywhere (display,
-  grouping, filtering). A curated app-level taxonomy and per-transaction overrides are both
-  deferred to v2 (section 7, MVP-PLAN §13).
+  grouping, filtering). A curated app-level taxonomy is deferred to v2 (section 7, MVP-PLAN
+  §13). The person's own categories, a per-transaction choice and rules shipped after the MVP
+  (`categorization/`, section 3).
 
 ## 2. What we borrow from the reference implementation, and what we do differently
 
@@ -73,8 +74,8 @@ Do differently (the reference implementation's biggest gaps for our use case):
 
 ```
 src/
-  adapters/          ProviderAdapter interface + etherfi.ts (only provider for MVP)
-  parsing/           XLSX sheet/header detection, row validation, normalization
+  adapters/          ProviderAdapter interface + etherfi.ts (the XLSX workbook or the CSV export)
+  parsing/           header detection, row validation, normalization
   matching/          identity-key computation, upsert logic
   storage/           Dexie schema + typed repositories (cards, transactions, imports, settings)
   analyzers/         pure aggregation functions (by month/year/category/currency/card)
@@ -122,10 +123,21 @@ interface StandardTransaction {
   importId: string           // provenance: which import last touched this row
 }
 
-// v2, not part of the v1 schema; see MVP-PLAN §5/§13.
-interface CategoryOverride {
-  transactionId: string      // PK
-  category: string           // user-chosen app-level category
+// Added in schema v2 (below), after the MVP: the person's own categories, and the rules that
+// file purchases into them. See MVP-PLAN §5.
+interface CustomCategory {
+  id: string
+  name: string
+  createdAt: string
+  color?: string             // picked by the person; otherwise a fixed automatic one
+}
+
+interface CategoryRule {
+  id: string
+  kind: 'merchant' | 'category' // every purchase from one merchant, or under one ether.fi category
+  matchKey: string
+  label: string              // what the rule matched, as shown to the person
+  categoryId: string
 }
 
 interface ImportRecord {
@@ -165,7 +177,8 @@ db.version(2).stores({
 
 ## 5. Import pipeline (step by step)
 
-1. **Read file**: SheetJS reads the workbook client-side; nothing leaves the browser.
+1. **Read file**: SheetJS reads the XLSX workbook, or the CSV export, client-side; nothing
+   leaves the browser.
 2. **Sheet selection**: read only the `All Transactions` sheet by exact name match (never
    concatenate the currency-specific sheets, per MVP-PLAN §5). If that sheet name isn't
    found, or multiple plausible transaction tables exist, stop and show an explicit error;
@@ -197,9 +210,10 @@ db.version(2).stores({
 
 No transaction ID exists in the source, but ether.fi's export covers the full transaction
 history each time (not incremental deltas), and category overrides (the main reason a merge
-needed to avoid clobbering local edits) are deferred to v2 (MVP-PLAN §5/§7). That removes most
-of the reason for a full matching engine, so the MVP uses one composite key instead of a
-two-hash system:
+needed to avoid clobbering local edits) were deferred to v2 at the time (MVP-PLAN §5/§7).
+They've since shipped, and the upsert leaves edited fields and hand-added transactions alone.
+That removes most of the reason for a full matching engine, so the MVP uses one composite key
+instead of a two-hash system:
 
 - **`identityKey`**: hash of `cardId + timestampUtc + normalizedDescription + amountMinor +
   currency`. Deliberately excludes `status` and `cashbackMinor` so that a PENDING → CLEARED
@@ -245,17 +259,15 @@ the MVP either, since nothing is being classified — every row already carries 
 category string ether.fi assigned it.
 
 Rationale: the sample export (a single cardholder) isn't enough to seed a curated taxonomy
-with confidence, and per-transaction override UI — the main reason to have a small, stable
-taxonomy in the first place — is already deferred to v2. Shipping a mapping table now would
-mean guessing at a design that gets redone once more real exports and the override feature
-land together.
+with confidence. The person's own categories, which shipped after the MVP, cover correcting a
+category without one, so a mapping table now would still mean guessing at a design.
 
 Deferred to v2 (MVP-PLAN §13): a small, curated app-level taxonomy (starter sketch:
 `Groceries, Restaurants & Dining, Transport, Travel, Shopping, Entertainment & Leisure,
 Utilities & Bills, Health & Wellness, Financial Fees & Services, Cash & ATM, Subscriptions &
-Software, Education, Uncategorized`), a static mapping table (`categorization/mccCategoryMap.ts`)
-from normalized category text to that taxonomy, and per-transaction manual overrides
-(`CategoryOverride`, section 4) that take precedence over the table and survive re-imports.
+Software, Education, Uncategorized`) and a static mapping table (`categorization/mccCategoryMap.ts`)
+from normalized category text to that taxonomy. The person's own categories and rules would
+keep taking precedence over it.
 
 ## 8. Money & date handling
 
@@ -350,7 +362,7 @@ Ties MVP-PLAN.md's Milestones 0–4 to concrete deliverables from this document:
   matching the observed workbook shape (section 10) for use in all later tests.
 - **M1** (sections 3–6): repo scaffold, Dexie schema, parsing pipeline, composite-identity
   upsert, atomic commit; no preview UI.
-- **M2** (sections 7–9): raw category display (no taxonomy mapping, no overrides — both v2),
+- **M2** (sections 7–9): raw category display (no taxonomy mapping or overrides at the time),
   decimal-safe aggregation, dashboard charts including the activity heatmap, transaction table
   with filters.
 - **M3** (section 11): PWA manifest/service worker, delete-all control, storage-quota handling,
