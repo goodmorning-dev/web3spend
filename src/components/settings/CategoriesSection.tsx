@@ -24,6 +24,7 @@ import {
 } from '@/storage/categories'
 import type { CategoryRule, CustomCategory } from '@/types/category'
 import { categoryMergeKey } from '@/utils/category'
+import { ownCategoryColors } from '@/utils/categoryColors'
 import CategoryColorPicker from './CategoryColorPicker'
 
 type Attempt = (action: () => Promise<unknown>) => Promise<boolean>
@@ -35,6 +36,9 @@ type Attempt = (action: () => Promise<unknown>) => Promise<boolean>
  */
 function CategoriesSection() {
   const state = useCategories()
+  // Worked out from all the categories together, the same way the
+  // dashboard and transaction lists do, so each card's swatch matches.
+  const colors = ownCategoryColors(state?.categories ?? [])
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -99,6 +103,7 @@ function CategoriesSection() {
               <CategoryCard
                 key={category.id}
                 category={category}
+                color={colors.get(category.id) as string}
                 count={state.usage.get(category.id) ?? 0}
                 rules={state.rules.filter((rule) => rule.categoryId === category.id)}
                 attempt={attempt}
@@ -147,11 +152,13 @@ function CategoriesSection() {
 
 function CategoryCard({
   category,
+  color,
   count,
   rules,
   attempt,
 }: {
   category: CustomCategory
+  color: string
   count: number
   rules: CategoryRule[]
   attempt: Attempt
@@ -169,7 +176,7 @@ function CategoryCard({
   return (
     <li className="flex flex-col rounded-xl border border-border bg-background/40">
       <div className="flex items-center gap-2 px-2.5 pt-3 pb-2.5">
-        <CategoryColorPicker category={category} attempt={attempt} />
+        <CategoryColorPicker category={category} color={color} attempt={attempt} />
         {renaming ? (
           <form onSubmit={handleRename} className="flex min-w-0 flex-1 items-center gap-1">
             <Input

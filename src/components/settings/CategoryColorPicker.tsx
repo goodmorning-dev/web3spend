@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils'
 import { setCategoryColor } from '@/storage/categories'
 import type { CustomCategory } from '@/types/category'
-import { CATEGORY_COLOR_CHOICES, preferredCategoryColor } from '@/utils/categoryColors'
+import { CATEGORY_COLOR_CHOICES } from '@/utils/categoryColors'
 
 const HEX_PATTERN = /^#[0-9a-f]{6}$/i
 
@@ -16,13 +16,16 @@ const HEX_PATTERN = /^#[0-9a-f]{6}$/i
  */
 function CategoryColorPicker({
   category,
+  color: current,
   attempt,
 }: {
   category: CustomCategory
+  /** The color the category shows everywhere else, picked or automatic
+   * (see ownCategoryColors). */
+  color: string
   attempt: (action: () => Promise<unknown>) => Promise<boolean>
 }) {
   const [open, setOpen] = useState(false)
-  const current = category.color ?? preferredCategoryColor(category.name)
   const isCustomHex = category.color !== undefined && HEX_PATTERN.test(category.color)
   const [customColor, setCustomColor] = useState(isCustomHex ? category.color! : '#f0b429')
 
