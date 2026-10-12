@@ -5,7 +5,7 @@ export interface CustomCategory {
   name: string
   createdAt: string
   /** A color the person picked (see CATEGORY_COLOR_CHOICES). Without one,
-   * the category gets a color from its name like any other. */
+   * the category gets a fixed automatic one (see ownCategoryColors). */
   color?: string
 }
 

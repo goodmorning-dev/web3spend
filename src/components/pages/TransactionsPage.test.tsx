@@ -2,10 +2,13 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
+import CategoriesSection from '@/components/settings/CategoriesSection'
 import { DashboardFiltersProvider } from '@/hooks/DashboardFiltersContext'
+import { createCategory } from '@/storage/categories'
 import { db } from '@/storage/db'
 import { resetDatabase } from '@/storage/test-helpers'
 import type { StandardTransaction } from '@/types/transaction'
+import { preferredCategoryColor } from '@/utils/categoryColors'
 import TransactionsPage from './TransactionsPage'
 
 afterEach(resetDatabase)
@@ -182,5 +185,53 @@ describe('TransactionsPage', () => {
     expect(await screen.findAllByText('Coffee Shop')).not.toHaveLength(0)
     expect(screen.queryByText('Grocery Run')).not.toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: /search by merchant/i })).toHaveValue('Coffee Shop')
+  })
+
+  it("shows one of your own categories in the same color as Settings, even when a bigger category's color clashes", async () => {
+    // Both names land on the same default color, and the grocery category
+    // is the bigger one, so the list used to move "Fuel" to another color
+    // while Settings kept showing the default.
+    expect(preferredCategoryColor('Fuel')).toBe(
+      preferredCategoryColor('Grocery Stores and Supermarkets'),
+    )
+    const fuel = await createCategory('Fuel')
+    await db.transactions.bulkPut([
+      makeTransaction({
+        id: 'g1',
+        identityKey: 'g1',
+        description: 'Lidl',
+        categoryRaw: 'Grocery Stores and Supermarkets',
+        amountMinor: 9000,
+        originalAmountMinor: 9000,
+      }),
+      makeTransaction({
+        id: 'f1',
+        identityKey: 'f1',
+        description: 'Shell',
+        categoryRaw: 'Service Stations',
+        categoryId: fuel.id,
+        amountMinor: 3000,
+        originalAmountMinor: 3000,
+      }),
+    ])
+
+    render(
+      <MemoryRouter initialEntries={['/app/transactions']}>
+        <DashboardFiltersProvider>
+          <TransactionsPage />
+          <CategoriesSection />
+        </DashboardFiltersProvider>
+      </MemoryRouter>,
+    )
+
+    const swatch = (await screen.findByRole('button', { name: 'Change the color of Fuel' }))
+      .firstElementChild as HTMLElement
+    const dots = (await screen.findAllByRole('button', { name: 'Fuel' })).map(
+      (label) => label.previousElementSibling as HTMLElement,
+    )
+    expect(dots.length).toBeGreaterThan(0)
+    for (const dot of dots) {
+      expect(dot.style.backgroundColor).toBe(swatch.style.backgroundColor)
+    }
   })
 })

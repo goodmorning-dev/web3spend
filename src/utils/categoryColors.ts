@@ -1,4 +1,5 @@
 import type { CategoryBucket } from '@/analyzers'
+import type { CustomCategory } from '@/types/category'
 
 /**
  * One set of category colors for the whole app, so a category looks the
@@ -82,11 +83,12 @@ export function listCategoryColor(
  * (OTHER_CATEGORY_COLOR); transaction lists color those categories with
  * listCategoryColor instead.
  *
- * `chosen` holds the colors the person picked for their own categories,
- * keyed by merge key. Those always win, wherever the category ranks, and
- * every other category steers clear of them, so a picked color never shows
- * up on a different category too. They're included in the map even for a
- * category the donut rolls into "Other", so transaction lists use them.
+ * `chosen` holds the colors of the person's own categories (see
+ * ownCategoryColors), keyed by merge key. Those always win, wherever the
+ * category ranks, and every other category steers clear of them, so one of
+ * their colors never shows up on a different category too. They're
+ * included in the map even for a category the donut rolls into "Other", so
+ * transaction lists use them.
  */
 export function categoryColorMap(
   buckets: CategoryBucket[],
@@ -134,6 +136,45 @@ export const CATEGORY_COLOR_CHOICES: readonly { value: string; label: string }[]
   { value: '#a3e635', label: 'Lime' },
   { value: '#94a3b8', label: 'Slate' },
 ]
+
+/** The colors an automatic color can fall back to when the name's own
+ * color is taken: the offered ones, minus slate, which reads as the donut's
+ * gray "Other". */
+const AUTOMATIC_FALLBACK_COLORS = CATEGORY_COLOR_CHOICES.map((choice) => choice.value).filter(
+  (value) => value !== '#94a3b8',
+)
+
+/**
+ * One fixed color for each of the person's own categories, keyed by
+ * category id: the one they picked, or otherwise an automatic one. The
+ * automatic color starts from the name (preferredCategoryColor) and skips
+ * any color another of their categories already has, oldest category
+ * first, so adding a category never recolors an older one. It depends only
+ * on their categories, never on what's on screen, so Settings, the
+ * dashboard and every transaction list agree on it.
+ */
+export function ownCategoryColors(categories: readonly CustomCategory[]): Map<string, string> {
+  const colors = new Map<string, string>()
+  const taken = new Set<string>()
+  for (const category of categories) {
+    if (category.color) {
+      colors.set(category.id, category.color)
+      taken.add(category.color)
+    }
+  }
+  const automatic = categories
+    .filter((category) => !category.color)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+  for (const category of automatic) {
+    const preferred = preferredCategoryColor(category.name)
+    const color = taken.has(preferred)
+      ? (AUTOMATIC_FALLBACK_COLORS.find((candidate) => !taken.has(candidate)) ?? preferred)
+      : preferred
+    colors.set(category.id, color)
+    taken.add(color)
+  }
+  return colors
+}
 
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i
 

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { CategoryBucket } from '@/analyzers'
+import type { CustomCategory } from '@/types/category'
 import {
   categoryColorMap,
   listCategoryColor,
   MAX_NAMED_CATEGORIES,
   OTHER_CATEGORY_COLOR,
+  ownCategoryColors,
   preferredCategoryColor,
 } from './categoryColors'
 
@@ -89,5 +91,44 @@ describe('listCategoryColor', () => {
     expect(listCategoryColor('Book Stores', 'book stores', new Map())).toBe(
       preferredCategoryColor('Book Stores'),
     )
+  })
+})
+
+describe('ownCategoryColors', () => {
+  function own(id: string, name: string, createdAt: string, color?: string): CustomCategory {
+    return { id, name, createdAt, ...(color ? { color } : {}) }
+  }
+
+  it('keeps a picked color, and gives the rest the color of their name', () => {
+    const colors = ownCategoryColors([
+      own('a', 'Gaming', '2026-10-01T00:00:00.000Z', '#2dd4bf'),
+      own('b', 'Treats', '2026-10-02T00:00:00.000Z'),
+    ])
+
+    expect(colors.get('a')).toBe('#2dd4bf')
+    expect(colors.get('b')).toBe(preferredCategoryColor('Treats'))
+  })
+
+  it('moves the newer of two clashing categories to a free color, never the older one', () => {
+    const [older, newer] = collidingNames()
+    // listed newest first, as an alphabetical list might be
+    const colors = ownCategoryColors([
+      own('new', newer, '2026-10-05T00:00:00.000Z'),
+      own('old', older, '2026-10-01T00:00:00.000Z'),
+    ])
+
+    expect(colors.get('old')).toBe(preferredCategoryColor(older))
+    expect(colors.get('new')).not.toBe(colors.get('old'))
+  })
+
+  it("steps aside for a color picked for another category, and never falls back to the donut's gray", () => {
+    const colors = ownCategoryColors([
+      own('a', 'Treats', '2026-10-01T00:00:00.000Z'),
+      own('b', 'Gaming', '2026-10-02T00:00:00.000Z', preferredCategoryColor('Treats')),
+    ])
+
+    expect(colors.get('b')).toBe(preferredCategoryColor('Treats'))
+    expect(colors.get('a')).not.toBe(preferredCategoryColor('Treats'))
+    expect(colors.get('a')).not.toBe('#94a3b8')
   })
 })
