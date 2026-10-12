@@ -146,14 +146,14 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Search merchant description and filter by status, category, currency, card, and period.
 - Show date, merchant, card label/last four digits, amount/currency, category, status, and recorded cashback.
 - Show original amount/currency in details when different.
-- User category override per transaction is a real feature, deferred to v2, not dropped:
-  the MVP shows ether.fi's raw category text as-is (no mapping to an app-level taxonomy; see
-  §6), editable in a later version.
-- Also deferred (v2), and independent of overrides: bulk merchant rules (one action that
-  recategorizes every past and future transaction from a given merchant at once, instead of
-  editing rows one by one) and transaction splitting (dividing a single transaction's amount
-  across more than one category, e.g. a supermarket run that was part groceries, part
-  household goods).
+- Shipped after the MVP (roadmap step 2): the person's own categories, a per-transaction
+  category choice, and rules that file every past and future purchase from a merchant, or
+  everything under one of ether.fi's categories, into one of their categories. ether.fi's raw
+  category text is still stored as-is and is what a transaction falls back to.
+- Also shipped then: adding a transaction by hand, and editing an imported one. Edits to an
+  imported transaction survive later imports and can be undone.
+- Still deferred: transaction splitting (dividing a single transaction's amount across more
+  than one category, e.g. a supermarket run that was part groceries, part household goods).
 
 ### Local data settings
 - Delete all local financial data after confirmation. This is the only data-management
@@ -245,7 +245,8 @@ Suggested local stores:
 - transactions: local ID, local card ID, normalized provider fields, composite identity (§7), import provenance.
 - imports: local import ID, file hash, import time, parser version, outcome counts.
 - settings: currency, period and card-filter preferences, and schema version.
-- categoryOverrides (v2): local transaction ID and chosen category; not part of the v1 schema.
+- categories and categoryRules (schema v2): the person's own categories, and the merchant and
+  ether.fi-category rules that fill them. A per-transaction choice is stored on the transaction.
 
 Persist base records; derive chart summaries from them. Validate database migrations as the schema changes.
 
@@ -346,7 +347,7 @@ Done when: users can complete the flow unaided and the team has a clear feedback
 - A small, curated app-level category taxonomy and the mapping table from ether.fi's raw
   category text into it (see §6). The MVP shows raw category text as-is; the taxonomy is
   designed once more real exports are seen and ships together with overrides below.
-- User category overrides per transaction, bulk merchant rules, and transaction splitting (see §5).
+- Transaction splitting (see §5). Category overrides and merchant rules have shipped.
 - Versioned backup/export and restore, and cross-device backup merging (see §5).
 - Full Borrow-mode analytics: balances, interest, repayments, collateral, and liquidation.
   Basic Borrow transaction *import* is already in the MVP (see §2); only the deeper analytics

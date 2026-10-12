@@ -1,3 +1,4 @@
+import { Pencil } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { transactionCashbackPct } from '@/analyzers'
 import type { SpendingMode, StandardTransaction, TransactionStatus } from '@/types/transaction'
@@ -21,6 +22,8 @@ interface TransactionsTableProps {
   onSelectMerchant?: (merchant: string) => void
   /** Likewise for each category, called with its merge key. */
   onSelectCategory?: (categoryKey: string) => void
+  /** When given, each row gets an edit button. */
+  onEdit?: (transaction: StandardTransaction) => void
 }
 
 /**
@@ -284,6 +287,52 @@ function OriginalAmountDetails({ transaction }: { transaction: StandardTransacti
   )
 }
 
+/** "Manual" for a transaction the person added, "Edited" for an imported
+ * one they've changed, so either is easy to tell apart from what ether.fi
+ * reported. */
+function OriginTag({ transaction }: { transaction: StandardTransaction }) {
+  const label =
+    transaction.source === 'manual' ? 'Manual' : transaction.editedFields ? 'Edited' : null
+  if (!label) {
+    return null
+  }
+  return (
+    <span
+      title={
+        transaction.source === 'manual'
+          ? 'Added by you'
+          : 'Changed by you; your changes are kept on the next import'
+      }
+      className="ml-1.5 inline-flex shrink-0 items-center rounded-full bg-foreground/[0.06] px-1.5 py-px align-middle text-[10px] font-medium text-text-faint"
+    >
+      {label}
+    </span>
+  )
+}
+
+function EditButton({
+  transaction,
+  onEdit,
+}: {
+  transaction: StandardTransaction
+  onEdit?: (transaction: StandardTransaction) => void
+}) {
+  if (!onEdit) {
+    return null
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onEdit(transaction)}
+      aria-label={`Edit ${transaction.description}`}
+      title="Edit"
+      className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-faint transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    >
+      <Pencil className="size-3.5" />
+    </button>
+  )
+}
+
 /** A plain table on wider screens, a stacked receipt-style list on phone
  * widths where an 8-column table would no longer be legible. */
 function TransactionsTable({
@@ -292,6 +341,7 @@ function TransactionsTable({
   categoryColors,
   onSelectMerchant,
   onSelectCategory,
+  onEdit,
 }: TransactionsTableProps) {
   const { hovered, showDate, scheduleHideDate } = useDateHover()
 
@@ -316,10 +366,12 @@ function TransactionsTable({
                   onSelect={onSelectMerchant && (() => onSelectMerchant(transaction.description))}
                   className="inline-block max-w-full truncate align-bottom"
                 />
+                <OriginTag transaction={transaction} />
               </p>
               <span className="shrink-0 text-sm font-semibold tabular-nums">
                 {formatSignedSpend(transaction.amountMinor, transaction.currency)}
               </span>
+              <EditButton transaction={transaction} onEdit={onEdit} />
             </div>
             <div className="flex items-center justify-between gap-1.5">
               <DateCell
@@ -389,6 +441,11 @@ function TransactionsTable({
               <th className="py-2 text-right text-[10px] font-semibold tracking-[0.06em] uppercase">
                 Status
               </th>
+              {onEdit && (
+                <th className="w-9 py-2">
+                  <span className="sr-only">Edit</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -408,6 +465,7 @@ function TransactionsTable({
                     title={`Show only ${transaction.description}`}
                     onSelect={onSelectMerchant && (() => onSelectMerchant(transaction.description))}
                   />
+                  <OriginTag transaction={transaction} />
                 </td>
                 <td className="py-2 pr-3 text-text-dim">
                   <span className="inline-flex items-center gap-1.5">
@@ -441,6 +499,11 @@ function TransactionsTable({
                 <td className="py-2 text-right">
                   <StatusPill transaction={transaction} />
                 </td>
+                {onEdit && (
+                  <td className="py-2 pl-2">
+                    <EditButton transaction={transaction} onEdit={onEdit} />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

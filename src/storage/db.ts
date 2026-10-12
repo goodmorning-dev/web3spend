@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Card } from '@/types/card'
+import type { CategoryRule, CustomCategory } from '@/types/category'
 import type { ImportRecord } from '@/types/import'
 import type { Settings } from '@/types/settings'
 import type { StandardTransaction } from '@/types/transaction'
@@ -9,6 +10,8 @@ export class Web3SpendDB extends Dexie {
   transactions!: EntityTable<StandardTransaction, 'id'>
   imports!: EntityTable<ImportRecord, 'id'>
   settings!: EntityTable<Settings, 'key'>
+  categories!: EntityTable<CustomCategory, 'id'>
+  categoryRules!: EntityTable<CategoryRule, 'id'>
 
   constructor(name = 'web3spend') {
     super(name)
@@ -18,6 +21,12 @@ export class Web3SpendDB extends Dexie {
         'id, cardId, identityKey, importId, [cardId+timestampUtc], [currency+timestampUtc]',
       imports: 'id, fileHash, importedAt',
       settings: 'key',
+    })
+    // Custom categories and the rules that apply them. Transactions only
+    // gained optional fields, so there's nothing to migrate.
+    this.version(2).stores({
+      categories: 'id, name',
+      categoryRules: 'id, [kind+matchKey], categoryId',
     })
   }
 }

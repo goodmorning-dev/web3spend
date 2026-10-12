@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '@/storage/db'
+import { loadTransactions } from '@/storage/transactions'
 import type { StandardTransaction } from '@/types/transaction'
 import type { SelectedFilters } from './DashboardFiltersContext'
 import { useDataSource } from './useDataSource'
@@ -18,7 +18,7 @@ export function useCurrencyScopedTransactions(
     if (!filters) {
       return undefined
     }
-    const all = await db.transactions.toArray()
+    const all = await loadTransactions()
     return all.filter(
       (transaction) =>
         transaction.currency === filters.currency &&

@@ -22,6 +22,7 @@ import { useFilteredTransactions } from '@/hooks/useFilteredTransactions'
 import { scrollToTop } from '@/lib/scrollToTop'
 import type { StandardTransaction } from '@/types/transaction'
 import { categoryColorMap } from '@/utils/categoryColors'
+import { useChosenCategoryColors } from '@/hooks/useChosenCategoryColors'
 import { formatUtcDate, formatUtcDateKey, getUtcYear } from '@/utils/dates'
 
 const RECENT_TRANSACTIONS_LIMIT = 6
@@ -46,6 +47,7 @@ function DashboardPage() {
   const overallSummary = useDashboardSummary()
   const { filters, options, setDay, clearDay } = useDashboardFilters()
   const filteredTransactions = useFilteredTransactions(filters)
+  const chosenColors = useChosenCategoryColors()
   const currencyScopedTransactions = useCurrencyScopedTransactions(filters)
   const cardLastFourById = useMemo(() => {
     const map = new Map<string, string>()
@@ -101,7 +103,7 @@ function DashboardPage() {
   // The donut's buckets, and its colors for the recent transactions below,
   // so a category looks the same in both.
   const categoryBuckets = filteredTransactions ? aggregateByCategory(filteredTransactions) : []
-  const categoryColors = categoryColorMap(categoryBuckets)
+  const categoryColors = categoryColorMap(categoryBuckets, chosenColors)
 
   return (
     <div className="flex flex-col gap-6">

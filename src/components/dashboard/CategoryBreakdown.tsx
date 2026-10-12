@@ -10,6 +10,7 @@ import {
   MAX_NAMED_CATEGORIES,
   OTHER_CATEGORY_COLOR,
 } from '@/utils/categoryColors'
+import { useChosenCategoryColors } from '@/hooks/useChosenCategoryColors'
 import { formatMoney, formatPercent } from '@/utils/format'
 
 interface CategoryBreakdownProps {
@@ -65,6 +66,7 @@ function CategoryBreakdown({
   onViewAll,
   onSelectCategory,
 }: CategoryBreakdownProps) {
+  const chosenColors = useChosenCategoryColors()
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const clearHoverTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -118,7 +120,7 @@ function CategoryBreakdown({
   const visibleBuckets = rollupTopCategories(buckets)
   // Each named category keeps the color it has in every transaction list
   // (see categoryColors.ts); "Other" is gray.
-  const colors = categoryColorMap(buckets)
+  const colors = categoryColorMap(buckets, chosenColors)
   const hasOther = buckets.length > MAX_NAMED_CATEGORIES
   const colorOf = (bucket: CategoryBucket, index: number) =>
     hasOther && index === visibleBuckets.length - 1

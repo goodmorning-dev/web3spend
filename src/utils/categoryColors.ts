@@ -81,11 +81,30 @@ export function listCategoryColor(
  * the map is part of the donut's "Other", which the donut shows gray
  * (OTHER_CATEGORY_COLOR); transaction lists color those categories with
  * listCategoryColor instead.
+ *
+ * `chosen` holds the colors the person picked for their own categories,
+ * keyed by merge key. Those always win, wherever the category ranks, and
+ * every other category steers clear of them, so a picked color never shows
+ * up on a different category too. They're included in the map even for a
+ * category the donut rolls into "Other", so transaction lists use them.
  */
-export function categoryColorMap(buckets: CategoryBucket[]): Map<string, string> {
+export function categoryColorMap(
+  buckets: CategoryBucket[],
+  chosen: ReadonlyMap<string, string> = new Map(),
+): Map<string, string> {
   const colors = new Map<string, string>()
   const taken = new Set<string>()
+  for (const bucket of buckets) {
+    const color = chosen.get(categoryIdentity(bucket))
+    if (color) {
+      colors.set(categoryIdentity(bucket), color)
+      taken.add(color)
+    }
+  }
   for (const bucket of buckets.slice(0, MAX_NAMED_CATEGORIES)) {
+    if (colors.has(categoryIdentity(bucket))) {
+      continue
+    }
     const preferred = preferredCategoryColor(bucket.category)
     const color = taken.has(preferred)
       ? (CATEGORY_COLORS.find((candidate) => !taken.has(candidate)) ?? preferred)
@@ -94,4 +113,34 @@ export function categoryColorMap(buckets: CategoryBucket[]): Map<string, string>
     colors.set(categoryIdentity(bucket), color)
   }
   return colors
+}
+
+/**
+ * The colors offered for a person's own categories: the app's own category
+ * colors first, then a few more that still sit well on the dark theme.
+ * Any other color has to be a plain #rrggbb value (see isCategoryColor).
+ */
+export const CATEGORY_COLOR_CHOICES: readonly { value: string; label: string }[] = [
+  { value: 'var(--color-chart-1)', label: 'Gold' },
+  { value: 'var(--color-chart-4)', label: 'Amber' },
+  { value: '#fb923c', label: 'Orange' },
+  { value: 'var(--color-chart-6)', label: 'Coral' },
+  { value: 'var(--color-chart-8)', label: 'Pink' },
+  { value: '#a78bfa', label: 'Violet' },
+  { value: 'var(--color-chart-2)', label: 'Periwinkle' },
+  { value: 'var(--color-chart-7)', label: 'Sky' },
+  { value: '#2dd4bf', label: 'Teal' },
+  { value: 'var(--color-chart-3)', label: 'Green' },
+  { value: '#a3e635', label: 'Lime' },
+  { value: '#94a3b8', label: 'Slate' },
+]
+
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i
+
+/** Whether a value is safe to store and use as a category color: one of
+ * the offered choices, or a plain hex color, and never arbitrary CSS. */
+export function isCategoryColor(value: string): boolean {
+  return (
+    HEX_COLOR_PATTERN.test(value) || CATEGORY_COLOR_CHOICES.some((choice) => choice.value === value)
+  )
 }

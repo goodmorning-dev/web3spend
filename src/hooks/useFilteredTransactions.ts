@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { filterTransactions } from '@/analyzers'
-import { db } from '@/storage/db'
+import { loadTransactions } from '@/storage/transactions'
 import type { StandardTransaction } from '@/types/transaction'
 import type { SelectedFilters } from './DashboardFiltersContext'
 import { toDashboardFilters } from './toDashboardFilters'
@@ -21,7 +21,7 @@ export function useFilteredTransactions(
     if (!filters) {
       return undefined
     }
-    const all = await db.transactions.toArray()
+    const all = await loadTransactions()
     return filterTransactions(all, toDashboardFilters(filters))
   }, [filters, source])
 }
