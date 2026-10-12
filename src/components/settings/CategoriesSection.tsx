@@ -115,11 +115,7 @@ function CategoriesSection() {
       {state && state.categories.length > 0 && (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="self-start text-text-faint hover:text-destructive"
-            >
+            <Button variant="destructive" size="sm" className="self-start">
               <Trash2 className="size-3.5" />
               Delete all categories
             </Button>

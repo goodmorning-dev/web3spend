@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { ladderFor, MEMBERSHIP_LEVELS, type MembershipLevel } from '@/cashback/ladders'
 import { Button } from '@/components/ui/button'
@@ -100,11 +101,12 @@ function MembershipSection() {
 
       {level && (
         <Button
+          variant="destructive"
           size="sm"
-          variant="ghost"
-          className="self-start text-text-faint"
+          className="self-start"
           onClick={() => void choose(null)}
         >
+          <Trash2 className="size-3.5" />
           Clear my level
         </Button>
       )}
