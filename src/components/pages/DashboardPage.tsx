@@ -118,10 +118,6 @@ function DashboardPage() {
               summary={summarizeTransactions(filteredTransactions)}
               currency={filters.currency}
             />
-            {/* Always this month and every card, since that's how ether.fi
-                counts; only the currency follows the filters, as euro
-                purchases have steps of their own. */}
-            <CashbackSteps currency={filters.currency} />
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.15fr_1fr]">
               {/* The cumulative this-month-against-last-month comparison only
                   makes sense for one month; "All time" gets a bar per month
@@ -149,6 +145,10 @@ function DashboardPage() {
                 onSelectCategory={(key) => openTransactions({ category: key })}
               />
             </div>
+            {/* Always this month and every card, since that's how ether.fi
+                counts; only the currency follows the filters, as euro
+                purchases have steps of their own. */}
+            <CashbackSteps currency={filters.currency} />
             <ActivityHeatmap
               activity={computeYearActivity(heatmapTransactions, heatmapYear)}
               year={heatmapYear}
