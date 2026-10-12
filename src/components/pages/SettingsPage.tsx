@@ -12,6 +12,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import CategoriesSection from '@/components/settings/CategoriesSection'
+import MembershipSection from '@/components/settings/MembershipSection'
 import { Button } from '@/components/ui/button'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDataSource, useHasRealData } from '@/hooks/useDataSource'
@@ -38,8 +39,8 @@ function InstallSection() {
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 className="font-heading text-sm font-semibold">Install Web3Spend</h2>
         <p className="max-w-prose text-sm text-text-faint">
-          Installing adds Web3Spend to your device like a regular app: its own icon, its own
-          window, and it keeps working offline once it's loaded your data.
+          Installing adds Web3Spend to your device like a regular app: its own icon, its own window,
+          and it keeps working offline once it's loaded your data.
         </p>
         <Button size="sm" className="self-start" onClick={promptInstall}>
           <Download className="size-3.5" />
@@ -54,9 +55,9 @@ function InstallSection() {
       <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 className="font-heading text-sm font-semibold">Install Web3Spend</h2>
         <p className="max-w-prose text-sm text-text-faint">
-          iOS doesn't offer an install button, but you can still add Web3Spend to your Home
-          Screen: tap the Share icon, then &quot;Add to Home Screen&quot;. It'll open in its own
-          window and keep working offline once it's loaded your data.
+          iOS doesn't offer an install button, but you can still add Web3Spend to your Home Screen:
+          tap the Share icon, then &quot;Add to Home Screen&quot;. It'll open in its own window and
+          keep working offline once it's loaded your data.
         </p>
       </section>
     )
@@ -135,10 +136,10 @@ function SettingsPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete all local data?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes every card, transaction, and import record stored in
-                  this browser. It cannot be undone from within the app; you'd need to re-import
-                  your ether.fi export to see your data again, and your edits and added
-                  transactions would be gone for good. Your categories and their rules stay.
+                  This permanently removes every card, transaction, and import record stored in this
+                  browser. It cannot be undone from within the app; you'd need to re-import your
+                  ether.fi export to see your data again, and your edits and added transactions
+                  would be gone for good. Your categories and their rules stay.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -157,6 +158,7 @@ function SettingsPage() {
           </p>
         )}
       </section>
+      <MembershipSection />
       <CategoriesSection />
     </div>
   )

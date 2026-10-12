@@ -10,6 +10,7 @@ import {
 } from '@/analyzers'
 import ImportFlow from '@/components/ImportFlow'
 import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap'
+import CashbackSteps from '@/components/dashboard/CashbackSteps'
 import CategoryBreakdown from '@/components/dashboard/CategoryBreakdown'
 import KpiRow from '@/components/dashboard/KpiRow'
 import MonthlySpendChart from '@/components/dashboard/MonthlySpendChart'
@@ -144,6 +145,10 @@ function DashboardPage() {
                 onSelectCategory={(key) => openTransactions({ category: key })}
               />
             </div>
+            {/* Always this month and every card, since that's how ether.fi
+                counts; only the currency follows the filters, as euro
+                purchases have steps of their own. */}
+            <CashbackSteps currency={filters.currency} />
             <ActivityHeatmap
               activity={computeYearActivity(heatmapTransactions, heatmapYear)}
               year={heatmapYear}

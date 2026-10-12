@@ -79,6 +79,7 @@ src/
   matching/          identity-key computation, upsert logic
   storage/           Dexie schema + typed repositories (cards, transactions, imports, settings)
   analyzers/         pure aggregation functions (by month/year/category/currency/card)
+  cashback/          ether.fi's cashback steps by level, the ECB reference rate, the steps count
   components/        feature UI (Home, ImportFlow, Dashboard, TransactionsTable, Settings)
   components/ui/     shadcn primitives
   hooks/             thin React glue over storage + analyzers
@@ -152,6 +153,7 @@ interface Settings {
   currency?: string
   periodFilter?: string
   cardFilter?: string
+  membershipLevel?: 'core' | 'luxe' | 'pinnacle' // picked by the person, for the cashback steps
   schemaVersion: number
 }
 ```
@@ -324,6 +326,10 @@ the real anonymized xlsx is never committed to the repo (MVP-PLAN §9/§12).
 
 - Bundle everything (fonts, icons, parser, charts): no remote fetches for app assets, no
   third-party analytics script, no merchant logos from a remote CDN.
+- The one thing fetched from elsewhere is fetched by the build, not the app: `npm run build`
+  gets the ECB's latest euro/dollar reference rate for the cashback steps and builds it in
+  (vite.config.ts). Without a connection the build keeps the rate committed in
+  `src/cashback/eurUsdReference.ts` and warns.
 - **shadcn/ui and remote requests**: shadcn/ui is not a runtime package. `npx shadcn add
   <component>` copies component source (built on Radix UI primitives + Tailwind classes, both
   fully bundled with no runtime network calls) directly into the repo; from that point it's

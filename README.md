@@ -12,6 +12,9 @@ transactions.
 
 - **The totals:** how much you've spent, how much cashback you've earned, and your effective
   cashback rate.
+- **Cashback steps:** ether.fi's rate drops from 3% to 1% and lower as the month's spending
+  grows. Pick your ether.fi level in Settings and the dashboard shows how much is left at 3%
+  this month, and what comes after.
 - **Monthly trends:** this month's spending against last month and your monthly average, or a
   bar for every month when you look at all time.
 - **Categories:** where your money goes, by merchant category. Click one to see its
@@ -97,6 +100,11 @@ npm run dev
 It's built with React, TypeScript and Vite, styled with Tailwind CSS, and uses SheetJS to read
 the export, Dexie for IndexedDB, and Recharts for the charts. Everything it needs, fonts
 included, is bundled with the app, so nothing is fetched from elsewhere while you use it.
+
+`npm run build` does fetch one thing itself: the European Central Bank's latest euro/dollar
+reference rate, which the cashback steps use to estimate euro spending against ether.fi's
+dollar limits. It's built into the app, so the app still never fetches it. Without a
+connection, the build keeps the rate committed in `src/cashback/eurUsdReference.ts`.
 
 ## Want your card supported?
 

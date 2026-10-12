@@ -2,12 +2,14 @@ import {
   buildDemoRows,
   DEMO_CARD_HOLDER_KEY,
   DEMO_FILE_HASH,
+  DEMO_MEMBERSHIP_LEVEL,
   DEMO_PARSER_VERSION,
 } from '@/adapters/demoData'
 import { commitImport } from '@/matching/commitImport'
 import { getDataSource, setDataSource } from './dataSource'
 import { demoDb, realDb } from './db'
 import { clearDatabase } from './deleteAllData'
+import { setMembershipLevel } from './settings'
 
 /**
  * True once the person has imported any real data. Always reads their own
@@ -23,8 +25,10 @@ export async function hasRealData(): Promise<boolean> {
  * Puts the demo on screen with a freshly built dataset, through the same
  * commitImport pipeline a real file import uses. The demo database is
  * emptied first, so the demo's dates are always relative to today and
- * opening it again never duplicates anything. Real data isn't touched. If
- * building it fails, whatever was on screen before comes back.
+ * opening it again never duplicates anything. Its level is set to the one
+ * its cashback follows, so the dashboard's cashback steps show straight
+ * away. Real data isn't touched. If building it fails, whatever was on
+ * screen before comes back.
  */
 export async function openDemo(): Promise<void> {
   const previous = getDataSource()
@@ -36,6 +40,7 @@ export async function openDemo(): Promise<void> {
       parserVersion: DEMO_PARSER_VERSION,
       unsupportedCount: 0,
     })
+    await setMembershipLevel(DEMO_MEMBERSHIP_LEVEL)
   } catch (err) {
     setDataSource(previous)
     throw err

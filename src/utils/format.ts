@@ -17,6 +17,11 @@ export function formatCashbackTotals(
   return totals.map((total) => formatMoney(total.amountMinor, total.currency)).join(' + ')
 }
 
+/** A cashback step's rate, given as a fraction: "3%", "1%", "0.1%". */
+export function formatCashbackRate(rate: number): string {
+  return `${Number((rate * 100).toFixed(1))}%`
+}
+
 export function formatPercent(value: number | null, fractionDigits = 2): string {
   if (value === null) {
     return 'Unavailable'

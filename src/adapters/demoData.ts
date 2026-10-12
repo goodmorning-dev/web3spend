@@ -1,3 +1,5 @@
+import { EUR_USD_REFERENCE } from '@/cashback/eurUsdReference'
+import { cashbackOnLadder, ladderFor, type MembershipLevel } from '@/cashback/ladders'
 import type { ParsedTransactionRow } from '@/matching/commitImport'
 import type { SpendingMode } from '@/types/transaction'
 
@@ -521,23 +523,26 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
   },
 ]
 
-/**
- * ether.fi's cashback as the demo models it: 3% on the first €1,000 of card
- * spending in a calendar month (UTC), across both cards, and 1% on
- * everything after that. A purchase that crosses the €1,000 mark earns 3%
- * on the part below it and 1% on the rest. A cancelled purchase earns
- * nothing and doesn't count toward the €1,000. A refund (a negative
- * amount) takes its cashback back at 3%, the rate an ordinary purchase
- * earns, and doesn't move the month's total either.
- */
-export const DEMO_CASHBACK = {
-  monthlyThresholdMinor: 100_000,
-  rateUpToThreshold: 0.03,
-  rateAfterThreshold: 0.01,
-}
+/** The membership level the demo's cashback follows, and the one it sets
+ * in the demo's settings so the dashboard's cashback steps show. */
+export const DEMO_MEMBERSHIP_LEVEL: MembershipLevel = 'core'
 
-export function applyDemoCashback(rows: ParsedTransactionRow[]): ParsedTransactionRow[] {
-  const spentByMonth = new Map<string, number>()
+/**
+ * ether.fi's cashback as the demo models it: the Core level's euro ladder
+ * (see src/cashback/ladders.ts), on one counter per calendar month (UTC)
+ * across both cards. Each purchase adds its dollar value, at the
+ * reference rate, and a purchase that crosses into the next step earns
+ * each rate on its own part. A cancelled purchase earns nothing and
+ * doesn't count. A refund (a negative amount) takes its cashback back at
+ * 3%, the rate an ordinary purchase earns, and takes its value off the
+ * month's counter, as ether.fi does.
+ */
+export function applyDemoCashback(
+  rows: ParsedTransactionRow[],
+  { eurUsdRate = EUR_USD_REFERENCE.rate }: { eurUsdRate?: number } = {},
+): ParsedTransactionRow[] {
+  const steps = ladderFor(DEMO_MEMBERSHIP_LEVEL, 'EUR')
+  const counterByMonth = new Map<string, number>()
   const cashbackByRow = new Map<ParsedTransactionRow, number>()
   const inOrder = [...rows].sort((a, b) => a.timestampUtc.localeCompare(b.timestampUtc))
 
@@ -546,25 +551,16 @@ export function applyDemoCashback(rows: ParsedTransactionRow[]): ParsedTransacti
       cashbackByRow.set(row, 0)
       continue
     }
+    const month = row.timestampUtc.slice(0, 7)
+    const counter = counterByMonth.get(month) ?? 0
+    const amountUsdMinor = Math.round(row.amountMinor * eurUsdRate)
+    counterByMonth.set(month, counter + amountUsdMinor)
     if (row.amountMinor < 0) {
-      cashbackByRow.set(row, Math.round(row.amountMinor * DEMO_CASHBACK.rateUpToThreshold))
+      cashbackByRow.set(row, Math.round(row.amountMinor * steps[0].rate))
       continue
     }
-    const month = row.timestampUtc.slice(0, 7)
-    const spentBefore = spentByMonth.get(month) ?? 0
-    const upToThreshold = Math.max(
-      0,
-      Math.min(row.amountMinor, DEMO_CASHBACK.monthlyThresholdMinor - spentBefore),
-    )
-    const afterThreshold = row.amountMinor - upToThreshold
-    cashbackByRow.set(
-      row,
-      Math.round(
-        upToThreshold * DEMO_CASHBACK.rateUpToThreshold +
-          afterThreshold * DEMO_CASHBACK.rateAfterThreshold,
-      ),
-    )
-    spentByMonth.set(month, spentBefore + row.amountMinor)
+    const cashbackUsdMinor = cashbackOnLadder(steps, Math.max(0, counter), amountUsdMinor)
+    cashbackByRow.set(row, Math.round(cashbackUsdMinor / eurUsdRate))
   }
 
   return rows.map((row) => ({ ...row, cashbackMinor: cashbackByRow.get(row) ?? 0 }))
