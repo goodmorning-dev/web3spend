@@ -154,8 +154,12 @@ No account, wallet connection, remote transaction upload, or financial-data back
   category choice, and rules that file every past and future purchase from a merchant, or
   everything under one of ether.fi's categories, into one of their categories. ether.fi's raw
   category text is still stored as-is and is what a transaction falls back to.
-- Also shipped then: adding a transaction by hand, and editing an imported one. Edits to an
-  imported transaction survive later imports and can be undone.
+- Editing a transaction is limited to its category. Changing amounts, cashback, dates and
+  status, and adding purchases by hand, shipped briefly and were taken out again: any change to
+  an amount puts the totals and cashback figures out of line with what ether.fi recorded (a
+  €100 bill cut to €50 keeps its €3 of cashback, so the effective rate reads 6%). Edits made in
+  that time still survive imports and can be undone, and a purchase added by hand can still be
+  deleted.
 - Still deferred: transaction splitting (dividing a single transaction's amount across more
   than one category, e.g. a supermarket run that was part groceries, part household goods).
 
@@ -196,8 +200,10 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Show cashback recorded in a different currency than its purchase in the currency it was recorded in, next to the rest when needed ("€0.81 + $0.41"), never converted. The export has no exchange rate, so the effective rate stays unavailable for those purchases.
 - Compute yearly cashback rates from yearly sums, never by averaging monthly percentages.
 - Shipped after the MVP: progress through ether.fi's published cashback steps (3%, then 1%,
-  then a lower last rate as the month's spending grows) for the membership level the person
-  picks in Settings, since the export doesn't say. The steps are kept in one place with their
+  then a lower last rate as the month's spending grows) for the month on screen. The export
+  doesn't say which membership level the person is on, so it's worked out from the month's
+  recorded cashback when that settles it, or picked on the dashboard or in Settings, and a
+  pill per level shows roughly what each would pay that month, for comparison. The steps are kept in one place with their
   source (`src/cashback/ladders.ts`). Euro spending is converted with the ECB reference rate
   built in at deploy, so it's labeled an estimate, and the latest purchase whose cashback shows
   its step pins it down. There's still no auditing of expected against earned cashback.
@@ -213,8 +219,8 @@ No account, wallet connection, remote transaction upload, or financial-data back
 No transaction ID exists in the source, but two things simplify this a lot for v1: ether.fi's
 export covers the full transaction history each time (not incremental deltas), and category
 overrides (the main reason a merge needed to be careful about not clobbering local edits) were
-deferred to v2. They've since shipped along with editing transactions, and an import leaves the
-person's edits and hand-added transactions alone (see §5). The elaborate
+deferred to v2. They've since shipped, and an import leaves the person's category choices, and
+any edits or hand-added purchases from when those were possible, alone (see §5). The elaborate
 dual-fingerprint/ambiguous-match design originally scoped here is no longer needed for the MVP;
 keep it in mind as a v2 option if real usage proves this insufficient.
 
@@ -378,8 +384,7 @@ Done when: users can complete the flow unaided and the team has a clear feedback
 - Historical FX conversion and token-price valuation.
 - Additional card providers, automatic syncing, accounts, or wallet connections.
 - Budgets and notifications. Recurring payment detection has shipped (Subscriptions, see §5).
-- Working out the membership level from the data, and auditing expected against earned
-  cashback.
+- Auditing expected against earned cashback.
 - Full refund/net-spend semantics (see §6).
 - Complex category rules, custom chart builders, and production usage telemetry.
 - Local data-at-rest protection (e.g. a PIN/passphrase-gated lock screen and/or encrypting the

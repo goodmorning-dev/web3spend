@@ -13,8 +13,9 @@ transactions.
 - **The totals:** how much you've spent, how much cashback you've earned, and your effective
   cashback rate.
 - **Cashback steps:** ether.fi's rate drops from 3% to 1% and lower as the month's spending
-  grows. Pick your ether.fi level in Settings and the dashboard shows how much is left at 3%
-  this month, and what comes after.
+  grows. The dashboard shows where any month stands, works out your ether.fi level from your
+  cashback when it can, and shows roughly what each level would pay that month, so you can
+  compare them and switch with a click.
 - **Monthly trends:** this month's spending against last month and your monthly average, or a
   bar for every month when you look at all time.
 - **Categories:** where your money goes, by merchant category. Click one to see its
@@ -25,8 +26,8 @@ transactions.
   days, longest streak, biggest day and top weekday.
 - **Transactions:** every purchase with its card, category, amount, cashback and status, and
   whether it was paid directly or in Borrow Mode. Search by merchant and filter by status,
-  category or spending mode. Fix anything that looks wrong, or add a purchase the export doesn't
-  have yet; your changes survive the next import and can be undone.
+  category or spending mode. Change any purchase's category; the amounts, cashback and dates
+  always stay as your ether.fi export has them, so the totals match it.
 - **Subscriptions:** recurring charges spotted in your history, including ones that have
   stopped.
 
