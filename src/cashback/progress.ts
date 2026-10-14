@@ -3,8 +3,10 @@ import { categoryMergeKey } from '@/utils/category'
 import { getUtcMonth, getUtcYear } from '@/utils/dates'
 import {
   amountForCashback,
+  cashbackOnLadder,
   ladderCurrency,
   ladderFor,
+  MEMBERSHIP_LEVELS,
   stepIndexAt,
   type CashbackStep,
   type LadderCurrency,
@@ -101,6 +103,26 @@ function countsTowardSpending(
   return true
 }
 
+/** One month's (UTC) transactions, and the ones among them that count
+ * toward the steps for `level`, oldest first. */
+function monthPurchases(
+  transactions: StandardTransaction[],
+  level: MembershipLevel,
+  year: number,
+  month: number,
+): { inMonth: StandardTransaction[]; counted: StandardTransaction[] } {
+  const inMonth = transactions.filter(
+    (transaction) =>
+      getUtcYear(transaction.timestampUtc) === year &&
+      getUtcMonth(transaction.timestampUtc) === month,
+  )
+  const excludedCategories = noCashbackCategories(transactions)
+  const counted = inMonth
+    .filter((transaction) => countsTowardSpending(transaction, level, excludedCategories))
+    .sort((a, b) => a.timestampUtc.localeCompare(b.timestampUtc))
+  return { inMonth, counted }
+}
+
 /** A purchase's value on the month's counter, in dollar cents, or null
  * when it can't be worked out. */
 function dollarValue(
@@ -165,7 +187,9 @@ export function stepFromCashback(
  * Euro amounts are converted with a reference rate, so the result is an
  * estimate. The latest purchase whose cashback shows which step it was
  * rated on then pins it down: if the estimate disagrees, the count is
- * moved just far enough to agree, since ether.fi's own numbers win.
+ * moved just far enough to agree, since ether.fi's own numbers win. That
+ * only makes sense for a level the cashback fits (see detectLevel), so
+ * `matchCashback: false` leaves the plain estimate for any other.
  */
 export function computeCashbackProgress(
   transactions: StandardTransaction[],
@@ -175,28 +199,21 @@ export function computeCashbackProgress(
     eurUsdRate: number
     year: number
     month: number
+    matchCashback?: boolean
   },
 ): CashbackProgress {
-  const { level, eurUsdRate, year, month } = options
+  const { level, eurUsdRate, year, month, matchCashback = true } = options
   const currency = ladderCurrency(options.currency)
   const steps = ladderFor(level, currency)
   const usdSteps = ladderFor(level, 'USD')
 
-  const inMonth = transactions.filter(
-    (transaction) =>
-      getUtcYear(transaction.timestampUtc) === year &&
-      getUtcMonth(transaction.timestampUtc) === month,
-  )
-  const excludedCategories = noCashbackCategories(transactions)
-  const counted = inMonth
-    .filter((transaction) => countsTowardSpending(transaction, level, excludedCategories))
-    .sort((a, b) => a.timestampUtc.localeCompare(b.timestampUtc))
+  const { inMonth, counted } = monthPurchases(transactions, level, year, month)
 
   // The latest purchase on the shown ladder whose cashback gives its step
   // away. Only one in the ladder's own currency, with its cashback in that
   // currency too and ether.fi's own figures, can show its rate.
   let anchor: { index: number; step: number } | null = null
-  for (let index = counted.length - 1; index >= 0 && anchor === null; index--) {
+  for (let index = counted.length - 1; matchCashback && index >= 0 && anchor === null; index--) {
     const transaction = counted[index]
     if (
       transaction.currency === currency &&
@@ -269,4 +286,118 @@ export function computeCashbackProgress(
     matchedToCashback,
     uncountedCount: result.uncounted,
   }
+}
+
+interface MonthOptions {
+  currency: string
+  eurUsdRate: number
+  year: number
+  month: number
+}
+
+/** The month's counted purchases for `level`, each with where the
+ * counter stood before it and its dollar value (null when it couldn't be
+ * worked out). From spending alone, without pinning to recorded cashback. */
+function walkMonth(
+  transactions: StandardTransaction[],
+  level: MembershipLevel,
+  { eurUsdRate, year, month }: Omit<MonthOptions, 'currency'>,
+) {
+  const usdSteps = ladderFor(level, 'USD')
+  let counter = 0
+  return monthPurchases(transactions, level, year, month).counted.map((transaction) => {
+    const counterBefore = counter
+    const value = dollarValue(transaction, counter, usdSteps, eurUsdRate)
+    counter += value ?? 0
+    return { transaction, counterBefore, value }
+  })
+}
+
+/**
+ * Roughly what `level` would pay on the month's purchases on the shown
+ * ladder (euro purchases on the euro one, dollar purchases on the dollar
+ * one), in that currency's minor units: each purchase's part on each step
+ * at that step's rate, worked out from spending alone. It's for comparing
+ * the levels side by side, not for checking what ether.fi actually paid.
+ */
+export function estimateMonthlyCashback(
+  transactions: StandardTransaction[],
+  options: MonthOptions & { level: MembershipLevel },
+): number {
+  const currency = ladderCurrency(options.currency)
+  const steps = ladderFor(options.level, currency)
+  let cashbackUsdMinor = 0
+  for (const { transaction, counterBefore, value } of walkMonth(
+    transactions,
+    options.level,
+    options,
+  )) {
+    if (transaction.currency === currency && value !== null && value > 0) {
+      cashbackUsdMinor += cashbackOnLadder(steps, Math.max(0, counterBefore), value)
+    }
+  }
+  return Math.round(currency === 'EUR' ? cashbackUsdMinor / options.eurUsdRate : cashbackUsdMinor)
+}
+
+export interface LevelDetection {
+  /** The one level the month's cashback fits, or null when it fits more
+   * than one, or none. */
+  detected: MembershipLevel | null
+  /** Every level the month's cashback fits, lowest first. */
+  possible: MembershipLevel[]
+}
+
+/**
+ * Whether the cashback ether.fi recorded this month is what `level` would
+ * have paid: every purchase whose cashback shows its step must be on the
+ * step `level` puts it on at that point in the month. A purchase while the
+ * count is close to a step's edge proves nothing, since euros are
+ * converted at ether.fi's own rate, which can put it on either side.
+ */
+function fitsLevel(
+  transactions: StandardTransaction[],
+  level: MembershipLevel,
+  options: Omit<MonthOptions, 'currency'>,
+): boolean {
+  for (const { transaction, counterBefore, value } of walkMonth(transactions, level, options)) {
+    const { currency, cashbackCurrency, amountMinor, cashbackMinor } = transaction
+    if (
+      value === null ||
+      value <= 0 ||
+      (currency !== 'EUR' && currency !== 'USD') ||
+      cashbackCurrency !== currency ||
+      !hasEtherfiFigures(transaction)
+    ) {
+      continue
+    }
+    const steps = ladderFor(level, currency)
+    const shown = stepFromCashback(steps, amountMinor, cashbackMinor)
+    const counter = Math.max(0, counterBefore)
+    // within 5% of an edge: more than the reference rate drifts from
+    // ether.fi's own in a month
+    const nearAnEdge = steps.some(
+      (step) =>
+        step.toUsdMinor !== null && Math.abs(counter - step.toUsdMinor) <= step.toUsdMinor * 0.05,
+    )
+    if (shown !== null && !nearAnEdge && stepIndexAt(steps, counter) !== shown) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Which membership level the month's recorded cashback fits, so the
+ * person doesn't have to say. Levels only differ once spending passes the
+ * lowest level's 3% limit, so a month that hasn't fits them all, and one
+ * past Core's limit at 3% still can't tell Luxe from Pinnacle.
+ */
+export function detectLevel(
+  transactions: StandardTransaction[],
+  options: Omit<MonthOptions, 'currency'>,
+): LevelDetection {
+  const possible = MEMBERSHIP_LEVELS.map((level) => level.value).filter((level) =>
+    fitsLevel(transactions, level, options),
+  )
+  return { detected: possible.length === 1 ? possible[0] : null, possible }
 }

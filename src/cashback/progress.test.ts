@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { StandardTransaction } from '@/types/transaction'
 import { ladderFor } from './ladders'
-import { computeCashbackProgress, stepFromCashback } from './progress'
+import {
+  computeCashbackProgress,
+  detectLevel,
+  estimateMonthlyCashback,
+  stepFromCashback,
+} from './progress'
 
 let nextId = 0
 
@@ -297,5 +302,62 @@ describe('stepFromCashback', () => {
     // $120 split as $100 at 3% and $20 at 1%: within 15% of 3%, but not a
     // 3% purchase rounded to the cent
     expect(stepFromCashback(ladderFor('core', 'USD'), 12_000, 320)).toBeNull()
+  })
+})
+
+describe('estimateMonthlyCashback', () => {
+  it("works out what each level would pay on the month's euro purchases", () => {
+    // €640 then €200: Core pays 3% up to €640 and 1% after; Luxe 3% on all
+    const transactions = month({ amountMinor: 64_000 }, { amountMinor: 20_000 })
+
+    expect(estimateMonthlyCashback(transactions, { ...options, level: 'core' })).toBe(1_920 + 200)
+    expect(estimateMonthlyCashback(transactions, { ...options, level: 'luxe' })).toBe(2_520)
+  })
+
+  it('leaves out purchases on the other ladder, and cancelled ones', () => {
+    const transactions = month(
+      { amountMinor: 10_000 },
+      { amountMinor: 10_000, currency: 'USD', cashbackCurrency: 'USD', cashbackMinor: 300 },
+      { amountMinor: 10_000, status: 'CANCELLED' },
+    )
+
+    expect(estimateMonthlyCashback(transactions, { ...options, level: 'core' })).toBe(300)
+  })
+})
+
+describe('detectLevel', () => {
+  const months = { eurUsdRate: 1.25, year: 2026, month: 10 }
+
+  it('picks Core when the rate dropped to 1% where only Core drops it', () => {
+    const transactions = month({ amountMinor: 64_000 }, { amountMinor: 20_000, cashbackMinor: 200 })
+
+    expect(detectLevel(transactions, months)).toEqual({ detected: 'core', possible: ['core'] })
+  })
+
+  it("can't tell while every purchase is on 3% below Core's limit", () => {
+    const transactions = month({ amountMinor: 20_000 }, { amountMinor: 10_000 })
+
+    expect(detectLevel(transactions, months)).toEqual({
+      detected: null,
+      possible: ['core', 'luxe', 'pinnacle'],
+    })
+  })
+
+  it("rules Core out once 3% carries on well past Core's limit", () => {
+    const transactions = month({ amountMinor: 72_000 }, { amountMinor: 20_000 })
+
+    expect(detectLevel(transactions, months)).toEqual({
+      detected: null,
+      possible: ['luxe', 'pinnacle'],
+    })
+  })
+
+  it("doesn't let a purchase right at a step's edge decide, since euros convert at ether.fi's own rate", () => {
+    // €630 puts the estimate a hair under Core's €640 limit, yet the next
+    // purchase earned 1%: at ether.fi's own rate the count was already
+    // past it, so that doesn't rule Core out
+    const transactions = month({ amountMinor: 63_000 }, { amountMinor: 1_000, cashbackMinor: 10 })
+
+    expect(detectLevel(transactions, months)).toEqual({ detected: 'core', possible: ['core'] })
   })
 })

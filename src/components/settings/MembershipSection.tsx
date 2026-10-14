@@ -25,7 +25,8 @@ function levelSummary(level: MembershipLevel): string {
 
 /**
  * The person's ether.fi membership level, which the export doesn't
- * include, for the cashback steps on the dashboard. The dashboard links
+ * include, for the cashback steps on the dashboard. Without one, the
+ * dashboard works it out from the month's cashback (see detectLevel). The dashboard links
  * here with #membership, so it scrolls into view when opened that way.
  */
 function MembershipSection() {
@@ -60,9 +61,9 @@ function MembershipSection() {
           Your ether.fi level
         </h2>
         <p className="max-w-prose text-[13px] text-text-faint">
-          The export doesn&apos;t say which membership level you&apos;re on, so pick it here. The
-          dashboard then shows how much is left at 3% this month. ether.fi&apos;s app shows your
-          level.{' '}
+          The export doesn&apos;t say which membership level you&apos;re on. The dashboard works it
+          out from your cashback when it can, and you can switch it there or here. Picking one saves
+          it; clearing it goes back to working it out. ether.fi&apos;s app shows your level.{' '}
           <a
             href={ETHERFI_MEMBERSHIP_URL}
             target="_blank"

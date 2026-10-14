@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -6,8 +6,9 @@ import { utils, write, type WorkBook } from 'xlsx'
 import { DashboardFiltersProvider, useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import type { StandardTransaction } from '@/types/transaction'
 import { db } from '@/storage/db'
-import { setMembershipLevel } from '@/storage/settings'
+import { getMembershipLevel } from '@/storage/settings'
 import { resetDatabase } from '@/storage/test-helpers'
+import { formatUtcMonthLabel } from '@/utils/dates'
 import DashboardPage from './DashboardPage'
 
 const HEADER_ROW = [
@@ -404,16 +405,29 @@ describe('DashboardPage', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/app/transactions?q=Shop')
   })
 
-  it("asks for the ether.fi level, then shows this month's cashback steps", async () => {
-    await db.transactions.bulkPut([spend('now', new Date().toISOString(), 10_000)])
+  it('shows the cashback steps for the month on screen, without asking for a level', async () => {
+    // the dashboard opens on the latest month with data: February 2026
+    await db.transactions.bulkPut([spend('feb', '2026-02-10T10:00:00.000Z', 10_000)])
     renderDashboardPage()
 
-    expect(
-      await screen.findByRole('heading', { name: 'How much is left at 3%?' }),
-    ).toBeInTheDocument()
+    const card = (await screen.findByRole('heading', { name: 'Cashback steps' })).closest(
+      'section',
+    ) as HTMLElement
+    expect(card).toHaveTextContent(formatUtcMonthLabel(2026, 2))
+    expect(screen.queryByText(/pick your level/i)).not.toBeInTheDocument()
+  })
 
-    await setMembershipLevel('core')
+  it('saves the level when its pill is clicked', async () => {
+    const user = userEvent.setup()
+    await db.transactions.bulkPut([spend('feb', '2026-02-10T10:00:00.000Z', 10_000)])
+    renderDashboardPage()
 
-    expect(await screen.findByRole('heading', { name: 'Cashback steps' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: /^Luxe/ }))
+
+    await waitFor(async () => expect(await getMembershipLevel()).toBe('luxe'))
+    expect(await screen.findByRole('button', { name: /^Luxe/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 })

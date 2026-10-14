@@ -523,8 +523,8 @@ const SUBSCRIPTION_SEEDS: DemoSubscriptionSeed[] = [
   },
 ]
 
-/** The membership level the demo's cashback follows, and the one it sets
- * in the demo's settings so the dashboard's cashback steps show. */
+/** The membership level the demo's cashback follows. It isn't saved
+ * anywhere: the dashboard works it out from the cashback, as for anyone. */
 export const DEMO_MEMBERSHIP_LEVEL: MembershipLevel = 'core'
 
 /**
