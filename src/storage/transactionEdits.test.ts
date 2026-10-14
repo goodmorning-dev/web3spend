@@ -1,16 +1,20 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { commitImport, type ParsedTransactionRow } from '@/matching/commitImport'
 import type { StandardTransaction } from '@/types/transaction'
+import { db } from './db'
 import { resetDatabase } from './test-helpers'
 import {
-  addManualTransaction,
   deleteManualTransaction,
   getTransaction,
   listTransactions,
   resetTransactionEdits,
   setTransactionCategory,
-  updateTransaction,
 } from './transactions'
+
+// Amounts, dates and statuses can't be edited and purchases can't be
+// added by hand any more, but rows from when they could still exist in
+// people's browsers. These tests set such rows up directly and check
+// they're still handled: kept through imports, undone, and deleted.
 
 afterEach(resetDatabase)
 
@@ -44,51 +48,52 @@ async function onlyTransaction(): Promise<StandardTransaction> {
   return all[0]
 }
 
-describe('manual transactions', () => {
-  const input = {
+/** Imports one purchase, then edits it the way the old edit form did:
+ * the new values in place, the import's own ones kept beside them. */
+async function importEdited(
+  imported: Partial<ParsedTransactionRow>,
+  edits: Partial<StandardTransaction>,
+): Promise<string> {
+  await importRows([makeRow(imported)], 'hash-1')
+  const stored = await onlyTransaction()
+  const fields = Object.keys(edits) as (keyof StandardTransaction)[]
+  await db.transactions.put({
+    ...stored,
+    ...edits,
+    editedFields: fields as StandardTransaction['editedFields'],
+    importedValues: Object.fromEntries(fields.map((field) => [field, stored[field]])),
+  })
+  return stored.id
+}
+
+function manualTransaction(overrides: Partial<StandardTransaction> = {}): StandardTransaction {
+  return {
+    id: 'manual-1',
     cardId: 'card-1',
     timestampUtc: '2026-02-01T12:00:00.000Z',
-    description: '  Farmers   market ',
+    type: 'card_spend',
+    description: 'Farmers market',
+    status: 'CLEARED',
     amountMinor: 1250,
     currency: 'EUR',
+    originalAmountMinor: 1250,
+    originalCurrency: 'EUR',
     cashbackMinor: 0,
-    status: 'CLEARED' as const,
-    spendingMode: 'Direct Pay' as const,
+    cashbackCurrency: 'EUR',
     categoryRaw: 'Groceries',
+    spendingMode: 'Direct Pay',
+    identityKey: 'manual:manual-1',
+    importId: 'manual',
+    source: 'manual',
+    ...overrides,
   }
+}
 
-  it('adds one with a key no import can ever match, and tidies the description', async () => {
-    const id = await addManualTransaction(input)
-
-    expect(await getTransaction(id)).toMatchObject({
-      source: 'manual',
-      description: 'Farmers market',
-      originalAmountMinor: 1250,
-      originalCurrency: 'EUR',
-      cashbackCurrency: 'EUR',
-      identityKey: `manual:${id}`,
-    })
-  })
-
-  it('edits one in place, keeping the original amount and currencies in step', async () => {
-    const id = await addManualTransaction(input)
-    await updateTransaction(id, { amountMinor: 990, currency: 'USD' })
-
-    const stored = await getTransaction(id)
-    expect(stored).toMatchObject({
-      amountMinor: 990,
-      originalAmountMinor: 990,
-      currency: 'USD',
-      originalCurrency: 'USD',
-      cashbackCurrency: 'USD',
-    })
-    expect(stored?.editedFields).toBeUndefined()
-  })
-
-  it('deletes one, but never an imported transaction', async () => {
-    const id = await addManualTransaction(input)
-    await deleteManualTransaction(id)
-    expect(await getTransaction(id)).toBeUndefined()
+describe('a purchase added by hand before that was removed', () => {
+  it('can still be deleted, unlike an imported one', async () => {
+    await db.transactions.put(manualTransaction())
+    await deleteManualTransaction('manual-1')
+    expect(await getTransaction('manual-1')).toBeUndefined()
 
     await importRows([makeRow()], 'hash-1')
     const imported = await onlyTransaction()
@@ -96,63 +101,30 @@ describe('manual transactions', () => {
   })
 
   it('is never touched by an import, even one with an identical purchase', async () => {
-    const id = await addManualTransaction({
-      ...input,
-      description: 'Coffee Shop',
-      amountMinor: 450,
-    })
-    await importRows([makeRow({ timestampUtc: input.timestampUtc })], 'hash-1')
+    await db.transactions.put(
+      manualTransaction({
+        description: 'Coffee Shop',
+        amountMinor: 450,
+        timestampUtc: '2026-01-15T10:00:00.000Z',
+      }),
+    )
+    await importRows([makeRow()], 'hash-1')
 
     expect(await listTransactions()).toHaveLength(2)
-    expect((await getTransaction(id))?.source).toBe('manual')
+    expect((await getTransaction('manual-1'))?.source).toBe('manual')
   })
 })
 
-describe('editing an imported transaction', () => {
-  it('remembers what the import said, and forgets once a field is changed back', async () => {
-    await importRows([makeRow()], 'hash-1')
-    const { id } = await onlyTransaction()
-
-    await updateTransaction(id, { description: 'Coffee with Sam', amountMinor: 500 })
-    let stored = await onlyTransaction()
-    expect(stored).toMatchObject({
-      description: 'Coffee with Sam',
-      amountMinor: 500,
-      originalAmountMinor: 500,
-      editedFields: ['description', 'amountMinor', 'originalAmountMinor'],
-      importedValues: { description: 'Coffee Shop', amountMinor: 450, originalAmountMinor: 450 },
-    })
-
-    await updateTransaction(id, { description: 'Coffee Shop' })
-    stored = await onlyTransaction()
-    expect(stored.editedFields).toEqual(['amountMinor', 'originalAmountMinor'])
-    expect(stored.importedValues).toEqual({ amountMinor: 450, originalAmountMinor: 450 })
-  })
-
-  it('leaves a foreign original amount alone when the amount is edited', async () => {
-    await importRows([makeRow({ originalAmountMinor: 500, originalCurrency: 'USD' })], 'hash-1')
-    const { id } = await onlyTransaction()
-
-    await updateTransaction(id, { amountMinor: 470 })
-    expect(await onlyTransaction()).toMatchObject({ amountMinor: 470, originalAmountMinor: 500 })
-  })
-
-  it('ignores card, currency and category changes', async () => {
-    await importRows([makeRow()], 'hash-1')
-    const before = await onlyTransaction()
-
-    await updateTransaction(before.id, { cardId: 'other', currency: 'USD', categoryRaw: 'Other' })
-    expect(await onlyTransaction()).toEqual(before)
-  })
-
+describe('an imported purchase edited before', () => {
   it('keeps the edit through a later import, while still taking in what that import reports', async () => {
-    await importRows([makeRow({ status: 'PENDING', cashbackMinor: 9 })], 'hash-1')
-    const { id } = await onlyTransaction()
-    await updateTransaction(id, { description: 'Coffee with Sam', cashbackMinor: 20 })
+    const id = await importEdited(
+      { status: 'PENDING', cashbackMinor: 9 },
+      { description: 'Coffee with Sam', cashbackMinor: 20 },
+    )
 
     await importRows([makeRow({ status: 'CLEARED', cashbackMinor: 13 })], 'hash-2')
 
-    expect(await onlyTransaction()).toMatchObject({
+    expect(await getTransaction(id)).toMatchObject({
       description: 'Coffee with Sam',
       cashbackMinor: 20,
       status: 'CLEARED',
@@ -161,34 +133,45 @@ describe('editing an imported transaction', () => {
   })
 
   it("judges a later import's status against the imported status, not an edited one", async () => {
-    await importRows([makeRow({ status: 'PENDING' })], 'hash-1')
-    const { id } = await onlyTransaction()
-    await updateTransaction(id, { status: 'CANCELLED' })
+    const id = await importEdited({ status: 'PENDING' }, { status: 'CANCELLED' })
 
     await importRows([makeRow({ status: 'CLEARED', cashbackMinor: 14 })], 'hash-2')
 
-    const stored = await onlyTransaction()
-    expect(stored.status).toBe('CANCELLED')
-    expect(stored.importedValues).toEqual({ status: 'CLEARED' })
+    const stored = await getTransaction(id)
+    expect(stored?.status).toBe('CANCELLED')
+    expect(stored?.importedValues).toMatchObject({ status: 'CLEARED' })
     // the CLEARED report was accepted, so its cashback applies as usual
-    expect(stored.cashbackMinor).toBe(14)
+    expect(stored?.cashbackMinor).toBe(14)
   })
 
-  it('puts the imported values back on reset, including ones a newer import reported', async () => {
-    await importRows([makeRow({ cashbackMinor: 9 })], 'hash-1')
-    const { id } = await onlyTransaction()
-    await updateTransaction(id, { cashbackMinor: 50, description: 'Renamed' })
+  it('keeps an edited cashback with its currency when a later import reports another one', async () => {
+    const id = await importEdited({ cashbackMinor: 30 }, { cashbackMinor: 500 })
+
+    await importRows([makeRow({ cashbackMinor: 35, cashbackCurrency: 'USD' })], 'hash-2')
+
+    const stored = await getTransaction(id)
+    expect(stored).toMatchObject({ cashbackMinor: 500, cashbackCurrency: 'EUR' })
+    expect(stored?.importedValues).toEqual({ cashbackMinor: 35, cashbackCurrency: 'USD' })
+  })
+
+  it('puts the imported values back on undo, including ones a newer import reported', async () => {
+    const id = await importEdited(
+      { cashbackMinor: 9 },
+      { cashbackMinor: 50, description: 'Renamed' },
+    )
     await importRows([makeRow({ cashbackMinor: 11 })], 'hash-2')
 
     await resetTransactionEdits(id)
 
-    const stored = await onlyTransaction()
+    const stored = await getTransaction(id)
     expect(stored).toMatchObject({ cashbackMinor: 11, description: 'Coffee Shop' })
-    expect(stored.editedFields).toBeUndefined()
-    expect(stored.importedValues).toBeUndefined()
+    expect(stored?.editedFields).toBeUndefined()
+    expect(stored?.importedValues).toBeUndefined()
   })
+})
 
-  it('keeps its own category through a later import', async () => {
+describe("a purchase's own category", () => {
+  it('stays through a later import, and can be taken off again', async () => {
     await importRows([makeRow()], 'hash-1')
     const { id } = await onlyTransaction()
 

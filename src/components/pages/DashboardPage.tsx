@@ -145,10 +145,17 @@ function DashboardPage() {
                 onSelectCategory={(key) => openTransactions({ category: key })}
               />
             </div>
-            {/* Always this month and every card, since that's how ether.fi
-                counts; only the currency follows the filters, as euro
-                purchases have steps of their own. */}
-            <CashbackSteps currency={filters.currency} />
+            {/* The month shown (this month on "All time") and every card,
+                since that's how ether.fi counts; the currency follows the
+                filters too, as euro purchases have steps of their own. */}
+            <CashbackSteps
+              currency={filters.currency}
+              period={
+                filters.period.kind === 'month'
+                  ? { year: filters.period.year, month: filters.period.month }
+                  : null
+              }
+            />
             <ActivityHeatmap
               activity={computeYearActivity(heatmapTransactions, heatmapYear)}
               year={heatmapYear}

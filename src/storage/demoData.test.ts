@@ -53,10 +53,10 @@ describe('openDemo', () => {
     expect(await realDb.transactions.count()).toBe(0)
   })
 
-  it("sets the demo's level to the one its cashback follows, so the cashback steps show", async () => {
+  it('leaves the level for the dashboard to work out from the cashback', async () => {
     await openDemo()
 
-    expect(await getMembershipLevel()).toBe('core')
+    expect(await getMembershipLevel()).toBeNull()
     expect(await realDb.settings.count()).toBe(0)
   })
 

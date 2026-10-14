@@ -180,16 +180,14 @@ export interface CategoryChoice {
    * removes that rule rather than silently leaving it in place. */
   hadMerchantRule: boolean
   hadEtherfiCategoryRule: boolean
-  /** The merchant as it was when the form opened; a merchant rule is
-   * keyed on it, and the description may have been edited since. */
+  /** The transaction's merchant, which a merchant rule is keyed on. */
   previousDescription: string
 }
 
 /**
- * Saves the category part of the edit form, after the transaction's own
- * fields are saved: sets or removes the two kinds of rule, then records a
- * category on the transaction itself only if the rules don't already
- * give it the one that was picked. That keeps a transaction following its
+ * Saves the category form: sets or removes the two kinds of rule, then
+ * records a category on the transaction itself only if the rules don't
+ * already give it the one that was picked. That keeps a transaction following its
  * rules (so changing a rule later moves it too) unless it was deliberately
  * filed somewhere else.
  */
