@@ -14,59 +14,36 @@ import { Input } from '@/components/ui/input'
 import { merchantKey, resolveCategory } from '@/categorization/customCategories'
 import { useCategories, type CategoriesState } from '@/hooks/useCategories'
 import { cn } from '@/lib/utils'
-import { saveTransaction, type SaveTarget } from '@/storage/saveTransaction'
+import { saveTransactionCategory } from '@/storage/saveTransaction'
 import {
   deleteManualTransaction,
   getTransaction,
   resetTransactionEdits,
-  type TransactionChanges,
 } from '@/storage/transactions'
-import type { Card } from '@/types/card'
-import type { SpendingMode, StandardTransaction, TransactionStatus } from '@/types/transaction'
+import type { StandardTransaction } from '@/types/transaction'
 import { categoryMergeKey, displayCategoryLabel } from '@/utils/category'
-import {
-  formatMoneyInput,
-  joinUtcTimestamp,
-  parseMoneyInput,
-  splitUtcTimestamp,
-} from '@/utils/transactionForm'
+import { formatUtcDate } from '@/utils/dates'
+import { formatMoney } from '@/utils/format'
 
-/** What a manual transaction is filed under until the person picks
- * something: never a guessed category. */
-const UNCATEGORIZED = 'Uncategorized'
 const NEW_CATEGORY = 'new'
 const ORIGINAL = 'original'
-
-const STATUS_OPTIONS: { value: TransactionStatus; label: string }[] = [
-  { value: 'CLEARED', label: 'Settled' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'CANCELLED', label: 'Cancelled' },
-]
-
-const MODE_OPTIONS: { value: SpendingMode; label: string }[] = [
-  { value: 'Direct Pay', label: 'Direct Pay' },
-  { value: 'Borrow Mode', label: 'Borrow Mode' },
-]
 
 interface TransactionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** The transaction to edit, or null to add a new one. */
+  /** The transaction whose category is being changed. */
   transactionId: string | null
-  cards: Card[]
-  currencies: string[]
-  /** Preselected for a new transaction: what's being looked at right now. */
-  defaultCurrency: string
-  defaultCardId?: string
 }
 
 /**
- * Adding a transaction by hand, or editing one. The form itself only
- * renders once the stored transaction and the person's categories have
- * loaded, keyed on the transaction, so its fields always start from what's
- * actually saved.
+ * Changing the category a transaction counts under. Its amount, cashback,
+ * date and status come from the ether.fi export and can't be changed here,
+ * so the totals and the cashback figures always match what ether.fi
+ * recorded. The form only renders once the stored transaction and the
+ * person's categories have loaded, keyed on the transaction, so it always
+ * starts from what's actually saved.
  */
-function TransactionDialog({ open, onOpenChange, transactionId, ...rest }: TransactionDialogProps) {
+function TransactionDialog({ open, onOpenChange, transactionId }: TransactionDialogProps) {
   const categories = useCategories()
   // Tagged with the id it was loaded for: right after switching to another
   // transaction, a live query still returns the previous one's result
@@ -78,30 +55,24 @@ function TransactionDialog({ open, onOpenChange, transactionId, ...rest }: Trans
     }),
     [transactionId],
   )
-  const isEditing = transactionId !== null
-  // null while adding; undefined while the transaction is still loading
-  const stored = !isEditing ? null : loaded?.id === transactionId ? loaded.transaction : undefined
+  const stored = transactionId && loaded?.id === transactionId ? loaded.transaction : undefined
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit transaction' : 'Add a transaction'}</DialogTitle>
+          <DialogTitle>Change category</DialogTitle>
           <DialogDescription>
-            {!isEditing
-              ? "For a purchase your ether.fi export doesn't have yet. Times are in UTC, like everywhere else in the app."
-              : stored?.source === 'manual'
-                ? 'You added this one yourself, so everything about it can be changed.'
-                : "Your changes are kept when you import again. The card, currency and ether.fi's own category come from the import and stay as they are."}
+            Pick what this purchase counts under. The amount, cashback and date come from your
+            ether.fi export and stay as they are, so your totals always match it.
           </DialogDescription>
         </DialogHeader>
-        {categories && stored !== undefined && (
-          <TransactionForm
-            key={transactionId ?? 'new'}
-            stored={stored ?? null}
+        {categories && stored && (
+          <CategoryForm
+            key={stored.id}
+            stored={stored}
             categories={categories}
             onDone={() => onOpenChange(false)}
-            {...rest}
           />
         )}
       </DialogContent>
@@ -109,58 +80,27 @@ function TransactionDialog({ open, onOpenChange, transactionId, ...rest }: Trans
   )
 }
 
-interface TransactionFormProps extends Omit<
-  TransactionDialogProps,
-  'open' | 'onOpenChange' | 'transactionId'
-> {
-  stored: StandardTransaction | null
-  categories: CategoriesState
-  onDone: () => void
-}
-
 function customValue(categoryId: string): string {
   return `custom:${categoryId}`
 }
 
-function rawValue(label: string): string {
-  return `raw:${label}`
-}
-
 /** Where the category picker starts: the category this transaction counts
  * under right now. */
-function initialCategoryValue(stored: StandardTransaction | null, categories: CategoriesState) {
-  if (!stored) {
-    return rawValue(UNCATEGORIZED)
-  }
+function initialCategoryValue(stored: StandardTransaction, categories: CategoriesState) {
   const resolved = resolveCategory(stored, categories.lookup)
-  if (resolved.categoryId) {
-    return customValue(resolved.categoryId)
-  }
-  return stored.source === 'manual' ? rawValue(displayCategoryLabel(stored.categoryRaw)) : ORIGINAL
+  return resolved.categoryId ? customValue(resolved.categoryId) : ORIGINAL
 }
 
-function TransactionForm({
+function CategoryForm({
   stored,
   categories,
-  cards,
-  currencies,
-  defaultCurrency,
-  defaultCardId,
   onDone,
-}: TransactionFormProps) {
-  const isManual = !stored || stored.source === 'manual'
-  const now = new Date().toISOString()
-  const startedAt = splitUtcTimestamp(stored?.timestampUtc ?? now)
-
-  const [description, setDescription] = useState(stored?.description ?? '')
-  const [amount, setAmount] = useState(stored ? formatMoneyInput(stored.amountMinor) : '')
-  const [cashback, setCashback] = useState(stored ? formatMoneyInput(stored.cashbackMinor) : '')
-  const [date, setDate] = useState(startedAt.date)
-  const [time, setTime] = useState(startedAt.time)
-  const [status, setStatus] = useState<TransactionStatus>(stored?.status ?? 'CLEARED')
-  const [mode, setMode] = useState<SpendingMode>(stored?.spendingMode ?? 'Direct Pay')
-  const [cardId, setCardId] = useState(stored?.cardId ?? defaultCardId ?? cards[0]?.id ?? '')
-  const [currency, setCurrency] = useState(stored?.currency ?? defaultCurrency)
+}: {
+  stored: StandardTransaction
+  categories: CategoriesState
+  onDone: () => void
+}) {
+  const isManual = stored.source === 'manual'
   const [categoryValue, setCategoryValue] = useState(() => initialCategoryValue(stored, categories))
   const [newCategoryName, setNewCategoryName] = useState('')
 
@@ -170,7 +110,7 @@ function TransactionForm({
     ? categoryValue.slice('custom:'.length)
     : null
   const [initialRules] = useState(() => {
-    if (!stored || !startingCategoryId) {
+    if (!startingCategoryId) {
       return { merchant: false, etherfi: false }
     }
     const merchantRule = categories.lookup.merchantRules.get(merchantKey(stored.description))
@@ -188,7 +128,7 @@ function TransactionForm({
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const picksCustom = categoryValue === NEW_CATEGORY || categoryValue.startsWith('custom:')
-  const merchantLabel = description.trim() || 'this merchant'
+  const etherfiLabel = displayCategoryLabel(stored.categoryRaw)
 
   async function run(action: () => Promise<void>) {
     setError(null)
@@ -205,77 +145,13 @@ function TransactionForm({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    const amountMinor = parseMoneyInput(amount)
-    const cashbackMinor = cashback.trim() === '' ? 0 : parseMoneyInput(cashback)
-    const timestampUtc = joinUtcTimestamp(date, time)
-
-    if (description.trim() === '') {
-      setError("Add the merchant's name.")
-      return
-    }
-    if (amountMinor === null) {
-      setError('Enter the amount as a number with up to two decimals, like 12.50.')
-      return
-    }
-    if (cashbackMinor === null) {
-      setError('Enter the cashback as a number with up to two decimals, or leave it empty.')
-      return
-    }
-    if (!timestampUtc) {
-      setError('Pick a valid date and time.')
-      return
-    }
-    if (isManual && !cardId) {
-      setError('Pick the card this was paid with.')
-      return
-    }
     if (categoryValue === NEW_CATEGORY && newCategoryName.trim() === '') {
       setError('Give the new category a name.')
       return
     }
 
-    void run(async () => {
-      const rawLabel = categoryValue.startsWith('raw:')
-        ? categoryValue.slice('raw:'.length)
-        : (stored?.categoryRaw ?? UNCATEGORIZED)
-
-      let target: SaveTarget
-      if (!stored) {
-        target = {
-          kind: 'add',
-          input: {
-            cardId,
-            timestampUtc,
-            description,
-            amountMinor,
-            currency,
-            cashbackMinor,
-            status,
-            spendingMode: mode,
-            categoryRaw: rawLabel,
-          },
-        }
-      } else {
-        const changes: TransactionChanges = {
-          description,
-          amountMinor,
-          cashbackMinor,
-          status,
-          spendingMode: mode,
-        }
-        // Leave the time alone unless it was actually changed: the inputs
-        // only show minutes, and the stored time has seconds too.
-        const storedAt = splitUtcTimestamp(stored.timestampUtc)
-        if (date !== storedAt.date || time !== storedAt.time) {
-          changes.timestampUtc = timestampUtc
-        }
-        if (isManual) {
-          Object.assign(changes, { cardId, currency, categoryRaw: rawLabel })
-        }
-        target = { kind: 'edit', id: stored.id, changes }
-      }
-
-      await saveTransaction(target, {
+    void run(() =>
+      saveTransactionCategory(stored.id, {
         selection:
           categoryValue === NEW_CATEGORY
             ? { kind: 'new', name: newCategoryName }
@@ -286,153 +162,29 @@ function TransactionForm({
         alwaysForEtherfiCategory: picksCustom && !isManual && alwaysForEtherfi,
         hadMerchantRule: initialRules.merchant,
         hadEtherfiCategoryRule: initialRules.etherfi,
-        previousDescription: stored?.description ?? description,
-      })
-    })
+        previousDescription: stored.description,
+      }),
+    )
   }
-
-  const etherfiLabel = stored ? displayCategoryLabel(stored.categoryRaw) : ''
-  const rawOptions = [
-    UNCATEGORIZED,
-    ...categories.etherfiCategories.filter((label) => label !== UNCATEGORIZED),
-  ]
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
-      <Field label="Merchant">
-        {(id) => (
-          <Input
-            id={id}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            autoComplete="off"
-          />
-        )}
-      </Field>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Field label={`Amount${isManual ? '' : ` (${currency})`}`}>
-          {(id) => (
-            <Input
-              id={id}
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="Cashback">
-          {(id) => (
-            <Input
-              id={id}
-              inputMode="decimal"
-              placeholder="0.00"
-              value={cashback}
-              onChange={(event) => setCashback(event.target.value)}
-            />
-          )}
-        </Field>
-      </div>
-
-      {isManual && (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Card">
-            {(id) => (
-              <NativeSelect id={id} value={cardId} onChange={setCardId}>
-                {cards.map((card) => (
-                  <option key={card.id} value={card.id}>
-                    •••• {card.last4}
-                  </option>
-                ))}
-              </NativeSelect>
-            )}
-          </Field>
-          <Field label="Currency">
-            {(id) => (
-              <NativeSelect id={id} value={currency} onChange={setCurrency}>
-                {currencies.map((code) => (
-                  <option key={code} value={code}>
-                    {code}
-                  </option>
-                ))}
-              </NativeSelect>
-            )}
-          </Field>
+      <div className="flex items-baseline justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-2.5">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{stored.description}</p>
+          <p className="text-xs text-text-faint">{formatUtcDate(stored.timestampUtc)}</p>
         </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Date">
-          {(id) => (
-            <Input
-              id={id}
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="Time (UTC)">
-          {(id) => (
-            <Input
-              id={id}
-              type="time"
-              value={time}
-              onChange={(event) => setTime(event.target.value)}
-            />
-          )}
-        </Field>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Status">
-          {(id) => (
-            <NativeSelect
-              id={id}
-              value={status}
-              onChange={(value) => setStatus(value as TransactionStatus)}
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-              {/* Any other status a transaction already has stays selectable,
-                  so opening the form and saving never quietly changes it. */}
-              {!STATUS_OPTIONS.some((option) => option.value === status) && (
-                <option value={status}>{status}</option>
-              )}
-            </NativeSelect>
-          )}
-        </Field>
-        <Field label="Paid with">
-          {(id) => (
-            <NativeSelect id={id} value={mode} onChange={(value) => setMode(value as SpendingMode)}>
-              {MODE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </NativeSelect>
-          )}
-        </Field>
+        <p className="shrink-0 text-sm font-semibold tabular-nums">
+          {formatMoney(stored.amountMinor, stored.currency)}
+        </p>
       </div>
 
       <Field label="Category">
         {(id) => (
           <NativeSelect id={id} value={categoryValue} onChange={setCategoryValue}>
-            {isManual ? (
-              <optgroup label="ether.fi categories">
-                {rawOptions.map((label) => (
-                  <option key={label} value={rawValue(label)}>
-                    {label}
-                  </option>
-                ))}
-              </optgroup>
-            ) : (
-              <option value={ORIGINAL}>{etherfiLabel} (from ether.fi)</option>
-            )}
+            <option value={ORIGINAL}>
+              {etherfiLabel} {isManual ? '(as entered)' : '(from ether.fi)'}
+            </option>
             {categories.categories.length > 0 && (
               <optgroup label="Your categories">
                 {categories.categories.map((category) => (
@@ -464,8 +216,9 @@ function TransactionForm({
       {picksCustom && (
         <div className="flex flex-col gap-2 rounded-lg border border-border bg-secondary/40 p-3">
           <Checkbox checked={alwaysForMerchant} onChange={setAlwaysForMerchant}>
-            Always use this for <span className="font-medium text-foreground">{merchantLabel}</span>
-            , including future imports
+            Always use this for{' '}
+            <span className="font-medium text-foreground">{stored.description}</span>, including
+            future imports
           </Checkbox>
           {!isManual && (
             <Checkbox checked={alwaysForEtherfi} onChange={setAlwaysForEtherfi}>
@@ -483,7 +236,10 @@ function TransactionForm({
       )}
 
       <DialogFooter className="mt-1">
-        {stored?.source === 'manual' &&
+        {/* Purchases can't be added by hand or have their amounts changed
+            any more, but one added or edited before can still be removed
+            or put back to what the export says. */}
+        {isManual &&
           (confirmingDelete ? (
             <Button
               type="button"
@@ -506,7 +262,7 @@ function TransactionForm({
               Delete
             </Button>
           ))}
-        {stored?.editedFields && (
+        {stored.editedFields && (
           <Button
             type="button"
             variant="ghost"
@@ -523,7 +279,7 @@ function TransactionForm({
           Cancel
         </Button>
         <Button type="submit" disabled={saving}>
-          {stored ? 'Save changes' : 'Add transaction'}
+          Save
         </Button>
       </DialogFooter>
     </form>

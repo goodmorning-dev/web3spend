@@ -3,14 +3,9 @@ import { commitImport, type ParsedTransactionRow } from '@/matching/commitImport
 import { ORIGINAL_CATEGORY_ID, type StandardTransaction } from '@/types/transaction'
 import { createCategory, listCategories, listCategoryRules, setMerchantRule } from './categories'
 import { db } from './db'
-import { saveTransaction, type SaveCategoryChoice } from './saveTransaction'
+import { saveTransactionCategory, type SaveCategoryChoice } from './saveTransaction'
 import { resetDatabase } from './test-helpers'
-import {
-  getTransaction,
-  listTransactions,
-  loadTransactions,
-  resetTransactionEdits,
-} from './transactions'
+import { getTransaction, listTransactions, loadTransactions } from './transactions'
 
 afterEach(async () => {
   vi.restoreAllMocks()
@@ -48,78 +43,52 @@ function noRules(selection: SaveCategoryChoice['selection']): SaveCategoryChoice
     alwaysForEtherfiCategory: false,
     hadMerchantRule: false,
     hadEtherfiCategoryRule: false,
-    previousDescription: '',
+    previousDescription: 'Steam Purchase',
   }
 }
 
-const manualInput = {
-  cardId: 'card-1',
-  timestampUtc: '2026-02-01T12:00:00.000Z',
-  description: 'Farmers market',
-  amountMinor: 1250,
-  currency: 'EUR',
-  cashbackMinor: 0,
-  status: 'CLEARED' as const,
-  spendingMode: 'Direct Pay' as const,
-  categoryRaw: 'Uncategorized',
-}
-
-describe('saveTransaction', () => {
-  it('adds a purchase together with a new category and its rule', async () => {
-    const id = await saveTransaction(
-      { kind: 'add', input: manualInput },
-      {
-        ...noRules({ kind: 'new', name: 'Market' }),
-        alwaysForMerchant: true,
-        previousDescription: 'Farmers market',
-      },
-    )
-
-    expect(await listCategories()).toMatchObject([{ name: 'Market' }])
-    expect(await listCategoryRules()).toMatchObject([{ kind: 'merchant', label: 'Farmers market' }])
-    const [loaded] = await loadTransactions()
-    expect(loaded).toMatchObject({ id, categoryRaw: 'Market' })
-  })
-
-  it('keeps nothing when the category part fails, so a retry cannot add the purchase twice', async () => {
-    vi.spyOn(db.categoryRules, 'put').mockRejectedValueOnce(new Error('disk full'))
-
-    await expect(
-      saveTransaction(
-        { kind: 'add', input: manualInput },
-        {
-          ...noRules({ kind: 'new', name: 'Market' }),
-          alwaysForMerchant: true,
-          previousDescription: 'Farmers market',
-        },
-      ),
-    ).rejects.toThrow('disk full')
-
-    expect(await db.transactions.count()).toBe(0)
-    expect(await listCategories()).toEqual([])
-    expect(await listCategoryRules()).toEqual([])
-  })
-
-  it('rolls an edit back too when the category part fails', async () => {
+describe('saveTransactionCategory', () => {
+  it('files a purchase under a new category, with a rule for its merchant', async () => {
     await importRows([makeRow()], 'hash-1')
     const [{ id }] = await listTransactions()
-    const gaming = await createCategory('Gaming')
+
+    await saveTransactionCategory(id, {
+      ...noRules({ kind: 'new', name: 'Gaming' }),
+      alwaysForMerchant: true,
+    })
+
+    expect(await listCategories()).toMatchObject([{ name: 'Gaming' }])
+    expect(await listCategoryRules()).toMatchObject([{ kind: 'merchant', label: 'Steam Purchase' }])
+    const [loaded] = await loadTransactions()
+    expect(loaded.categoryRaw).toBe('Gaming')
+  })
+
+  it('keeps nothing when the rule fails to save, so a retry starts clean', async () => {
+    await importRows([makeRow()], 'hash-1')
+    const [{ id }] = await listTransactions()
     vi.spyOn(db.categoryRules, 'put').mockRejectedValueOnce(new Error('disk full'))
 
     await expect(
-      saveTransaction(
-        { kind: 'edit', id, changes: { description: 'Steam' } },
-        {
-          ...noRules({ kind: 'custom', categoryId: gaming.id }),
-          alwaysForMerchant: true,
-          previousDescription: 'Steam Purchase',
-        },
-      ),
+      saveTransactionCategory(id, {
+        ...noRules({ kind: 'new', name: 'Gaming' }),
+        alwaysForMerchant: true,
+      }),
     ).rejects.toThrow('disk full')
 
-    const stored = await getTransaction(id)
-    expect(stored?.description).toBe('Steam Purchase')
-    expect(stored?.editedFields).toBeUndefined()
+    expect(await listCategories()).toEqual([])
+    expect(await listCategoryRules()).toEqual([])
+    expect((await getTransaction(id))?.categoryId).toBeUndefined()
+  })
+
+  it('never changes the amount, cashback, date or status', async () => {
+    await importRows([makeRow()], 'hash-1')
+    const [before] = await listTransactions()
+    const gaming = await createCategory('Gaming')
+
+    await saveTransactionCategory(before.id, noRules({ kind: 'custom', categoryId: gaming.id }))
+
+    const after = await getTransaction(before.id)
+    expect(after).toEqual({ ...before, categoryId: gaming.id })
   })
 })
 
@@ -139,15 +108,11 @@ describe("picking ether.fi's category for one purchase", () => {
 
     // the form opened on Gaming with the merchant box ticked, then the
     // person switched this purchase to ether.fi's own category
-    await saveTransaction(
-      { kind: 'edit', id: first.id, changes: {} },
-      {
-        ...noRules({ kind: 'original' }),
-        alwaysForMerchant: true,
-        hadMerchantRule: true,
-        previousDescription: 'Steam Purchase',
-      },
-    )
+    await saveTransactionCategory(first.id, {
+      ...noRules({ kind: 'original' }),
+      alwaysForMerchant: true,
+      hadMerchantRule: true,
+    })
 
     expect(await listCategoryRules()).toHaveLength(1)
     expect((await getTransaction(first.id))?.categoryId).toBe(ORIGINAL_CATEGORY_ID)
@@ -160,56 +125,12 @@ describe("picking ether.fi's category for one purchase", () => {
   it('still removes the rule when its box is unticked with one of your categories picked', async () => {
     const { first, gamingId } = await setUp()
 
-    await saveTransaction(
-      { kind: 'edit', id: first.id, changes: {} },
-      {
-        ...noRules({ kind: 'custom', categoryId: gamingId }),
-        hadMerchantRule: true,
-        previousDescription: 'Steam Purchase',
-      },
-    )
+    await saveTransactionCategory(first.id, {
+      ...noRules({ kind: 'custom', categoryId: gamingId }),
+      hadMerchantRule: true,
+    })
 
     expect(await listCategoryRules()).toEqual([])
     expect((await getTransaction(first.id))?.categoryId).toBe(gamingId)
-  })
-})
-
-describe('an edited cashback amount and its currency', () => {
-  it('stay together when a later import reports a different cashback currency', async () => {
-    await importRows([makeRow({ cashbackMinor: 30, cashbackCurrency: 'EUR' })], 'hash-1')
-    const [{ id }] = await listTransactions()
-    await saveTransaction(
-      { kind: 'edit', id, changes: { cashbackMinor: 500 } },
-      noRules({ kind: 'original' }),
-    )
-
-    await importRows([makeRow({ cashbackMinor: 35, cashbackCurrency: 'USD' })], 'hash-2')
-
-    const stored = await getTransaction(id)
-    expect(stored).toMatchObject({ cashbackMinor: 500, cashbackCurrency: 'EUR' })
-    expect(stored?.importedValues).toEqual({ cashbackMinor: 35, cashbackCurrency: 'USD' })
-
-    await resetTransactionEdits(id)
-    expect(await getTransaction(id)).toMatchObject({ cashbackMinor: 35, cashbackCurrency: 'USD' })
-  })
-
-  it('takes the imported currency back when the amount is changed back to the imported one', async () => {
-    await importRows([makeRow({ cashbackMinor: 30, cashbackCurrency: 'EUR' })], 'hash-1')
-    const [{ id }] = await listTransactions()
-    await saveTransaction(
-      { kind: 'edit', id, changes: { cashbackMinor: 500 } },
-      noRules({ kind: 'original' }),
-    )
-    await importRows([makeRow({ cashbackMinor: 35, cashbackCurrency: 'USD' })], 'hash-2')
-
-    await saveTransaction(
-      { kind: 'edit', id, changes: { cashbackMinor: 35 } },
-      noRules({ kind: 'original' }),
-    )
-
-    const stored = await getTransaction(id)
-    expect(stored).toMatchObject({ cashbackMinor: 35, cashbackCurrency: 'USD' })
-    expect(stored?.editedFields).toBeUndefined()
-    expect(stored?.importedValues).toBeUndefined()
   })
 })

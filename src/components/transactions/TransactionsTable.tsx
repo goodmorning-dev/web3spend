@@ -1,4 +1,4 @@
-import { Pencil } from 'lucide-react'
+import { Tag } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { transactionCashbackPct } from '@/analyzers'
 import type { SpendingMode, StandardTransaction, TransactionStatus } from '@/types/transaction'
@@ -22,7 +22,7 @@ interface TransactionsTableProps {
   onSelectMerchant?: (merchant: string) => void
   /** Likewise for each category, called with its merge key. */
   onSelectCategory?: (categoryKey: string) => void
-  /** When given, each row gets an edit button. */
+  /** When given, each row gets a button to change its category. */
   onEdit?: (transaction: StandardTransaction) => void
 }
 
@@ -324,11 +324,11 @@ function EditButton({
     <button
       type="button"
       onClick={() => onEdit(transaction)}
-      aria-label={`Edit ${transaction.description}`}
-      title="Edit"
+      aria-label={`Change the category of ${transaction.description}`}
+      title="Change category"
       className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-faint transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
-      <Pencil className="size-3.5" />
+      <Tag className="size-3.5" />
     </button>
   )
 }
