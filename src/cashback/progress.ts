@@ -315,8 +315,8 @@ function walkMonth(
 
 /**
  * Roughly what `level` would pay on the month's purchases on the shown
- * ladder (euro purchases on the euro one, dollar purchases on the dollar
- * one), in that currency's minor units: each purchase's part on each step
+ * ladder (euro purchases on the euro one, everything else on the dollar
+ * one), in that ladder's currency's minor units: each purchase's part on each step
  * at that step's rate, worked out from spending alone. It's for comparing
  * the levels side by side, not for checking what ether.fi actually paid.
  */
@@ -332,7 +332,9 @@ export function estimateMonthlyCashback(
     options.level,
     options,
   )) {
-    if (transaction.currency === currency && value !== null && value > 0) {
+    // Every currency but the euro is on the dollar ladder, at its dollar
+    // value (worked out from its dollar cashback when it's in another).
+    if (ladderCurrency(transaction.currency) === currency && value !== null && value > 0) {
       cashbackUsdMinor += cashbackOnLadder(steps, Math.max(0, counterBefore), value)
     }
   }
@@ -349,10 +351,12 @@ export interface LevelDetection {
 
 /**
  * Whether the cashback ether.fi recorded this month is what `level` would
- * have paid: every purchase whose cashback shows its step must be on the
- * step `level` puts it on at that point in the month. A purchase while the
- * count is close to a step's edge proves nothing, since euros are
- * converted at ether.fi's own rate, which can put it on either side.
+ * have paid: every purchase whose cashback shows its step must lie wholly
+ * on the step `level` puts it on, from where the count stood before it to
+ * where it ended up, since one that ran on past the step's end would have
+ * earned the next step's rate on that part. A purchase that starts or ends
+ * close to a step's edge proves nothing, since euros are converted at
+ * ether.fi's own rate, which can put it on either side.
  */
 function fitsLevel(
   transactions: StandardTransaction[],
@@ -372,14 +376,16 @@ function fitsLevel(
     }
     const steps = ladderFor(level, currency)
     const shown = stepFromCashback(steps, amountMinor, cashbackMinor)
-    const counter = Math.max(0, counterBefore)
+    const start = Math.max(0, counterBefore)
+    const end = start + value
     // within 5% of an edge: more than the reference rate drifts from
     // ether.fi's own in a month
-    const nearAnEdge = steps.some(
-      (step) =>
-        step.toUsdMinor !== null && Math.abs(counter - step.toUsdMinor) <= step.toUsdMinor * 0.05,
-    )
-    if (shown !== null && !nearAnEdge && stepIndexAt(steps, counter) !== shown) {
+    const nearAnEdge = steps.some((step) => {
+      const edge = step.toUsdMinor
+      return edge !== null && [start, end].some((point) => Math.abs(point - edge) <= edge * 0.05)
+    })
+    const onOneStep = stepIndexAt(steps, start) === shown && stepIndexAt(steps, end - 1) === shown
+    if (shown !== null && !nearAnEdge && !onOneStep) {
       return false
     }
   }

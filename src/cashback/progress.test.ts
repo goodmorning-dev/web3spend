@@ -314,6 +314,23 @@ describe('estimateMonthlyCashback', () => {
     expect(estimateMonthlyCashback(transactions, { ...options, level: 'luxe' })).toBe(2_520)
   })
 
+  it('includes purchases in other currencies on the dollar ladder, at their worked-out dollar value', () => {
+    // with yen on screen the dollar ladder applies; ¥15,000 earning $3.00
+    // at 3% was a $100 purchase
+    const transactions = month({
+      amountMinor: 1_500_000,
+      currency: 'JPY',
+      cashbackMinor: 300,
+      cashbackCurrency: 'USD',
+    })
+
+    expect(
+      estimateMonthlyCashback(transactions, { ...options, currency: 'JPY', level: 'core' }),
+    ).toBe(300)
+    // and it isn't on the euro ladder
+    expect(estimateMonthlyCashback(transactions, { ...options, level: 'core' })).toBe(0)
+  })
+
   it('leaves out purchases on the other ladder, and cancelled ones', () => {
     const transactions = month(
       { amountMinor: 10_000 },
@@ -345,6 +362,22 @@ describe('detectLevel', () => {
 
   it("rules Core out once 3% carries on well past Core's limit", () => {
     const transactions = month({ amountMinor: 72_000 }, { amountMinor: 20_000 })
+
+    expect(detectLevel(transactions, months)).toEqual({
+      detected: null,
+      possible: ['luxe', 'pinnacle'],
+    })
+  })
+
+  it('rules Core out when one purchase ran far past its limit and still earned 3% on all of it', () => {
+    // $5,000 from nothing: Core would have paid 3% on $2,000, 1% on the next
+    // $1,000 and 0.5% on the rest, not $150
+    const transactions = month({
+      amountMinor: 500_000,
+      currency: 'USD',
+      cashbackMinor: 15_000,
+      cashbackCurrency: 'USD',
+    })
 
     expect(detectLevel(transactions, months)).toEqual({
       detected: null,
