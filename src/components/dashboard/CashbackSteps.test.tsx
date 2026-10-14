@@ -129,6 +129,28 @@ describe('CashbackStepsCard', () => {
     expect(onPickLevel).toHaveBeenCalledWith('pinnacle')
   })
 
+  it('offers to go back to detecting the level only once one has been picked', async () => {
+    renderCard(stateFor([purchase(20_000, 600)]))
+    expect(screen.queryByRole('button', { name: /detect my level/i })).not.toBeInTheDocument()
+  })
+
+  it('lets go of a picked level with "Detect my level"', async () => {
+    const onPickLevel = renderCard(stateFor([purchase(20_000, 600)], { saved: 'luxe' }))
+
+    await userEvent.click(screen.getByRole('button', { name: /detect my level/i }))
+
+    expect(onPickLevel).toHaveBeenCalledWith(null)
+  })
+
+  it("links to ether.fi's own explanation of the levels", () => {
+    renderCard(stateFor([purchase(20_000, 600)]))
+
+    expect(screen.getByRole('link', { name: /how ether\.fi's levels work/i })).toHaveAttribute(
+      'href',
+      'https://help.ether.fi/en/articles/303625-how-do-membership-levels-work',
+    )
+  })
+
   it('marks the level picked as yours, and still points out a detected one that differs', () => {
     renderCard(stateFor([purchase(64_000, 1_920, 2), purchase(20_000, 200, 3)], { saved: 'luxe' }))
 

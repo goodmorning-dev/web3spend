@@ -12,7 +12,6 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import CategoriesSection from '@/components/settings/CategoriesSection'
-import MembershipSection from '@/components/settings/MembershipSection'
 import { Button } from '@/components/ui/button'
 import { useDashboardFilters } from '@/hooks/DashboardFiltersContext'
 import { useDataSource, useHasRealData } from '@/hooks/useDataSource'
@@ -158,7 +157,6 @@ function SettingsPage() {
           </p>
         )}
       </section>
-      <MembershipSection />
       <CategoriesSection />
     </div>
   )

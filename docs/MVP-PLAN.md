@@ -202,7 +202,7 @@ No account, wallet connection, remote transaction upload, or financial-data back
 - Shipped after the MVP: progress through ether.fi's published cashback steps (3%, then 1%,
   then a lower last rate as the month's spending grows) for the month on screen. The export
   doesn't say which membership level the person is on, so it's worked out from the month's
-  recorded cashback when that settles it, or picked on the dashboard or in Settings, and a
+  recorded cashback when that settles it, or picked on the dashboard, and a
   pill per level shows roughly what each would pay that month, for comparison. The steps are kept in one place with their
   source (`src/cashback/ladders.ts`). Euro spending is converted with the ECB reference rate
   built in at deploy, so it's labeled an estimate, and the latest purchase whose cashback shows

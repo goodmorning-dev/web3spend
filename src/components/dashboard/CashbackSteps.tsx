@@ -1,6 +1,8 @@
+import { RotateCcw } from 'lucide-react'
 import { EUR_USD_REFERENCE } from '@/cashback/eurUsdReference'
 import { MEMBERSHIP_LEVELS, type CashbackStep, type MembershipLevel } from '@/cashback/ladders'
 import { useCashbackProgress, type CashbackStepsState } from '@/hooks/useCashbackProgress'
+import { ETHERFI_MEMBERSHIP_URL } from '@/lib/links'
 import { cn } from '@/lib/utils'
 import { setMembershipLevel } from '@/storage/settings'
 import { formatUtcDate, formatUtcMonthLabel } from '@/utils/dates'
@@ -130,7 +132,8 @@ function levelLabel(level: MembershipLevel): string {
  * roughly what it would pay this month, so the levels can be compared at
  * a glance and switched with a click. The level shown is the one picked,
  * or else the one the month's cashback fits (see detectLevel), so nobody
- * has to pick one first. Euro amounts are estimates (see
+ * has to pick one first; a picked one can be let go of again with
+ * "Detect my level". Euro amounts are estimates (see
  * computeCashbackProgress), and the count only goes as far as the last
  * import, which it says.
  */
@@ -140,7 +143,9 @@ export function CashbackStepsCard({
   eurUsdReference = EUR_USD_REFERENCE,
 }: {
   state: CashbackStepsState
-  onPickLevel: (level: MembershipLevel) => void
+  /** Saves a level as the person's own, or with null, goes back to
+   * working it out from their cashback. */
+  onPickLevel: (level: MembershipLevel | null) => void
   eurUsdReference?: { rate: number; date: string }
 }) {
   const { progress, year, month, isCurrentMonth, saved, detection, level, estimates } = state
@@ -210,14 +215,27 @@ export function CashbackStepsCard({
       aria-labelledby="cashback-steps"
       className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4"
     >
-      <div>
-        <h3 id="cashback-steps" className="font-heading text-sm font-semibold">
-          Cashback steps
-        </h3>
-        <p className="text-[11.5px] font-medium text-text-faint">
-          {formatUtcMonthLabel(year, month)} ·{' '}
-          {currency === 'EUR' ? 'euro purchases' : 'dollar purchases'}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 id="cashback-steps" className="font-heading text-sm font-semibold">
+            Cashback steps
+          </h3>
+          <p className="text-[11.5px] font-medium text-text-faint">
+            {formatUtcMonthLabel(year, month)} ·{' '}
+            {currency === 'EUR' ? 'euro purchases' : 'dollar purchases'}
+          </p>
+        </div>
+        {saved !== null && (
+          <button
+            type="button"
+            onClick={() => onPickLevel(null)}
+            title="Stop using the level you picked, and work it out from your cashback"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-xs font-semibold text-primary hover:underline"
+          >
+            <RotateCcw className="size-3.5" />
+            Detect my level
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col gap-0.5">
@@ -276,7 +294,17 @@ export function CashbackStepsCard({
         })}
       </div>
 
-      <p className="text-xs text-text-faint">{notes.join(' ')}</p>
+      <p className="text-xs text-text-faint">
+        {notes.join(' ')}{' '}
+        <a
+          href={ETHERFI_MEMBERSHIP_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-primary hover:underline"
+        >
+          How ether.fi&apos;s levels work
+        </a>
+      </p>
     </section>
   )
 }
@@ -284,7 +312,7 @@ export function CashbackStepsCard({
 /** The cashback steps for the month the dashboard shows (this month on
  * "All time"), on the ladder for its currency, since euro purchases have
  * steps of their own. Clicking a level's pill saves it as the person's
- * level. */
+ * level, and "Detect my level" clears it again. */
 function CashbackSteps({
   currency,
   period,
